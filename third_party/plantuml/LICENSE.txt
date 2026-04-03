@@ -1,0 +1,1 @@
+Placeholder: include the exact PlantUML license text matching the bundled jar version.

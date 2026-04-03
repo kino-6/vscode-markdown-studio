@@ -1,0 +1,95 @@
+{
+  "name": "markdown-studio",
+  "displayName": "Markdown Studio",
+  "description": "Local-first Markdown authoring studio with integrated diagram rendering (Mermaid, PlantUML), SVG support, and secure PDF export.",
+  "version": "0.1.0",
+  "publisher": "local",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.92.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown",
+    "onCommand:markdownStudio.openPreview",
+    "onCommand:markdownStudio.exportPdf",
+    "onCommand:markdownStudio.validateEnvironment"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "markdownStudio.openPreview",
+        "title": "Markdown Studio: Open Secure Preview"
+      },
+      {
+        "command": "markdownStudio.exportPdf",
+        "title": "Markdown Studio: Export PDF"
+      },
+      {
+        "command": "markdownStudio.validateEnvironment",
+        "title": "Markdown Studio: Validate Local Environment"
+      }
+    ],
+    "configuration": {
+      "title": "Markdown Studio",
+      "properties": {
+        "markdownStudio.plantuml.mode": {
+          "type": "string",
+          "default": "bundled-jar",
+          "enum": [
+            "bundled-jar",
+            "external-command",
+            "docker"
+          ],
+          "description": "PlantUML rendering mode. MVP only fully supports bundled-jar."
+        },
+        "markdownStudio.java.path": {
+          "type": "string",
+          "default": "java",
+          "description": "Path to Java executable used for PlantUML rendering."
+        },
+        "markdownStudio.export.pageFormat": {
+          "type": "string",
+          "default": "A4",
+          "enum": [
+            "A4",
+            "Letter"
+          ],
+          "description": "Page format for PDF export."
+        },
+        "markdownStudio.security.blockExternalLinks": {
+          "type": "boolean",
+          "default": true,
+          "description": "Block external links and remote resources in preview/export by default."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "lint": "tsc --noEmit",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "vitest run test/unit --reporter=dot",
+    "test:integration": "vitest run test/integration --reporter=dot",
+    "test:ci": "npm run lint && npm run test"
+  },
+  "dependencies": {
+    "markdown-it": "^14.1.0",
+    "mermaid": "^11.12.0",
+    "playwright": "^1.53.0",
+    "sanitize-html": "^2.17.0"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
+    "@types/node": "^22.10.0",
+    "@types/sanitize-html": "^2.16.0",
+    "@types/vscode": "^1.92.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
