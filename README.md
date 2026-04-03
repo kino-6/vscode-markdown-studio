@@ -66,17 +66,12 @@ Then press `F5` in VS Code to launch an Extension Development Host.
 ## Tests
 
 ```bash
-npm test
+npm run test:unit
+npm run test:integration
+npm run test:ci
 ```
 
-Includes basic tests/scaffolding for:
-
-- markdown rendering path
-- mermaid success/error scaffolding
-- plantuml success/error scaffolding
-- java missing scaffolding
-- malicious svg sanitization
-- pdf export smoke scaffolding
+See [TESTING.md](./TESTING.md) for the full testing guide and coverage details.
 
 ## Coexistence with Markdown All in One
 

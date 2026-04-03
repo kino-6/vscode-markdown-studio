@@ -5,7 +5,7 @@ import { createMarkdownParser } from '../parser/parseMarkdown';
 import { sanitizeSvg } from '../parser/sanitizeSvg';
 import { scanFencedBlocks } from '../parser/scanFencedBlocks';
 import { RenderedMarkdown } from '../types/models';
-import { renderMermaidPlaceholder } from './renderMermaid';
+import { renderMermaidBlock } from './renderMermaid';
 import { renderPlantUml } from './renderPlantUml';
 
 const parser = createMarkdownParser();
@@ -75,7 +75,16 @@ export async function renderMarkdownDocument(
     let replacement = sourceFence;
 
     if (block.kind === 'mermaid') {
-      replacement = renderMermaidPlaceholder(block.content);
+      const result = await renderMermaidBlock(block.content);
+      if (result.ok && result.placeholder) {
+        replacement = result.placeholder;
+      } else {
+        errors.push({
+          title: 'Mermaid render error',
+          detail: result.error ?? 'Unknown Mermaid rendering issue.'
+        });
+        replacement = `<div class="ms-error"><div class="ms-error-title">Mermaid render error</div><pre>${escapeHtml(result.error ?? 'Unknown error')}</pre></div>`;
+      }
     }
 
     if (block.kind === 'svg') {
