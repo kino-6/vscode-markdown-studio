@@ -39,7 +39,11 @@
         "markdownStudio.plantuml.mode": {
           "type": "string",
           "default": "bundled-jar",
-          "enum": ["bundled-jar", "external-command", "docker"],
+          "enum": [
+            "bundled-jar",
+            "external-command",
+            "docker"
+          ],
           "description": "PlantUML rendering mode. MVP only fully supports bundled-jar."
         },
         "markdownStudio.java.path": {
@@ -50,7 +54,10 @@
         "markdownStudio.export.pageFormat": {
           "type": "string",
           "default": "A4",
-          "enum": ["A4", "Letter"],
+          "enum": [
+            "A4",
+            "Letter"
+          ],
           "description": "Page format for PDF export."
         },
         "markdownStudio.security.blockExternalLinks": {
@@ -65,7 +72,10 @@
     "build": "node esbuild.js",
     "watch": "node esbuild.js --watch",
     "lint": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run -c vitest.config.ts",
+    "test:unit": "vitest run -c vitest.unit.config.ts",
+    "test:integration": "vitest run -c vitest.integration.config.ts",
+    "test:ci": "npm run lint && npm run test:unit && npm run test:integration"
   },
   "dependencies": {
     "markdown-it": "^14.1.0",

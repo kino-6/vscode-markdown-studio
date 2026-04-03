@@ -1,0 +1,114 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const renderPlantUmlMock = vi.fn();
+const renderMermaidBlockMock = vi.fn();
+
+vi.mock('../../src/infra/config', () => ({
+  getConfig: () => ({
+    plantUmlMode: 'bundled-jar',
+    javaPath: 'java',
+    pageFormat: 'A4',
+    blockExternalLinks: true
+  })
+}));
+
+vi.mock('../../src/renderers/renderPlantUml', () => ({
+  renderPlantUml: renderPlantUmlMock
+}));
+
+vi.mock('../../src/renderers/renderMermaid', async () => {
+  const actual = await vi.importActual<typeof import('../../src/renderers/renderMermaid')>('../../src/renderers/renderMermaid');
+  return {
+    ...actual,
+    renderMermaidBlock: renderMermaidBlockMock
+  };
+});
+
+import { renderMarkdownDocument } from '../../src/renderers/renderMarkdown';
+
+describe('renderMarkdownDocument integration', () => {
+  const fakeContext = { extensionPath: '/tmp/ext' } as any;
+
+  beforeEach(() => {
+    renderPlantUmlMock.mockReset();
+    renderMermaidBlockMock.mockReset();
+  });
+
+  it('renders Mermaid and PlantUML success cases', async () => {
+    renderMermaidBlockMock.mockResolvedValue({ ok: true, placeholder: '<div class="mermaid-host" data-mermaid-src="abc"></div>' });
+    renderPlantUmlMock.mockResolvedValue({ ok: true, svg: '<svg><rect /></svg>' });
+
+    const markdown = [
+      '```mermaid',
+      'graph TD;A-->B;',
+      '```',
+      '```plantuml',
+      '@startuml',
+      'A->B:Hi',
+      '@enduml',
+      '```'
+    ].join('\n');
+
+    const result = await renderMarkdownDocument(markdown, fakeContext);
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.htmlBody).toContain('mermaid-host');
+    expect(result.htmlBody).toContain('<svg>');
+  });
+
+  it('surfaces Mermaid and PlantUML syntax errors with graceful degradation', async () => {
+    renderMermaidBlockMock.mockResolvedValue({ ok: false, error: 'Mermaid syntax error: bad token' });
+    renderPlantUmlMock.mockResolvedValue({ ok: false, error: 'PlantUML rendering failed: syntax issue' });
+
+    const markdown = [
+      '```mermaid',
+      'graph ???',
+      '```',
+      '```puml',
+      '@startuml',
+      'A->',
+      '@enduml',
+      '```'
+    ].join('\n');
+
+    const result = await renderMarkdownDocument(markdown, fakeContext);
+
+    expect(result.errors).toHaveLength(2);
+    expect(result.htmlBody).toContain('Mermaid render error');
+    expect(result.htmlBody).toContain('PlantUML render error');
+    expect(result.htmlBody).toContain('ms-error');
+  });
+
+  it('handles java missing case from PlantUML renderer', async () => {
+    renderMermaidBlockMock.mockResolvedValue({ ok: true, placeholder: '<div class="mermaid-host" data-mermaid-src="abc"></div>' });
+    renderPlantUmlMock.mockResolvedValue({ ok: false, error: 'PlantUML rendering failed: java: command not found' });
+
+    const markdown = '```plantuml\n@startuml\nA->B\n@enduml\n```';
+    const result = await renderMarkdownDocument(markdown, fakeContext);
+
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].detail).toContain('java: command not found');
+    expect(result.htmlBody).toContain('PlantUML render error');
+  });
+
+  it('composes sanitized HTML and blocks remote resources by default', async () => {
+    renderMermaidBlockMock.mockResolvedValue({ ok: true, placeholder: '<div class="mermaid-host" data-mermaid-src="abc"></div>' });
+    renderPlantUmlMock.mockResolvedValue({ ok: true, svg: '<svg><script>alert(1)</script><rect/></svg>' });
+
+    const markdown = [
+      '<script>alert(1)</script>',
+      '[safe?](https://example.com)',
+      '![img](https://example.com/x.png)',
+      '```svg',
+      '<svg><foreignObject>bad</foreignObject><rect onclick="hack()"/></svg>',
+      '```'
+    ].join('\n');
+
+    const result = await renderMarkdownDocument(markdown, fakeContext);
+
+    expect(result.htmlBody).not.toContain('<script');
+    expect(result.htmlBody).not.toContain('onclick=');
+    expect(result.htmlBody).toContain('ms-link-blocked');
+    expect(result.htmlBody).toContain('External image blocked by policy');
+  });
+});
