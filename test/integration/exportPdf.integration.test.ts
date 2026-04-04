@@ -1,28 +1,30 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const buildHtmlMock = vi.fn();
-const accessMock = vi.fn();
-const setContentMock = vi.fn();
-const pdfMock = vi.fn();
-const closeMock = vi.fn();
-const newPageMock = vi.fn();
-const launchMock = vi.fn();
+vi.mock('node:fs/promises', () => {
+  const accessMock = vi.fn();
+  return { default: { access: accessMock }, __accessMock: accessMock };
+});
 
-vi.mock('node:fs/promises', () => ({
-  default: {
-    access: accessMock
-  }
-}));
+vi.mock('../../src/preview/buildHtml', () => {
+  const buildHtmlMock = vi.fn();
+  return { buildHtml: buildHtmlMock, __buildHtmlMock: buildHtmlMock };
+});
 
-vi.mock('../../src/preview/buildHtml', () => ({
-  buildHtml: buildHtmlMock
-}));
-
-vi.mock('playwright', () => ({
-  chromium: {
-    launch: launchMock
-  }
-}));
+vi.mock('playwright', () => {
+  const setContentMock = vi.fn();
+  const pdfMock = vi.fn();
+  const closeMock = vi.fn();
+  const newPageMock = vi.fn();
+  const launchMock = vi.fn();
+  return {
+    chromium: { launch: launchMock },
+    __setContentMock: setContentMock,
+    __pdfMock: pdfMock,
+    __closeMock: closeMock,
+    __newPageMock: newPageMock,
+    __launchMock: launchMock
+  };
+});
 
 vi.mock('../../src/infra/config', () => ({
   getConfig: () => ({
@@ -33,7 +35,18 @@ vi.mock('../../src/infra/config', () => ({
   })
 }));
 
+import * as fsModule from 'node:fs/promises';
+import * as buildHtmlModule from '../../src/preview/buildHtml';
+import * as playwrightModule from 'playwright';
 import { exportToPdf } from '../../src/export/exportPdf';
+
+const accessMock = (fsModule as any).__accessMock as ReturnType<typeof vi.fn>;
+const buildHtmlMock = (buildHtmlModule as any).__buildHtmlMock as ReturnType<typeof vi.fn>;
+const setContentMock = (playwrightModule as any).__setContentMock as ReturnType<typeof vi.fn>;
+const pdfMock = (playwrightModule as any).__pdfMock as ReturnType<typeof vi.fn>;
+const closeMock = (playwrightModule as any).__closeMock as ReturnType<typeof vi.fn>;
+const newPageMock = (playwrightModule as any).__newPageMock as ReturnType<typeof vi.fn>;
+const launchMock = (playwrightModule as any).__launchMock as ReturnType<typeof vi.fn>;
 
 describe('exportToPdf smoke/integration', () => {
   it('uses preview composition pipeline and writes a PDF', async () => {

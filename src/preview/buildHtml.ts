@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import * as vscode from 'vscode';
 import { renderMarkdownDocument } from '../renderers/renderMarkdown';
 
@@ -11,18 +12,19 @@ export async function buildHtml(
   const styleHref = assets?.styleUri.toString() ?? '';
   const scriptSrc = assets?.scriptUri.toString() ?? '';
   const cspSource = webview?.cspSource ?? 'none';
+  const nonce = crypto.randomUUID();
 
   return `<!doctype html>
 <html>
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} data:; style-src ${cspSource} 'unsafe-inline'; script-src ${cspSource}; font-src ${cspSource};">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} data:; style-src ${cspSource} 'unsafe-inline'; script-src ${cspSource} 'nonce-${nonce}'; font-src ${cspSource};">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="${styleHref}">
 </head>
 <body>
 ${rendered.htmlBody}
-${scriptSrc ? `<script src="${scriptSrc}" nonce="markdown-studio"></script>` : ''}
+${scriptSrc ? `<script src="${scriptSrc}" nonce="${nonce}"></script>` : ''}
 </body>
 </html>`;
 }

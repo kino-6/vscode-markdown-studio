@@ -21,7 +21,9 @@ function escapeHtml(text: string): string {
 
 function sanitizeHtmlOutput(html: string): string {
   return sanitizeHtml(html, {
+    allowVulnerableTags: true,
     allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+      'img',
       'svg',
       'g',
       'path',
@@ -38,6 +40,7 @@ function sanitizeHtmlOutput(html: string): string {
       'style',
       'symbol',
       'use',
+      'image',
       'title',
       'desc',
       'span',
@@ -52,12 +55,12 @@ function sanitizeHtmlOutput(html: string): string {
       div: ['data-mermaid-src', 'class'],
       span: ['class', 'title']
     },
-    allowedSchemes: ['data', 'file', 'vscode-resource'],
+    allowedSchemes: ['data', 'file', 'vscode-resource', 'http', 'https'],
     transformTags: {
-      script: () => ({ tagName: 'noscript', text: '' }),
-      iframe: () => ({ tagName: 'div', text: '' }),
-      object: () => ({ tagName: 'div', text: '' }),
-      embed: () => ({ tagName: 'div', text: '' })
+      script: () => ({ tagName: 'noscript', attribs: {}, text: '' }),
+      iframe: () => ({ tagName: 'div', attribs: {}, text: '' }),
+      object: () => ({ tagName: 'div', attribs: {}, text: '' }),
+      embed: () => ({ tagName: 'div', attribs: {}, text: '' })
     }
   });
 }

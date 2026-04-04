@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { exportPdfCommand } from './commands/exportPdf';
 import { openPreviewCommand } from './commands/openPreview';
 import { validateEnvironmentCommand } from './commands/validateEnvironment';
+import { cleanupTempFiles } from './infra/tempFiles';
 
 export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
@@ -12,5 +13,5 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 export function deactivate(): void {
-  // no-op
+  cleanupTempFiles().catch(() => {});
 }

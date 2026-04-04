@@ -1,14 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const parseMock = vi.fn();
+vi.mock('mermaid', () => {
+  const parseMock = vi.fn();
+  return {
+    default: {
+      parse: parseMock
+    },
+    __parseMock: parseMock
+  };
+});
 
-vi.mock('mermaid', () => ({
-  default: {
-    parse: parseMock
-  }
-}));
-
+import mermaidModule from 'mermaid';
 import { decodeMermaidAttribute, renderMermaidBlock, renderMermaidPlaceholder } from '../../src/renderers/renderMermaid';
+
+const parseMock = (mermaidModule as any).__parseMock ?? mermaidModule.parse;
 
 describe('renderMermaidBlock', () => {
   beforeEach(() => {
@@ -33,6 +38,39 @@ describe('renderMermaidBlock', () => {
     expect(result.ok).toBe(false);
     expect(result.error).toContain('Mermaid syntax error');
     expect(result.error).toContain('Unexpected token');
+  });
+
+  it('returns placeholder when DOM ReferenceError occurs (Node.js environment)', async () => {
+    const domError = new ReferenceError('document is not defined');
+    parseMock.mockRejectedValue(domError);
+    const source = 'graph TD;A-->B;';
+
+    const result = await renderMermaidBlock(source);
+
+    expect(result.ok).toBe(true);
+    expect(result.placeholder).toBe(renderMermaidPlaceholder(source));
+    expect(result.error).toBeUndefined();
+  });
+
+  it('returns placeholder when window-related DOM error occurs', async () => {
+    const domError = new Error('window is not defined');
+    parseMock.mockRejectedValue(domError);
+    const source = 'sequenceDiagram\nA->>B: Hello';
+
+    const result = await renderMermaidBlock(source);
+
+    expect(result.ok).toBe(true);
+    expect(result.placeholder).toBe(renderMermaidPlaceholder(source));
+  });
+
+  it('still returns syntax error for non-DOM errors', async () => {
+    parseMock.mockRejectedValue(new Error('Parse error on line 1'));
+
+    const result = await renderMermaidBlock('invalid diagram');
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain('Mermaid syntax error');
+    expect(result.error).toContain('Parse error on line 1');
   });
 
   it('gracefully handles malformed encoded attribute', () => {

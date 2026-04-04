@@ -10,6 +10,11 @@ import { PlantUmlResult } from '../types/models';
 
 const cache = new ContentCache<PlantUmlResult>();
 
+/** @internal Exposed for testing only. */
+export function clearPlantUmlCache(): void {
+  cache.clear();
+}
+
 function bundledJarPath(context: vscode.ExtensionContext): string {
   return path.join(context.extensionPath, 'third_party', 'plantuml', 'plantuml.jar');
 }

@@ -6,7 +6,7 @@ const extensionConfig = {
   entryPoints: ['src/extension.ts'],
   bundle: true,
   platform: 'node',
-  external: ['vscode'],
+  external: ['vscode', 'playwright'],
   format: 'cjs',
   sourcemap: true,
   outfile: 'dist/extension.js'

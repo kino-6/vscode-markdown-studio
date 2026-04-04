@@ -1,8 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const renderPlantUmlMock = vi.fn();
-const renderMermaidBlockMock = vi.fn();
-
 vi.mock('../../src/infra/config', () => ({
   getConfig: () => ({
     plantUmlMode: 'bundled-jar',
@@ -12,19 +9,27 @@ vi.mock('../../src/infra/config', () => ({
   })
 }));
 
-vi.mock('../../src/renderers/renderPlantUml', () => ({
-  renderPlantUml: renderPlantUmlMock
-}));
+vi.mock('../../src/renderers/renderPlantUml', () => {
+  const renderPlantUmlMock = vi.fn();
+  return { renderPlantUml: renderPlantUmlMock, __renderPlantUmlMock: renderPlantUmlMock };
+});
 
 vi.mock('../../src/renderers/renderMermaid', async () => {
   const actual = await vi.importActual<typeof import('../../src/renderers/renderMermaid')>('../../src/renderers/renderMermaid');
+  const renderMermaidBlockMock = vi.fn();
   return {
     ...actual,
-    renderMermaidBlock: renderMermaidBlockMock
+    renderMermaidBlock: renderMermaidBlockMock,
+    __renderMermaidBlockMock: renderMermaidBlockMock
   };
 });
 
+import * as plantUmlModule from '../../src/renderers/renderPlantUml';
+import * as mermaidModule from '../../src/renderers/renderMermaid';
 import { renderMarkdownDocument } from '../../src/renderers/renderMarkdown';
+
+const renderPlantUmlMock = (plantUmlModule as any).__renderPlantUmlMock as ReturnType<typeof vi.fn>;
+const renderMermaidBlockMock = (mermaidModule as any).__renderMermaidBlockMock as ReturnType<typeof vi.fn>;
 
 describe('renderMarkdownDocument integration', () => {
   const fakeContext = { extensionPath: '/tmp/ext' } as any;

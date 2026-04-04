@@ -26,9 +26,11 @@ export function sanitizeSvg(input: string): string {
       'style',
       'symbol',
       'use',
+      'image',
       'title',
       'desc'
     ]),
+    allowVulnerableTags: true,
     allowedAttributes: {
       '*': [
         'id',
@@ -55,7 +57,8 @@ export function sanitizeSvg(input: string): string {
         'xmlns:xlink',
         'xlink:href',
         'href',
-        'points'
+        'points',
+        'preserveAspectRatio'
       ]
     },
     allowedSchemes: ['data'],

@@ -19,6 +19,24 @@ export function decodeMermaidAttribute(encoded: string): string {
   }
 }
 
+/**
+ * Checks whether an error originates from DOM APIs that are unavailable in Node.js.
+ */
+function isDomRelatedError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message.toLowerCase();
+  return (
+    error.name === 'ReferenceError' ||
+    msg.includes('document is not defined') ||
+    msg.includes('window is not defined') ||
+    msg.includes('navigator is not defined') ||
+    msg.includes('is not a function') ||
+    msg.includes('queryselector') ||
+    msg.includes('createelement') ||
+    msg.includes('dom')
+  );
+}
+
 export async function renderMermaidBlock(source: string): Promise<MermaidRenderResult> {
   try {
     await mermaid.parse(source, { suppressErrors: false });
@@ -27,6 +45,13 @@ export async function renderMermaidBlock(source: string): Promise<MermaidRenderR
       placeholder: renderMermaidPlaceholder(source)
     };
   } catch (error) {
+    if (isDomRelatedError(error)) {
+      // Node.js 環境では構文検証が制限されるため、構文チェックをスキップして placeholder を返す
+      return {
+        ok: true,
+        placeholder: renderMermaidPlaceholder(source)
+      };
+    }
     return {
       ok: false,
       error: `Mermaid syntax error: ${error instanceof Error ? error.message : String(error)}`

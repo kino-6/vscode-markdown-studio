@@ -5,6 +5,10 @@
   "version": "0.1.0",
   "publisher": "local",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kino-6/vscode-markdown-studio.git"
+  },
   "engines": {
     "vscode": "^1.92.0"
   },
@@ -12,10 +16,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onLanguage:markdown",
-    "onCommand:markdownStudio.openPreview",
-    "onCommand:markdownStudio.exportPdf",
-    "onCommand:markdownStudio.validateEnvironment"
+    "onLanguage:markdown"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -69,13 +70,16 @@
     }
   },
   "scripts": {
-    "build": "node esbuild.js",
-    "watch": "node esbuild.js --watch",
+    "build": "node config/esbuild.js",
+    "watch": "node config/esbuild.js --watch",
     "lint": "tsc --noEmit",
-    "test": "vitest run -c vitest.config.ts",
-    "test:unit": "vitest run -c vitest.unit.config.ts",
-    "test:integration": "vitest run -c vitest.integration.config.ts",
-    "test:ci": "npm run lint && npm run test:unit && npm run test:integration"
+    "test": "vitest run",
+    "test:unit": "vitest run -c config/vitest.unit.config.ts",
+    "test:integration": "vitest run -c config/vitest.integration.config.ts",
+    "pretest:e2e": "tsc -p config/tsconfig.e2e.json && npm run build",
+    "test:e2e": "vscode-test",
+    "test:ci": "npm run lint && npm run test:unit && npm run test:integration",
+    "package": "npm run build && vsce package -o dist/"
   },
   "dependencies": {
     "markdown-it": "^14.1.0",
@@ -85,9 +89,12 @@
   },
   "devDependencies": {
     "@types/markdown-it": "^14.1.2",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^22.10.0",
     "@types/sanitize-html": "^2.16.0",
     "@types/vscode": "^1.92.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
     "esbuild": "^0.24.0",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
