@@ -234,7 +234,204 @@ Switch between **light** and **dark** mode in VS Code (`Cmd+K Cmd+T`) to see how
 
 ---
 
-## 8. PDF Export
+## 8. Diagram Type Catalog
+
+All diagram types below are verified to render correctly with the bundled PlantUML + Smetana engine (no Graphviz required).
+
+<details>
+<summary>Class Diagram</summary>
+
+```plantuml
+@startuml
+class Animal {
+  +name: String
+  +speak(): void
+}
+class Dog extends Animal {
+  +fetch(): void
+}
+class Cat extends Animal {
+  +purr(): void
+}
+@enduml
+```
+
+</details>
+
+<details>
+<summary>Activity Diagram</summary>
+
+```plantuml
+@startuml
+start
+:Parse Markdown;
+if (Has diagrams?) then (yes)
+  fork
+    :Render Mermaid;
+  fork again
+    :Render PlantUML;
+  end fork
+else (no)
+  :Skip diagram rendering;
+endif
+:Sanitize HTML;
+:Build preview;
+stop
+@enduml
+```
+
+</details>
+
+<details>
+<summary>State Diagram</summary>
+
+```plantuml
+@startuml
+[*] --> Idle
+Idle --> Parsing : openPreview
+Parsing --> Rendering : fencedBlockFound
+Rendering --> Composing : allBlocksRendered
+Composing --> Displaying : htmlBuilt
+Displaying --> Idle : panelClosed
+Displaying --> Parsing : documentChanged
+@enduml
+```
+
+</details>
+
+<details>
+<summary>Use Case Diagram</summary>
+
+```plantuml
+@startuml
+actor Developer
+Developer --> (Write Markdown)
+Developer --> (Preview Document)
+Developer --> (Export PDF)
+Developer --> (Validate Environment)
+@enduml
+```
+
+</details>
+
+<details>
+<summary>Timing Diagram</summary>
+
+```plantuml
+@startuml
+robust "Extension Host" as EH
+robust "Webview" as WV
+
+@0
+EH is Idle
+WV is Empty
+
+@100
+EH is Parsing
+
+@200
+EH is Rendering
+WV is Loading
+
+@300
+EH is Idle
+WV is Displaying
+@enduml
+```
+
+</details>
+
+<details>
+<summary>Mind Map</summary>
+
+```plantuml
+@startmindmap
+* Markdown Studio
+** Rendering
+*** Mermaid
+*** PlantUML
+*** SVG Sanitizer
+*** highlight.js
+** Export
+*** PDF (Playwright)
+** Security
+*** CSP Nonce
+*** HTML Sanitization
+*** External Link Blocking
+@endmindmap
+```
+
+</details>
+
+<details>
+<summary>Gantt Chart</summary>
+
+```plantuml
+@startgantt
+[Parse Markdown] lasts 1 day
+[Render Diagrams] starts at [Parse Markdown]'s end and lasts 2 days
+[Sanitize HTML] starts at [Render Diagrams]'s end and lasts 1 day
+[Build Preview] starts at [Sanitize HTML]'s end and lasts 1 day
+@endgantt
+```
+
+</details>
+
+<details>
+<summary>Object Diagram</summary>
+
+```plantuml
+@startuml
+object ExtensionConfig {
+  plantUmlMode = "bundled-jar"
+  javaPath = "java"
+  pageFormat = "A4"
+  blockExternalLinks = true
+}
+object DependencyStatus {
+  allReady = true
+  javaPath = "/path/to/java"
+  browserPath = "/path/to/chromium"
+}
+ExtensionConfig -- DependencyStatus
+@enduml
+```
+
+</details>
+
+<details>
+<summary>Mermaid: Pie Chart</summary>
+
+```mermaid
+pie title Markdown Studio Components
+    "Rendering" : 40
+    "Security" : 25
+    "Export" : 20
+    "Infrastructure" : 15
+```
+
+</details>
+
+<details>
+<summary>Mermaid: Git Graph</summary>
+
+```mermaid
+gitGraph
+    commit id: "init"
+    commit id: "add-preview"
+    branch feature/plantuml
+    commit id: "plantuml-renderer"
+    commit id: "smetana-engine"
+    checkout main
+    merge feature/plantuml
+    commit id: "pdf-export"
+```
+
+</details>
+
+---
+
+## 9. PDF Export
 
 This entire document can be exported to PDF:
 
