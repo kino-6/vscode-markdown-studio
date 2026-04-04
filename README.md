@@ -63,6 +63,25 @@ npm run build
 
 Then press `F5` in VS Code to launch an Extension Development Host.
 
+## Package and install
+
+Build a VSIX package and install it into VS Code:
+
+```bash
+npm run package
+code --install-extension dist/markdown-studio-0.1.0.vsix
+```
+
+For PDF export, Chromium is also required (one-time setup):
+
+```bash
+npx playwright install chromium
+```
+
+Restart VS Code after installation. Open any `.md` file and run commands from the command palette (`Cmd+Shift+P` / `Ctrl+Shift+P`).
+
+A demo file is included at `examples/demo.md` to showcase all features.
+
 ## Tests
 
 ```bash

@@ -216,4 +216,38 @@ Run **Markdown Studio: Validate Local Environment** to check:
 
 ---
 
+## 9. Theme Adaptability
+
+Diagrams and SVG elements adapt to your current VS Code theme automatically.
+Switch between light and dark mode to see colors update in real time.
+
+**To switch themes:** Settings → Color Theme, or `Cmd+K Cmd+T` (`Ctrl+K Ctrl+T` on Windows/Linux).
+
+### Mermaid (auto-detects theme)
+
+Mermaid diagrams use the built-in dark/light theme based on your VS Code color scheme:
+
+```mermaid
+flowchart LR
+    A[Light Mode] -->|switch theme| B[Dark Mode]
+    B -->|switch theme| A
+    A --> C[Default colors]
+    B --> D[Dark colors]
+```
+
+### SVG (theme-visible colors)
+
+These shapes use colors with good contrast in both light and dark backgrounds:
+
+```svg
+<svg viewBox="0 0 260 100" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="10" width="100" height="80" rx="10" fill="#4CAF50" />
+  <text x="60" y="55" text-anchor="middle" fill="white" font-size="14">Green</text>
+  <rect x="150" y="10" width="100" height="80" rx="10" fill="#2196F3" />
+  <text x="200" y="55" text-anchor="middle" fill="white" font-size="14">Blue</text>
+</svg>
+```
+
+---
+
 *Generated for Markdown Studio v0.1.0*

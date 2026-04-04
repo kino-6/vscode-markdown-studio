@@ -1,9 +1,40 @@
 import mermaid from 'mermaid';
 
+const THEME_MAP = {
+  'vscode-dark': 'dark',
+  'vscode-light': 'default',
+  'vscode-high-contrast': 'dark',
+  'vscode-high-contrast-light': 'default',
+};
+
+function detectThemeKind() {
+  const kind = document.body.dataset.vscodeThemeKind;
+  return (kind && Object.prototype.hasOwnProperty.call(THEME_MAP, kind)) ? kind : 'vscode-light';
+}
+
+function getMermaidTheme(themeKind) {
+  return THEME_MAP[themeKind] ?? 'default';
+}
+
+function observeThemeChanges(callback) {
+  const observer = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      if (m.type === 'attributes' && m.attributeName === 'data-vscode-theme-kind') {
+        callback(detectThemeKind());
+      }
+    }
+  });
+  observer.observe(document.body, {
+    attributes: true,
+    attributeFilter: ['data-vscode-theme-kind'],
+  });
+  return observer;
+}
+
 mermaid.initialize({
   startOnLoad: false,
   securityLevel: 'strict',
-  theme: 'default'
+  theme: getMermaidTheme(detectThemeKind()),
 });
 
 function safeText(text) {
@@ -38,4 +69,17 @@ window.addEventListener('DOMContentLoaded', () => {
   renderMermaidBlocks().catch((error) => {
     console.error('Mermaid rendering failed', error);
   });
+
+  observeThemeChanges((newThemeKind) => {
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: getMermaidTheme(newThemeKind),
+    });
+    renderMermaidBlocks().catch((error) => {
+      console.error('Mermaid re-rendering failed after theme change', error);
+    });
+  });
 });
+
+export { THEME_MAP, detectThemeKind, getMermaidTheme, observeThemeChanges };

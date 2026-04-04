@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import * as vscode from 'vscode';
+import { dependencyStatus } from '../extension';
 import { ContentCache } from '../infra/cache';
 import { getConfig } from '../infra/config';
 import { runProcess } from '../infra/runProcess';
@@ -46,20 +47,30 @@ export async function renderPlantUml(
     return missing;
   }
 
+  // Prefer managed Corretto path, fall back to user config
+  const javaPath = dependencyStatus?.javaPath ?? cfg.javaPath;
+
   const inputFile = await createTempFile('puml', source);
   const result = await runProcess(
-    cfg.javaPath,
+    javaPath,
     ['-Djava.awt.headless=true', '-jar', jarPath, '-tsvg', inputFile],
     15000
   );
 
   if (result.timedOut || result.exitCode !== 0) {
-    const failed: PlantUmlResult = {
-      ok: false,
-      error: result.timedOut
-        ? 'PlantUML rendering timed out.'
-        : `PlantUML rendering failed: ${result.stderr || result.stdout}`
-    };
+    const isJavaMissing = !result.timedOut &&
+      (result.stderr?.includes('not found') ||
+       result.stderr?.includes('not recognized') ||
+       result.stderr?.includes('ENOENT') ||
+       result.exitCode === 127);
+
+    const errorMessage = result.timedOut
+      ? 'PlantUML rendering timed out.'
+      : isJavaMissing && !dependencyStatus?.javaPath
+        ? 'Java is not available. Run "Markdown Studio: Setup Dependencies" to install it automatically.'
+        : `PlantUML rendering failed: ${result.stderr || result.stdout}`;
+
+    const failed: PlantUmlResult = { ok: false, error: errorMessage };
     cache.set(key, failed);
     return failed;
   }

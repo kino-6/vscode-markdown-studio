@@ -25,10 +25,15 @@ vi.mock('../../src/infra/config', () => {
   return { getConfig: getConfigMock, __getConfigMock: getConfigMock };
 });
 
+vi.mock('../../src/extension', () => ({
+  dependencyStatus: undefined
+}));
+
 import * as fsModule from 'node:fs/promises';
 import * as runProcessModule from '../../src/infra/runProcess';
 import * as tempFilesModule from '../../src/infra/tempFiles';
 import * as configModule from '../../src/infra/config';
+import * as extensionModule from '../../src/extension';
 import { clearPlantUmlCache, renderPlantUml } from '../../src/renderers/renderPlantUml';
 
 const accessMock = (fsModule as any).__accessMock as ReturnType<typeof vi.fn>;
@@ -48,6 +53,7 @@ describe('renderPlantUml', () => {
     createTempFileMock.mockReset();
     getConfigMock.mockReset();
     getConfigMock.mockReturnValue({ plantUmlMode: 'bundled-jar', javaPath: 'java' });
+    (extensionModule as any).dependencyStatus = undefined;
   });
 
   it('returns unsupported mode error', async () => {
@@ -66,14 +72,45 @@ describe('renderPlantUml', () => {
     expect(result.error).toContain('jar missing');
   });
 
-  it('returns process failure (java missing / syntax error)', async () => {
+  it('returns actionable error when java is missing and no managed path', async () => {
     accessMock.mockResolvedValue(undefined);
     createTempFileMock.mockResolvedValue('/tmp/in.puml');
     runProcessMock.mockResolvedValue({ exitCode: 1, stdout: '', stderr: 'java: command not found', timedOut: false });
 
     const result = await renderPlantUml('@startuml\nA->\n@enduml', context);
     expect(result.ok).toBe(false);
-    expect(result.error).toContain('java: command not found');
+    expect(result.error).toContain('Setup Dependencies');
+  });
+
+  it('uses managed java path when dependencyStatus is available', async () => {
+    (extensionModule as any).dependencyStatus = { allReady: true, javaPath: '/managed/java', errors: [] };
+    accessMock.mockResolvedValue(undefined);
+    createTempFileMock.mockResolvedValue('/tmp/in.puml');
+    runProcessMock.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '', timedOut: false });
+    readFileMock.mockResolvedValue('<svg><rect/></svg>');
+
+    await renderPlantUml('@startuml\nA->B\n@enduml', context);
+    expect(runProcessMock).toHaveBeenCalledWith(
+      '/managed/java',
+      expect.any(Array),
+      15000
+    );
+  });
+
+  it('falls back to config javaPath when dependencyStatus has no javaPath', async () => {
+    (extensionModule as any).dependencyStatus = { allReady: false, errors: ['Corretto failed'] };
+    getConfigMock.mockReturnValue({ plantUmlMode: 'bundled-jar', javaPath: '/custom/java' });
+    accessMock.mockResolvedValue(undefined);
+    createTempFileMock.mockResolvedValue('/tmp/in.puml');
+    runProcessMock.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '', timedOut: false });
+    readFileMock.mockResolvedValue('<svg><rect/></svg>');
+
+    await renderPlantUml('@startuml\nA->B\n@enduml', context);
+    expect(runProcessMock).toHaveBeenCalledWith(
+      '/custom/java',
+      expect.any(Array),
+      15000
+    );
   });
 
   it('returns sanitized svg on success', async () => {

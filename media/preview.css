@@ -2,6 +2,16 @@
   color-scheme: light dark;
   --error-bg: rgba(255, 0, 0, 0.08);
   --error-border: rgba(255, 0, 0, 0.45);
+  --diagram-text: #1e1e1e;
+  --diagram-bg: #ffffff;
+  --diagram-stroke: #333333;
+}
+
+body.vscode-dark,
+body.vscode-high-contrast {
+  --diagram-text: #d4d4d4;
+  --diagram-bg: #1e1e1e;
+  --diagram-stroke: #888888;
 }
 
 body {
@@ -28,6 +38,7 @@ svg {
 .ms-error {
   border: 1px solid var(--error-border);
   background: var(--error-bg);
+  color: var(--vscode-foreground);
   border-radius: 6px;
   padding: 0.75rem;
   margin: 0.75rem 0;
@@ -35,6 +46,23 @@ svg {
 
 .ms-error-title {
   font-weight: 700;
+}
+
+body.vscode-dark svg[xmlns] text,
+body.vscode-high-contrast svg[xmlns] text {
+  fill: var(--diagram-text);
+}
+
+body.vscode-dark svg rect:not([fill]),
+body.vscode-dark svg circle:not([fill]),
+body.vscode-dark svg ellipse:not([fill]),
+body.vscode-dark svg polygon:not([fill]),
+body.vscode-high-contrast svg rect:not([fill]),
+body.vscode-high-contrast svg circle:not([fill]),
+body.vscode-high-contrast svg ellipse:not([fill]),
+body.vscode-high-contrast svg polygon:not([fill]) {
+  fill: var(--diagram-bg);
+  stroke: var(--diagram-stroke);
 }
 
 .mermaid-host {

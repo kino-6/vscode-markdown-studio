@@ -1,17 +1,45 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import * as vscode from 'vscode';
+import { dependencyStatus } from '../extension';
 import { getConfig } from '../infra/config';
 import { buildHtml } from '../preview/buildHtml';
 
 export async function exportToPdf(document: vscode.TextDocument, context: vscode.ExtensionContext): Promise<string> {
   const cfg = getConfig();
-  const html = await buildHtml(document.getText(), context);
+  let html = await buildHtml(document.getText(), context);
+
+  // Inline the hljs theme CSS so PDF code blocks are colorized.
+  // There's no webview in the PDF path, so we read the CSS from disk
+  // and inject it as a <style> tag that Playwright can render.
+  const hljsCssPath = path.join(context.extensionPath, 'media', 'hljs-theme.css');
+  try {
+    const hljsCss = await fs.readFile(hljsCssPath, 'utf-8');
+    html = html.replace('</head>', `<style>${hljsCss}</style>\n</head>`);
+  } catch {
+    // CSS file missing — degrade gracefully, code blocks render without color
+  }
+
+  // Point Playwright at the managed Chromium directory when available
+  if (dependencyStatus?.browserPath) {
+    process.env.PLAYWRIGHT_BROWSERS_PATH = dependencyStatus.browserPath;
+  }
 
   // Playwright is external (not bundled) and shipped in the VSIX's node_modules.
   // Dynamic import keeps it out of the activation path.
   const { chromium } = await import('playwright');
-  const browser = await chromium.launch({ headless: true });
+
+  let browser;
+  try {
+    browser = await chromium.launch({ headless: true });
+  } catch (err) {
+    if (!dependencyStatus?.browserPath) {
+      throw new Error(
+        'Chromium browser is not available. Run "Markdown Studio: Setup Dependencies" to install it automatically.'
+      );
+    }
+    throw err;
+  }
 
   try {
     const page = await browser.newPage();

@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { DependencyStatus } from '../deps/types';
 import { MarkdownStudioConfig } from '../infra/config';
 import { runProcess as defaultRunProcess } from '../infra/runProcess';
 
@@ -30,7 +31,8 @@ const defaultDeps: EnvironmentValidationDeps = {
 export async function validateEnvironment(
   cfg: MarkdownStudioConfig,
   extensionPath: string,
-  deps: Partial<EnvironmentValidationDeps> = {}
+  deps: Partial<EnvironmentValidationDeps> = {},
+  managedDeps?: DependencyStatus
 ): Promise<EnvironmentValidationResult> {
   const runtimeDeps: EnvironmentValidationDeps = { ...defaultDeps, ...deps };
   const lines: string[] = [];
@@ -57,6 +59,20 @@ export async function validateEnvironment(
     lines.push('✅ Temp directory writable');
   } catch {
     lines.push('❌ Temp directory is not writable');
+  }
+
+  if (managedDeps) {
+    if (managedDeps.javaPath) {
+      lines.push('✅ Managed Corretto JDK available');
+    } else {
+      lines.push('❌ Managed Corretto JDK not available');
+    }
+
+    if (managedDeps.browserPath) {
+      lines.push('✅ Managed Chromium browser available');
+    } else {
+      lines.push('❌ Managed Chromium browser not available');
+    }
   }
 
   return { ok: lines.every((line) => line.startsWith('✅')), lines };
