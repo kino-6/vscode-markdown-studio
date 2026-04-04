@@ -1,5 +1,3 @@
-import mermaid from 'mermaid';
-
 export interface MermaidRenderResult {
   ok: boolean;
   placeholder?: string;
@@ -20,41 +18,16 @@ export function decodeMermaidAttribute(encoded: string): string {
 }
 
 /**
- * Checks whether an error originates from DOM APIs that are unavailable in Node.js.
+ * In the Extension Host (Node.js), we skip Mermaid syntax validation entirely.
+ * The mermaid library depends on DOM APIs (document, window) that don't exist
+ * in Node.js, causing the extension to crash on activation.
+ *
+ * Instead, we always return a placeholder. The actual Mermaid rendering and
+ * syntax validation happens client-side in the webview (media/preview.js).
  */
-function isDomRelatedError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  const msg = error.message.toLowerCase();
-  return (
-    error.name === 'ReferenceError' ||
-    msg.includes('document is not defined') ||
-    msg.includes('window is not defined') ||
-    msg.includes('navigator is not defined') ||
-    msg.includes('is not a function') ||
-    msg.includes('queryselector') ||
-    msg.includes('createelement') ||
-    msg.includes('dom')
-  );
-}
-
 export async function renderMermaidBlock(source: string): Promise<MermaidRenderResult> {
-  try {
-    await mermaid.parse(source, { suppressErrors: false });
-    return {
-      ok: true,
-      placeholder: renderMermaidPlaceholder(source)
-    };
-  } catch (error) {
-    if (isDomRelatedError(error)) {
-      // Node.js 環境では構文検証が制限されるため、構文チェックをスキップして placeholder を返す
-      return {
-        ok: true,
-        placeholder: renderMermaidPlaceholder(source)
-      };
-    }
-    return {
-      ok: false,
-      error: `Mermaid syntax error: ${error instanceof Error ? error.message : String(error)}`
-    };
-  }
+  return {
+    ok: true,
+    placeholder: renderMermaidPlaceholder(source)
+  };
 }

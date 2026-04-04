@@ -16,7 +16,10 @@
     "Other"
   ],
   "activationEvents": [
-    "onLanguage:markdown"
+    "onLanguage:markdown",
+    "onCommand:markdownStudio.openPreview",
+    "onCommand:markdownStudio.exportPdf",
+    "onCommand:markdownStudio.validateEnvironment"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -83,7 +86,6 @@
   },
   "dependencies": {
     "markdown-it": "^14.1.0",
-    "mermaid": "^11.12.0",
     "playwright": "^1.53.0",
     "sanitize-html": "^2.17.0"
   },
@@ -96,6 +98,7 @@
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
     "esbuild": "^0.24.0",
+    "mermaid": "^11.12.0",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   }

@@ -1,4 +1,5 @@
 .git/**
+.github/**
 .kiro/**
 .vscode-test/**
 node_modules/**
@@ -6,6 +7,7 @@ src/**
 test/**
 config/**
 out/**
+examples/**
 media/preview.js
 
 *.ts
