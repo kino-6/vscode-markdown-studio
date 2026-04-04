@@ -70,6 +70,12 @@ npm run package
 code --install-extension dist/markdown-studio-0.1.0.vsix
 ```
 
+For development, use the one-step reinstall command (clears webview cache to avoid ServiceWorker errors):
+
+```bash
+npm run reinstall
+```
+
 For PDF export, Chromium is also required (one-time setup):
 
 ```bash

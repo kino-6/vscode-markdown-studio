@@ -87,7 +87,8 @@
     "pretest:e2e": "tsc -p config/tsconfig.e2e.json && npm run build",
     "test:e2e": "vscode-test",
     "test:ci": "npm run lint && npm run test:unit && npm run test:integration",
-    "package": "npm run build && rm -f dist/*.vsix && vsce package -o dist/"
+    "package": "npm run build && rm -f dist/*.vsix && vsce package -o dist/",
+    "reinstall": "npm run package && code --uninstall-extension local.markdown-studio; rm -rf ~/Library/Application\\ Support/Code/Service\\ Worker/CacheStorage && code --install-extension dist/markdown-studio-0.1.0.vsix"
   },
   "dependencies": {
     "highlight.js": "^11.11.1",
