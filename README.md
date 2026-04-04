@@ -96,6 +96,12 @@ npm run test:ci
 
 See [TESTING.md](./TESTING.md) for the full testing guide and coverage details.
 
+## Syntax highlighting
+
+Code blocks are highlighted using highlight.js with VS Code-inspired colors. Supported languages:
+
+TypeScript, JavaScript, Python, Java, JSON, YAML, Bash, Shell, HTML, XML, CSS, SQL, Go, Rust, C, C++, C#, Ruby, PHP, Swift, Kotlin, Dockerfile, Markdown, Plaintext
+
 ## Coexistence with Markdown All in One
 
 Markdown Studio does **not** attempt to replace editing helpers. It is intended to coexist with Markdown All in One by focusing only on secure preview/render/export.
