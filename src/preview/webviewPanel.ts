@@ -79,6 +79,17 @@ export async function openOrRefreshPreview(
 }
 
 /**
+ * Destroys the current preview panel and clears state.
+ * Used by the "Clear Cache & Reload" command.
+ */
+export function destroyPreviewPanel(): void {
+  if (currentPanel) {
+    currentPanel.dispose();
+    // onDidDispose callback will clear currentPanel and changeSubscription
+  }
+}
+
+/**
  * Reset module state – exposed only for unit tests.
  * @internal
  */

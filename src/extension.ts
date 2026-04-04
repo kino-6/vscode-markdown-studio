@@ -5,6 +5,7 @@ import { validateEnvironmentCommand } from './commands/validateEnvironment';
 import { cleanupTempFiles } from './infra/tempFiles';
 import { DependencyManager } from './deps/dependencyManager';
 import type { DependencyStatus } from './deps/types';
+import { destroyPreviewPanel } from './preview/webviewPanel';
 
 /** Module-level dependency status, accessible by other modules if needed. */
 export let dependencyStatus: DependencyStatus | undefined;
@@ -37,6 +38,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('markdownStudio.openPreview', async () => openPreviewCommand(context)),
     vscode.commands.registerCommand('markdownStudio.exportPdf', async () => exportPdfCommand(context)),
     vscode.commands.registerCommand('markdownStudio.validateEnvironment', async () => validateEnvironmentCommand(context)),
+    vscode.commands.registerCommand('markdownStudio.reloadPreview', async () => {
+      destroyPreviewPanel();
+      await openPreviewCommand(context);
+    }),
     vscode.commands.registerCommand('markdownStudio.setupDependencies', async () => {
       try {
         const status = await depManager.reinstall(context);

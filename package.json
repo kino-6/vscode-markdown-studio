@@ -20,6 +20,7 @@
     "onCommand:markdownStudio.openPreview",
     "onCommand:markdownStudio.exportPdf",
     "onCommand:markdownStudio.validateEnvironment",
+    "onCommand:markdownStudio.reloadPreview",
     "onCommand:markdownStudio.setupDependencies"
   ],
   "main": "./dist/extension.js",
@@ -36,6 +37,10 @@
       {
         "command": "markdownStudio.validateEnvironment",
         "title": "Markdown Studio: Validate Local Environment"
+      },
+      {
+        "command": "markdownStudio.reloadPreview",
+        "title": "Markdown Studio: Reload Preview (Clear Cache)"
       },
       {
         "command": "markdownStudio.setupDependencies",
