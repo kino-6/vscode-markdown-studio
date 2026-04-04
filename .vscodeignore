@@ -3,6 +3,8 @@
 .kiro/**
 .vscode-test/**
 node_modules/**
+!node_modules/playwright/**
+!node_modules/playwright-core/**
 src/**
 test/**
 config/**

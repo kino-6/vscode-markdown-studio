@@ -12,6 +12,13 @@ export async function exportPdfCommand(context: vscode.ExtensionContext): Promis
     const path = await exportToPdf(editor.document, context);
     void vscode.window.showInformationMessage(`Markdown Studio: Exported PDF to ${path}`);
   } catch (error) {
-    void vscode.window.showErrorMessage(`Markdown Studio PDF export failed: ${String(error)}`);
+    const msg = String(error);
+    if (msg.includes('Executable doesn\'t exist') || msg.includes('browserType.launch')) {
+      void vscode.window.showErrorMessage(
+        'Markdown Studio: Chromium browser not found. Run `npx playwright install chromium` in your terminal, then try again.'
+      );
+    } else {
+      void vscode.window.showErrorMessage(`Markdown Studio PDF export failed: ${msg}`);
+    }
   }
 }

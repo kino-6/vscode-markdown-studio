@@ -8,8 +8,8 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
   const cfg = getConfig();
   const html = await buildHtml(document.getText(), context);
 
-  // Dynamic import so playwright is only loaded when PDF export is actually used.
-  // This prevents activation failure when playwright is not installed.
+  // Playwright is external (not bundled) and shipped in the VSIX's node_modules.
+  // Dynamic import keeps it out of the activation path.
   const { chromium } = await import('playwright');
   const browser = await chromium.launch({ headless: true });
 
