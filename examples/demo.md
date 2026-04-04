@@ -148,7 +148,7 @@ wv --> Developer : Live preview
 Dangerous elements (`<script>`, `<foreignObject>`, event handlers) are stripped automatically.
 
 ```svg
-<svg viewBox="0 0 360 80" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 360 80" xmlns="http://www.w3.org/2000/svg" width="100%">
   <rect x="5" y="5" width="110" height="70" rx="10" fill="#4CAF50" />
   <text x="60" y="48" text-anchor="middle" fill="white" font-size="18" font-weight="bold">Parse</text>
   <rect x="125" y="5" width="110" height="70" rx="10" fill="#2196F3" />
