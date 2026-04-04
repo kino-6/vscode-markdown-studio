@@ -35,7 +35,7 @@ Bundled at:
 
 - `third_party/plantuml/plantuml.jar`
 
-Sequence diagrams, activity diagrams, and other Graphviz-free diagram types work out of the box. Component diagrams and class diagrams require [Graphviz](https://graphviz.org/) to be installed separately (`brew install graphviz` on macOS).
+Sequence diagrams, activity diagrams, and other Graphviz-free diagram types work out of the box. Component diagrams and class diagrams use PlantUML's built-in Smetana layout engine (a Java port of Graphviz), so no external Graphviz installation is needed.
 
 See `THIRD_PARTY_NOTICES.md` for notice guidance.
 

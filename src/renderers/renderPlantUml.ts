@@ -52,7 +52,7 @@ export async function renderPlantUml(
   const inputFile = await createTempFile('puml', source);
   const result = await runProcess(
     javaPath,
-    ['-Djava.awt.headless=true', '-jar', jarPath, '-tsvg', inputFile],
+    ['-Djava.awt.headless=true', '-jar', jarPath, '-Playout=smetana', '-tsvg', inputFile],
     15000
   );
 
