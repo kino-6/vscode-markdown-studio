@@ -37,9 +37,15 @@ export async function validateEnvironment(
   const runtimeDeps: EnvironmentValidationDeps = { ...defaultDeps, ...deps };
   const lines: string[] = [];
 
-  const javaCheck = await runtimeDeps.runProcess(cfg.javaPath, ['-version'], 8000);
+  // Use managed Corretto path if available, fall back to config
+  const javaPath = managedDeps?.javaPath ?? cfg.javaPath;
+  const javaCheck = await runtimeDeps.runProcess(javaPath, ['-version'], 8000);
   if (javaCheck.exitCode === 0 || javaCheck.stderr.toLowerCase().includes('version')) {
-    lines.push('✅ Java detected');
+    if (managedDeps?.javaPath) {
+      lines.push('✅ Java detected (managed Corretto)');
+    } else {
+      lines.push('✅ Java detected (system)');
+    }
   } else {
     lines.push('❌ Java missing or inaccessible');
   }
@@ -61,18 +67,10 @@ export async function validateEnvironment(
     lines.push('❌ Temp directory is not writable');
   }
 
-  if (managedDeps) {
-    if (managedDeps.javaPath) {
-      lines.push('✅ Managed Corretto JDK available');
-    } else {
-      lines.push('❌ Managed Corretto JDK not available');
-    }
-
-    if (managedDeps.browserPath) {
-      lines.push('✅ Managed Chromium browser available');
-    } else {
-      lines.push('❌ Managed Chromium browser not available');
-    }
+  if (managedDeps?.browserPath) {
+    lines.push('✅ Managed Chromium browser available');
+  } else if (managedDeps) {
+    lines.push('❌ Managed Chromium browser not available');
   }
 
   return { ok: lines.every((line) => line.startsWith('✅')), lines };
