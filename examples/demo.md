@@ -75,41 +75,37 @@ sequenceDiagram
 
 Rendered locally via bundled JAR. No remote server.
 
-### Extension Component Diagram
+### Extension Rendering Pipeline
 
 ```plantuml
 @startuml
-skinparam componentStyle rectangle
 skinparam defaultFontSize 14
 
-package "Markdown Studio" {
-  [Extension Host] as ext
-  [Markdown Parser] as parser
-  [Mermaid Renderer] as mermaid
-  [PlantUML Renderer] as plantuml
-  [SVG Sanitizer] as svg
-  [HTML Builder] as html
-  [PDF Exporter] as pdf
-  [Webview Preview] as preview
-}
+start
+:Markdown Source;
+:scanFencedBlocks();
 
-package "External Dependencies" {
-  [Amazon Corretto JDK] as java
-  [Playwright Chromium] as chromium
-  [PlantUML JAR] as jar
-}
+if (Block type?) then (mermaid)
+  :Create placeholder\n(client-side render);
+elseif (plantuml/puml) then
+  :Java → PlantUML JAR;
+  :Generate SVG;
+elseif (svg) then
+  :Sanitize SVG;
+else (code/text)
+  :highlight.js tokenize;
+endif
 
-ext --> parser
-parser --> mermaid
-parser --> plantuml
-parser --> svg
-parser --> html
-html --> preview
-html --> pdf
+:sanitizeHtmlOutput();
+:buildHtml() + CSP nonce;
 
-plantuml --> jar
-jar --> java
-pdf --> chromium
+fork
+  :Webview Preview;
+fork again
+  :Playwright → PDF;
+end fork
+
+stop
 @enduml
 ```
 

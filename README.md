@@ -29,15 +29,13 @@ By default, it is designed to be safe-by-design:
 
 ## PlantUML bundling note
 
-PlantUML is bundled as an **unmodified third-party component**.
+PlantUML v1.2024.8 is bundled as an **unmodified third-party component** (GPLv2).
 
-This repository includes a placeholder file at:
+Bundled at:
 
 - `third_party/plantuml/plantuml.jar`
 
-To run real PlantUML rendering, replace the placeholder with an **unmodified official PlantUML.jar** and place the matching license text in:
-
-- `third_party/plantuml/LICENSE.txt`
+Sequence diagrams, activity diagrams, and other Graphviz-free diagram types work out of the box. Component diagrams and class diagrams require [Graphviz](https://graphviz.org/) to be installed separately (`brew install graphviz` on macOS).
 
 See `THIRD_PARTY_NOTICES.md` for notice guidance.
 
