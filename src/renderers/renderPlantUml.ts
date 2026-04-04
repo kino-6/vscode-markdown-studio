@@ -6,7 +6,6 @@ import { ContentCache } from '../infra/cache';
 import { getConfig } from '../infra/config';
 import { runProcess } from '../infra/runProcess';
 import { createTempFile } from '../infra/tempFiles';
-import { sanitizeSvg } from '../parser/sanitizeSvg';
 import { PlantUmlResult } from '../types/models';
 
 const cache = new ContentCache<PlantUmlResult>();
@@ -78,7 +77,10 @@ export async function renderPlantUml(
   const outputFile = inputFile.replace(/\.puml$/, '.svg');
   try {
     const rawSvg = await fs.readFile(outputFile, 'utf8');
-    const ok: PlantUmlResult = { ok: true, svg: sanitizeSvg(rawSvg) };
+    // PlantUML output is from a trusted local JAR — only strip script tags,
+    // skip full sanitization which destroys PlantUML's style attributes.
+    const safeSvg = rawSvg.replace(/<script[\s\S]*?<\/script>/gi, '');
+    const ok: PlantUmlResult = { ok: true, svg: safeSvg };
     cache.set(key, ok);
     return ok;
   } catch {

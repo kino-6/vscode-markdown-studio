@@ -1,121 +1,143 @@
 # Markdown Studio — Feature Demo
 
-This single file showcases every feature of Markdown Studio.
-Open it in VS Code and run **Markdown Studio: Open Secure Preview** (`Cmd+Shift+P`).
+Open this file and run **Markdown Studio: Open Secure Preview** (`Cmd+Shift+P`).
 
 ---
 
-## 1. Standard Markdown Rendering
+## 1. Markdown Rendering
 
-Regular Markdown elements are rendered with full fidelity:
+**Bold**, *italic*, ~~strikethrough~~, `inline code`
 
-- **Bold**, *italic*, ~~strikethrough~~, `inline code`
-- [Internal link](#5-security-model) works fine
-- [External link](https://example.com) — blocked by default policy ✋
+> Blockquotes work too.
 
-> Blockquotes are supported too.
+| Feature    | Status |
+|------------|--------|
+| Markdown   | ✅     |
+| Mermaid    | ✅     |
+| PlantUML   | ✅     |
+| SVG        | ✅     |
+| PDF Export | ✅     |
 
-### Ordered List
-
-1. First item
-2. Second item
+1. Ordered list item
+2. Another item
 3. Third item
 
-### Table
-
-| Feature         | Status |
-|-----------------|--------|
-| Markdown        | ✅      |
-| Mermaid         | ✅      |
-| PlantUML        | ✅      |
-| SVG             | ✅      |
-| PDF Export      | ✅      |
-| Security        | ✅      |
+- Unordered item
+- Another item
 
 ---
 
-## 2. Mermaid Diagram (Local Rendering)
+## 2. Mermaid Diagrams
 
-Mermaid diagrams are rendered client-side in the webview — no external service.
+### Markdown Studio Architecture
 
 ```mermaid
-graph TD
-    A[Open Markdown] --> B{Has diagrams?}
-    B -- Yes --> C[Render Mermaid]
-    B -- Yes --> D[Render PlantUML]
-    B -- No --> E[Render HTML]
-    C --> F[Compose Preview]
-    D --> F
-    E --> F
-    F --> G[Display in Webview]
-    F --> H[Export to PDF]
+flowchart TD
+    A[Markdown Source] --> B[markdown-it Parser]
+    B --> C{Fenced Block?}
+    C -- mermaid --> D[Mermaid Placeholder]
+    C -- plantuml/puml --> E[PlantUML JAR → SVG]
+    C -- svg --> F[SVG Sanitizer]
+    C -- code --> G[highlight.js]
+    C -- none --> H[HTML Output]
+    D --> I[sanitize-html]
+    E --> I
+    F --> I
+    G --> I
+    H --> I
+    I --> J[buildHtml + CSP Nonce]
+    J --> K[Webview Preview]
+    J --> L[Playwright → PDF Export]
 ```
 
-### Sequence Diagram
+### Extension Activation Flow
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant VSCode
-    participant Extension
-    participant Webview
+    participant VS as VS Code
+    participant Ext as Extension Host
+    participant DM as DependencyManager
+    participant WV as Webview
 
-    User->>VSCode: Open .md file
-    VSCode->>Extension: Activate
-    User->>VSCode: Cmd+Shift+P → Open Preview
-    VSCode->>Extension: Execute command
-    Extension->>Extension: Parse & render
-    Extension->>Webview: Send HTML
-    Webview->>User: Display preview
+    VS->>Ext: activate()
+    Ext->>DM: ensureAll()
+    DM-->>Ext: Java ✅ Chromium ✅
+    Ext->>VS: Register commands
+    VS->>Ext: openPreview
+    Ext->>Ext: renderMarkdownDocument()
+    Ext->>WV: HTML + CSP + Nonce
+    WV->>WV: Mermaid client-side render
 ```
 
 ---
 
-## 3. PlantUML Diagram (Local JAR)
+## 3. PlantUML Diagrams
 
-PlantUML is rendered locally via the bundled JAR — no remote server.
-Requires Java to be installed (`markdownStudio.java.path`).
+Rendered locally via bundled JAR. No remote server.
+
+### Extension Component Diagram
 
 ```plantuml
 @startuml
-skinparam style strictuml
+skinparam componentStyle rectangle
+skinparam defaultFontSize 14
 
-actor User
-participant "VS Code" as vsc
-participant "Extension" as ext
-database "Temp Files" as tmp
+package "Markdown Studio" {
+  [Extension Host] as ext
+  [Markdown Parser] as parser
+  [Mermaid Renderer] as mermaid
+  [PlantUML Renderer] as plantuml
+  [SVG Sanitizer] as svg
+  [HTML Builder] as html
+  [PDF Exporter] as pdf
+  [Webview Preview] as preview
+}
 
-User -> vsc : Open Markdown
-vsc -> ext : Activate extension
-User -> vsc : Export PDF
-vsc -> ext : exportPdf command
-ext -> tmp : Write .puml temp file
-ext -> ext : java -jar plantuml.jar
-tmp -> ext : Read .svg output
-ext -> ext : Sanitize SVG
-ext -> vsc : Compose HTML
-vsc -> User : Save PDF
+package "External Dependencies" {
+  [Amazon Corretto JDK] as java
+  [Playwright Chromium] as chromium
+  [PlantUML JAR] as jar
+}
+
+ext --> parser
+parser --> mermaid
+parser --> plantuml
+parser --> svg
+parser --> html
+html --> preview
+html --> pdf
+
+plantuml --> jar
+jar --> java
+pdf --> chromium
 @enduml
 ```
 
-### Also supports `puml` fence
+### Document Processing Sequence
 
 ```puml
 @startuml
-class ContentCache<T> {
-  - entries: Map<string, T>
-  - maxEntries: number
-  + get(key): T
-  + set(key, value): void
-  + clear(): void
-}
+skinparam defaultFontSize 14
 
-class TempFiles {
-  + createTempFile(ext, content): string
-  + cleanupTempFiles(): void
-}
+actor Developer
+participant "VS Code" as vsc
+participant "Extension" as ext
+participant "PlantUML JAR" as jar
+participant "Webview" as wv
 
-ContentCache --> TempFiles : used by PlantUML renderer
+Developer -> vsc : Open .md file
+Developer -> vsc : Cmd+Shift+P → Preview
+vsc -> ext : openPreview command
+ext -> ext : scanFencedBlocks()
+ext -> ext : renderMermaidBlock() → placeholder
+ext -> jar : java -jar plantuml.jar -tsvg
+jar --> ext : SVG output
+ext -> ext : sanitizeSvg()
+ext -> ext : sanitizeHtmlOutput()
+ext -> ext : buildHtml() + CSP nonce
+ext -> wv : Set webview HTML
+wv -> wv : Mermaid client-side render
+wv --> Developer : Live preview
 @enduml
 ```
 
@@ -123,61 +145,36 @@ ContentCache --> TempFiles : used by PlantUML renderer
 
 ## 4. Inline SVG (Sanitized)
 
-Raw SVG in fenced blocks is sanitized — `<script>`, `<foreignObject>`,
-event handlers, and `javascript:` URIs are all stripped.
+Dangerous elements (`<script>`, `<foreignObject>`, event handlers) are stripped automatically.
 
 ```svg
-<svg viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
-  <rect x="10" y="10" width="80" height="80" rx="10" fill="#4CAF50" />
-  <text x="50" y="55" text-anchor="middle" fill="white" font-size="14">Safe</text>
-  <circle cx="150" cy="50" r="40" fill="#2196F3" />
-  <text x="150" y="55" text-anchor="middle" fill="white" font-size="14">SVG</text>
-</svg>
-```
-
-The following dangerous elements are automatically removed:
-
-```svg
-<svg viewBox="0 0 200 50" xmlns="http://www.w3.org/2000/svg">
-  <script>alert('XSS')</script>
-  <rect width="200" height="50" fill="#f44336" onclick="alert('hack')" />
-  <text x="100" y="30" text-anchor="middle" fill="white">Dangerous tags stripped</text>
-  <foreignObject><div>blocked</div></foreignObject>
+<svg viewBox="0 0 360 80" xmlns="http://www.w3.org/2000/svg">
+  <rect x="5" y="5" width="110" height="70" rx="10" fill="#4CAF50" />
+  <text x="60" y="48" text-anchor="middle" fill="white" font-size="18" font-weight="bold">Parse</text>
+  <rect x="125" y="5" width="110" height="70" rx="10" fill="#2196F3" />
+  <text x="180" y="48" text-anchor="middle" fill="white" font-size="18" font-weight="bold">Render</text>
+  <rect x="245" y="5" width="110" height="70" rx="10" fill="#FF9800" />
+  <text x="300" y="48" text-anchor="middle" fill="white" font-size="18" font-weight="bold">Export</text>
 </svg>
 ```
 
 ---
 
-## 5. Security Model
-
-Markdown Studio is **safe by design**:
-
-- ✅ No external API calls
-- ✅ No SaaS dependency or CDN assets
-- ✅ Restrictive Content Security Policy with random nonce
-- ✅ HTML sanitization before rendering
-- ✅ SVG sanitization strips scripts, event handlers, foreign objects
-- ✅ External links and images blocked by default
-
-### External image (blocked by policy)
-
-![Remote image](https://example.com/image.png)
-
-The image above is replaced with a policy notice in the preview.
-
----
-
-## 6. Code Blocks
-
-Standard fenced code blocks render normally:
+## 5. Syntax Highlighting
 
 ```typescript
 import * as vscode from 'vscode';
 
 export function activate(context: vscode.ExtensionContext): void {
+  const depManager = new DependencyManager();
+  const status = await depManager.ensureAll(context);
+
   context.subscriptions.push(
     vscode.commands.registerCommand('markdownStudio.openPreview', async () => {
-      // Open secure preview
+      await openPreviewCommand(context);
+    }),
+    vscode.commands.registerCommand('markdownStudio.exportPdf', async () => {
+      await exportPdfCommand(context);
     })
   );
 }
@@ -192,9 +189,52 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 ```
 
+```python
+# PlantUML rendering is also useful for Python projects
+from dataclasses import dataclass
+
+@dataclass
+class DiagramConfig:
+    mode: str = "bundled-jar"
+    java_path: str = "java"
+    timeout_ms: int = 15000
+```
+
 ---
 
-## 7. PDF Export
+## 6. Security Model
+
+- ✅ No external API calls
+- ✅ No SaaS dependency or CDN assets
+- ✅ Restrictive CSP with random nonce
+- ✅ HTML sanitization before rendering
+- ✅ SVG sanitization strips scripts, event handlers, foreign objects
+- ✅ External links and images blocked by default
+
+### External image (blocked by policy)
+
+![Remote image](https://example.com/image.png)
+
+The image above is replaced with a policy notice in the preview.
+
+### External link (blocked by policy)
+
+[External link](https://example.com) — blocked by default ✋
+
+---
+
+## 7. Theme Adaptability
+
+Switch between **light** and **dark** mode in VS Code (`Cmd+K Cmd+T`) to see how the preview adapts:
+
+- Mermaid diagrams automatically switch between light and dark themes
+- SVG elements use colors chosen for visibility in both themes
+- Code blocks use theme-aware syntax highlighting
+- PlantUML output receives CSS overrides for dark mode
+
+---
+
+## 8. PDF Export
 
 This entire document can be exported to PDF:
 
@@ -202,52 +242,8 @@ This entire document can be exported to PDF:
 2. `Cmd+Shift+P` → **Markdown Studio: Export PDF**
 3. A `demo.pdf` will be generated next to this file
 
-The PDF uses the same HTML pipeline as the preview — what you see is what you get.
+The PDF uses the same HTML pipeline as the preview.
 
 ---
 
-## 8. Environment Validation
-
-Run **Markdown Studio: Validate Local Environment** to check:
-
-- ✅ Java detected
-- ✅ Bundled PlantUML jar found
-- ✅ Temp directory writable
-
----
-
-## 9. Theme Adaptability
-
-Diagrams and SVG elements adapt to your current VS Code theme automatically.
-Switch between light and dark mode to see colors update in real time.
-
-**To switch themes:** Settings → Color Theme, or `Cmd+K Cmd+T` (`Ctrl+K Ctrl+T` on Windows/Linux).
-
-### Mermaid (auto-detects theme)
-
-Mermaid diagrams use the built-in dark/light theme based on your VS Code color scheme:
-
-```mermaid
-flowchart LR
-    A[Light Mode] -->|switch theme| B[Dark Mode]
-    B -->|switch theme| A
-    A --> C[Default colors]
-    B --> D[Dark colors]
-```
-
-### SVG (theme-visible colors)
-
-These shapes use colors with good contrast in both light and dark backgrounds:
-
-```svg
-<svg viewBox="0 0 260 100" xmlns="http://www.w3.org/2000/svg">
-  <rect x="10" y="10" width="100" height="80" rx="10" fill="#4CAF50" />
-  <text x="60" y="55" text-anchor="middle" fill="white" font-size="14">Green</text>
-  <rect x="150" y="10" width="100" height="80" rx="10" fill="#2196F3" />
-  <text x="200" y="55" text-anchor="middle" fill="white" font-size="14">Blue</text>
-</svg>
-```
-
----
-
-*Generated for Markdown Studio v0.1.0*
+*Markdown Studio v0.1.0*
