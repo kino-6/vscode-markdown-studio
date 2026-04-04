@@ -1,13 +1,16 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import * as vscode from 'vscode';
-import { chromium } from 'playwright';
 import { getConfig } from '../infra/config';
 import { buildHtml } from '../preview/buildHtml';
 
 export async function exportToPdf(document: vscode.TextDocument, context: vscode.ExtensionContext): Promise<string> {
   const cfg = getConfig();
   const html = await buildHtml(document.getText(), context);
+
+  // Dynamic import so playwright is only loaded when PDF export is actually used.
+  // This prevents activation failure when playwright is not installed.
+  const { chromium } = await import('playwright');
   const browser = await chromium.launch({ headless: true });
 
   try {
