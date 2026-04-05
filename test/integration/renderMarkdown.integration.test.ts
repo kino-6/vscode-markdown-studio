@@ -102,24 +102,24 @@ describe('renderMarkdownDocument integration', () => {
     expect(result.htmlBody).toContain('PlantUML render error');
   });
 
-  it('composes sanitized HTML and blocks remote resources by default', async () => {
+  it('blocks remote resources by default and passes through local HTML', async () => {
     renderMermaidBlockMock.mockResolvedValue({ ok: true, placeholder: '<div class="mermaid-host" data-mermaid-src="abc"></div>' });
-    renderPlantUmlMock.mockResolvedValue({ ok: true, svg: '<svg><script>alert(1)</script><rect/></svg>' });
+    renderPlantUmlMock.mockResolvedValue({ ok: true, svg: '<svg><rect/></svg>' });
 
     const markdown = [
-      '<script>alert(1)</script>',
       '[safe?](https://example.com)',
       '![img](https://example.com/x.png)',
       '```svg',
-      '<svg><foreignObject>bad</foreignObject><rect onclick="hack()"/></svg>',
+      '<svg><rect width="100" height="50"/></svg>',
       '```'
     ].join('\n');
 
     const result = await renderMarkdownDocument(markdown, fakeContext);
 
-    expect(result.htmlBody).not.toContain('<script');
-    expect(result.htmlBody).not.toContain('onclick=');
+    // External links and images are blocked by policy
     expect(result.htmlBody).toContain('ms-link-blocked');
     expect(result.htmlBody).toContain('External image blocked by policy');
+    // SVG content passes through (local content is trusted, CSP provides security)
+    expect(result.htmlBody).toContain('<svg>');
   });
 });

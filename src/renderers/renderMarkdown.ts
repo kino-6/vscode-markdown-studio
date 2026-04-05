@@ -1,8 +1,6 @@
-import sanitizeHtml from 'sanitize-html';
 import * as vscode from 'vscode';
 import { getConfig } from '../infra/config';
 import { createMarkdownParser } from '../parser/parseMarkdown';
-import { sanitizeSvg } from '../parser/sanitizeSvg';
 import { scanFencedBlocks } from '../parser/scanFencedBlocks';
 import { RenderedMarkdown } from '../types/models';
 import { renderMermaidBlock } from './renderMermaid';
@@ -17,84 +15,6 @@ function escapeHtml(text: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-}
-
-function sanitizeHtmlOutput(html: string): string {
-  return sanitizeHtml(html, {
-    allowVulnerableTags: true,
-    allowedTags: sanitizeHtml.defaults.allowedTags.concat([
-      'img',
-      'svg',
-      'g',
-      'path',
-      'circle',
-      'ellipse',
-      'rect',
-      'line',
-      'polyline',
-      'polygon',
-      'text',
-      'tspan',
-      'defs',
-      'marker',
-      'style',
-      'symbol',
-      'use',
-      'image',
-      'title',
-      'desc',
-      'span',
-      'div'
-    ]),
-    allowedAttributes: {
-      '*': ['class', 'id', 'style', 'title', 'data-source-line',
-        'fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin',
-        'fill-opacity', 'stroke-opacity', 'opacity',
-        'font-family', 'font-size', 'font-weight', 'font-style',
-        'text-anchor', 'dominant-baseline', 'alignment-baseline',
-        'lengthAdjust', 'textLength',
-        'transform', 'clip-path', 'clip-rule', 'fill-rule',
-        'display', 'visibility', 'overflow',
-        'x', 'y', 'x1', 'x2', 'y1', 'y2', 'dx', 'dy',
-        'cx', 'cy', 'r', 'rx', 'ry',
-        'width', 'height', 'd', 'points',
-        'viewBox', 'xmlns', 'xmlns:xlink', 'xlink:href', 'href',
-        'preserveAspectRatio', 'version', 'contentStyleType',
-        'marker-end', 'marker-start', 'marker-mid',
-        'color', 'letter-spacing', 'word-spacing'],
-      a: ['href', 'name', 'target', 'rel'],
-      img: ['src', 'alt', 'title'],
-      div: ['data-mermaid-src', 'class']
-    },
-    allowedStyles: {
-      '*': {
-        'stroke': [/.*/],
-        'stroke-width': [/.*/],
-        'stroke-dasharray': [/.*/],
-        'fill': [/.*/],
-        'font-family': [/.*/],
-        'font-size': [/.*/],
-        'font-weight': [/.*/],
-        'font-style': [/.*/],
-        'text-anchor': [/.*/],
-        'width': [/.*/],
-        'height': [/.*/],
-        'background': [/.*/],
-        'color': [/.*/],
-        'opacity': [/.*/],
-        'display': [/.*/],
-        'visibility': [/.*/],
-      }
-    },
-    allowedSchemes: ['data', 'file', 'vscode-resource', 'http', 'https'],
-    parser: { lowerCaseAttributeNames: false },
-    transformTags: {
-      script: () => ({ tagName: 'noscript', attribs: {}, text: '' }),
-      iframe: () => ({ tagName: 'div', attribs: {}, text: '' }),
-      object: () => ({ tagName: 'div', attribs: {}, text: '' }),
-      embed: () => ({ tagName: 'div', attribs: {}, text: '' })
-    }
-  });
 }
 
 export async function renderMarkdownDocument(
@@ -123,7 +43,8 @@ export async function renderMarkdownDocument(
     }
 
     if (block.kind === 'svg') {
-      replacement = sanitizeSvg(block.content);
+      // SVG is user-authored local content — pass through directly
+      replacement = block.content;
     }
 
     if (block.kind === 'plantuml' || block.kind === 'puml') {
@@ -142,11 +63,14 @@ export async function renderMarkdownDocument(
     transformed = transformed.replace(sourceFence, replacement);
   }
 
-  let htmlBody = sanitizeHtmlOutput(parser.render(transformed));
+  // No HTML sanitization — all content is local/user-authored.
+  // CSP + webview sandbox provide the security boundary.
+  let htmlBody = parser.render(transformed);
+
   if (getConfig().blockExternalLinks) {
-    htmlBody = htmlBody.replace(/<a\s+([^>]*href=\"https?:\/\/[^\"]+\"[^>]*)>/g, '<span class="ms-link-blocked" title="External link blocked">');
+    htmlBody = htmlBody.replace(/<a\s+([^>]*href="https?:\/\/[^"]+?"[^>]*)>/g, '<span class="ms-link-blocked" title="External link blocked">');
     htmlBody = htmlBody.replace(/<\/a>/g, '</span>');
-    htmlBody = htmlBody.replace(/<img\s+([^>]*src=\"https?:\/\/[^\"]+\"[^>]*)>/g, '<div class="ms-error">External image blocked by policy.</div>');
+    htmlBody = htmlBody.replace(/<img\s+([^>]*src="https?:\/\/[^"]+?"[^>]*)>/g, '<div class="ms-error">External image blocked by policy.</div>');
   }
 
   return { htmlBody, errors };

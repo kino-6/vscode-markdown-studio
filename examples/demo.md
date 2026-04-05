@@ -152,74 +152,45 @@ wv --> Developer : Live preview
 Dangerous elements (`<script>`, `<foreignObject>`, event handlers) are stripped automatically.
 
 ```svg
-<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" width="100%">
-  <defs>
-    <linearGradient id="gParse" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#4CAF50"/>
-      <stop offset="100%" stop-color="#81C784"/>
-    </linearGradient>
-    <linearGradient id="gRender" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#2196F3"/>
-      <stop offset="100%" stop-color="#64B5F6"/>
-    </linearGradient>
-    <linearGradient id="gExport" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#FF9800"/>
-      <stop offset="100%" stop-color="#FFB74D"/>
-    </linearGradient>
-  </defs>
-
-  <!-- Background -->
-  <rect x="0" y="0" width="600" height="320" rx="12" fill="#f8f9fa" stroke="#dee2e6" stroke-width="1"/>
-
-  <!-- Title -->
-  <text x="300" y="32" text-anchor="middle" font-size="16" font-weight="bold" fill="#333">Markdown Studio Pipeline</text>
-
+<svg viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg" width="100%">
   <!-- Parse stage -->
-  <rect x="30" y="60" width="160" height="80" rx="12" fill="url(#gParse)"/>
-  <text x="110" y="95" text-anchor="middle" fill="white" font-size="15" font-weight="bold">Parse</text>
-  <text x="110" y="118" text-anchor="middle" fill="white" font-size="11">markdown-it + scanner</text>
+  <rect x="30" y="20" width="160" height="70" rx="12" fill="#4CAF50"/>
+  <text x="110" y="55" text-anchor="middle" fill="white" font-size="15" font-weight="bold">Parse</text>
+  <text x="110" y="75" text-anchor="middle" fill="white" font-size="11">markdown-it + scanner</text>
+
+  <!-- Arrow -->
+  <polygon points="195,55 215,47 215,63" fill="#888"/>
 
   <!-- Render stage -->
-  <rect x="220" y="60" width="160" height="80" rx="12" fill="url(#gRender)"/>
-  <text x="300" y="95" text-anchor="middle" fill="white" font-size="15" font-weight="bold">Render</text>
-  <text x="300" y="118" text-anchor="middle" fill="white" font-size="11">Mermaid · PlantUML · SVG</text>
+  <rect x="220" y="20" width="160" height="70" rx="12" fill="#2196F3"/>
+  <text x="300" y="55" text-anchor="middle" fill="white" font-size="15" font-weight="bold">Render</text>
+  <text x="300" y="75" text-anchor="middle" fill="white" font-size="11">Mermaid · PlantUML · SVG</text>
+
+  <!-- Arrow -->
+  <polygon points="385,55 405,47 405,63" fill="#888"/>
 
   <!-- Export stage -->
-  <rect x="410" y="60" width="160" height="80" rx="12" fill="url(#gExport)"/>
-  <text x="490" y="95" text-anchor="middle" fill="white" font-size="15" font-weight="bold">Export</text>
-  <text x="490" y="118" text-anchor="middle" fill="white" font-size="11">Playwright → PDF</text>
+  <rect x="410" y="20" width="160" height="70" rx="12" fill="#FF9800"/>
+  <text x="490" y="55" text-anchor="middle" fill="white" font-size="15" font-weight="bold">Export</text>
+  <text x="490" y="75" text-anchor="middle" fill="white" font-size="11">Playwright → PDF</text>
 
-  <!-- Arrows between stages -->
-  <polygon points="195,100 215,92 215,108" fill="#555"/>
-  <polygon points="385,100 405,92 405,108" fill="#555"/>
+  <!-- Security icons -->
+  <circle cx="110" cy="140" r="25" fill="#4CAF50" opacity="0.2" stroke="#4CAF50" stroke-width="2"/>
+  <text x="110" y="145" text-anchor="middle" fill="#4CAF50" font-size="16">🔒</text>
+  <text x="110" y="175" text-anchor="middle" fill="#4CAF50" font-size="9">CSP + Nonce</text>
 
-  <!-- Security badge -->
-  <circle cx="110" cy="200" r="30" fill="#E8F5E9" stroke="#4CAF50" stroke-width="2"/>
-  <text x="110" y="196" text-anchor="middle" fill="#2E7D32" font-size="20">🔒</text>
-  <text x="110" y="215" text-anchor="middle" fill="#2E7D32" font-size="8">CSP + Nonce</text>
+  <circle cx="300" cy="140" r="25" fill="#2196F3" opacity="0.2" stroke="#2196F3" stroke-width="2"/>
+  <text x="300" y="145" text-anchor="middle" fill="#2196F3" font-size="16">🛡️</text>
+  <text x="300" y="175" text-anchor="middle" fill="#2196F3" font-size="9">HTML Sanitize</text>
 
-  <!-- Sanitize badge -->
-  <circle cx="300" cy="200" r="30" fill="#E3F2FD" stroke="#2196F3" stroke-width="2"/>
-  <text x="300" y="196" text-anchor="middle" fill="#1565C0" font-size="20">🛡️</text>
-  <text x="300" y="215" text-anchor="middle" fill="#1565C0" font-size="8">HTML Sanitize</text>
+  <circle cx="490" cy="140" r="25" fill="#FF9800" opacity="0.2" stroke="#FF9800" stroke-width="2"/>
+  <text x="490" y="145" text-anchor="middle" fill="#FF9800" font-size="16">💻</text>
+  <text x="490" y="175" text-anchor="middle" fill="#FF9800" font-size="9">Local-First</text>
 
-  <!-- Local-first badge -->
-  <circle cx="490" cy="200" r="30" fill="#FFF3E0" stroke="#FF9800" stroke-width="2"/>
-  <text x="490" y="196" text-anchor="middle" fill="#E65100" font-size="20">💻</text>
-  <text x="490" y="215" text-anchor="middle" fill="#E65100" font-size="8">Local-First</text>
-
-  <!-- Connecting lines -->
-  <line x1="110" y1="140" x2="110" y2="170" stroke="#4CAF50" stroke-width="2" stroke-dasharray="4"/>
-  <line x1="300" y1="140" x2="300" y2="170" stroke="#2196F3" stroke-width="2" stroke-dasharray="4"/>
-  <line x1="490" y1="140" x2="490" y2="170" stroke="#FF9800" stroke-width="2" stroke-dasharray="4"/>
-
-  <!-- Bottom path decoration -->
-  <path d="M 60 270 Q 150 250 300 270 Q 450 290 540 270" fill="none" stroke="#90A4AE" stroke-width="2" stroke-dasharray="6,3"/>
-
-  <!-- Feature labels along the path -->
-  <text x="120" y="295" text-anchor="middle" fill="#666" font-size="10">Diagrams</text>
-  <text x="300" y="305" text-anchor="middle" fill="#666" font-size="10">Syntax Highlighting</text>
-  <text x="480" y="295" text-anchor="middle" fill="#666" font-size="10">Theme Aware</text>
+  <!-- Connecting dashed lines -->
+  <line x1="110" y1="90" x2="110" y2="115" stroke="#4CAF50" stroke-width="2" stroke-dasharray="4"/>
+  <line x1="300" y1="90" x2="300" y2="115" stroke="#2196F3" stroke-width="2" stroke-dasharray="4"/>
+  <line x1="490" y1="90" x2="490" y2="115" stroke="#FF9800" stroke-width="2" stroke-dasharray="4"/>
 </svg>
 ```
 
