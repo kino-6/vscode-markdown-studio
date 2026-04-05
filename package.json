@@ -28,7 +28,7 @@
     "commands": [
       {
         "command": "markdownStudio.openPreview",
-        "title": "Markdown Studio: Open Secure Preview"
+        "title": "Markdown Studio: Preview"
       },
       {
         "command": "markdownStudio.exportPdf",

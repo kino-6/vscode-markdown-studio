@@ -1,6 +1,6 @@
 # Markdown Studio — Feature Demo
 
-Open this file and run **Markdown Studio: Open Secure Preview** (`Cmd+Shift+P`).
+Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
 
 ---
 
