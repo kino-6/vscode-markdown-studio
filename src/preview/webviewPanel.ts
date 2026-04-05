@@ -1,6 +1,9 @@
 import * as vscode from 'vscode';
 import { buildHtml, buildLoadingHtml, renderBody } from './buildHtml';
 import { getPreviewAssetUris } from './previewAssets';
+import { validateEnvironment } from '../commands/validateEnvironmentCore';
+import { dependencyStatus } from '../extension';
+import { getConfig } from '../infra/config';
 
 /** Module-level reference to the current preview panel. */
 let currentPanel: vscode.WebviewPanel | undefined;
@@ -72,8 +75,13 @@ export async function openOrRefreshPreview(
 
     const assets = getPreviewAssetUris(currentPanel.webview, context);
 
-    // Show spinner immediately while buildHtml() renders the full content
-    currentPanel.webview.html = buildLoadingHtml(currentPanel.webview, assets);
+    // Show spinner + env status immediately while buildHtml() renders the full content
+    let envLines: string[] = [];
+    try {
+      const envResult = await validateEnvironment(getConfig(), context.extensionPath, {}, dependencyStatus);
+      envLines = envResult.lines;
+    } catch { /* fall back to spinner only */ }
+    currentPanel.webview.html = buildLoadingHtml(currentPanel.webview, assets, envLines);
 
     currentPanel.webview.html = await buildHtml(document.getText(), context, currentPanel.webview, assets, document.uri);
 
@@ -138,8 +146,13 @@ export async function openOrRefreshPreview(
 
   const assets = getPreviewAssetUris(panel.webview, context);
 
-  // Show spinner immediately while buildHtml() renders the full content
-  panel.webview.html = buildLoadingHtml(panel.webview, assets);
+  // Show spinner + env status immediately while buildHtml() renders the full content
+  let envLines: string[] = [];
+  try {
+    const envResult = await validateEnvironment(getConfig(), context.extensionPath, {}, dependencyStatus);
+    envLines = envResult.lines;
+  } catch { /* fall back to spinner only */ }
+  panel.webview.html = buildLoadingHtml(panel.webview, assets, envLines);
 
   panel.webview.html = await buildHtml(document.getText(), context, panel.webview, assets, document.uri);
 

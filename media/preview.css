@@ -241,8 +241,37 @@ body.vscode-high-contrast .ms-loading-overlay {
   to { transform: rotate(360deg); }
 }
 
-.ms-loading-timer {
+.ms-env-status {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.ms-env-line {
   font-family: var(--vscode-font-family, sans-serif);
   font-size: 12px;
-  color: var(--vscode-descriptionForeground, #888);
+  line-height: 1.8;
+  color: var(--vscode-descriptionForeground, #666);
+}
+
+.ms-env-ok {
+  color: var(--vscode-testing-iconPassed, #388a34);
+}
+
+.ms-env-fail {
+  color: var(--vscode-testing-iconFailed, #f14c4c);
+}
+
+body.vscode-dark .ms-env-line,
+body.vscode-high-contrast .ms-env-line {
+  color: var(--vscode-descriptionForeground, #999);
+}
+
+body.vscode-dark .ms-env-ok,
+body.vscode-high-contrast .ms-env-ok {
+  color: var(--vscode-testing-iconPassed, #73c991);
+}
+
+body.vscode-dark .ms-env-fail,
+body.vscode-high-contrast .ms-env-fail {
+  color: var(--vscode-testing-iconFailed, #f48771);
 }

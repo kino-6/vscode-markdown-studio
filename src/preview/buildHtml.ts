@@ -65,15 +65,43 @@ h2 {
 }
 
 /**
- * Returns a lightweight HTML page that shows only the loading spinner.
+ * Escapes HTML-special characters to prevent injection.
+ */
+export function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * Renders status lines as static HTML divs with appropriate CSS classes.
+ */
+function buildStatusHtml(statusLines?: string[]): string {
+  if (!statusLines || statusLines.length === 0) return '';
+  const divs = statusLines.map((line) => {
+    let cls = 'ms-env-line';
+    if (line.startsWith('✅')) cls += ' ms-env-ok';
+    else if (line.startsWith('❌')) cls += ' ms-env-fail';
+    return `<div class="${cls}">${escapeHtml(line)}</div>`;
+  });
+  return `<div class="ms-env-status">${divs.join('')}</div>`;
+}
+
+/**
+ * Returns a lightweight HTML page that shows only the loading spinner
+ * and optional environment status lines.
  * Used as a placeholder while the full preview is being rendered.
  */
 export function buildLoadingHtml(
   webview?: vscode.Webview,
-  assets?: { styleUri: vscode.Uri; scriptUri?: vscode.Uri; hljsStyleUri?: vscode.Uri }
+  assets?: { styleUri: vscode.Uri; scriptUri?: vscode.Uri; hljsStyleUri?: vscode.Uri },
+  statusLines?: string[]
 ): string {
   const styleHref = assets?.styleUri.toString() ?? '';
   const cspSource = webview?.cspSource ?? 'none';
+  const statusHtml = buildStatusHtml(statusLines);
 
   return `<!doctype html>
 <html>
@@ -84,7 +112,7 @@ export function buildLoadingHtml(
 <link rel="stylesheet" href="${styleHref}">
 </head>
 <body>
-<div id="ms-loading-overlay" class="ms-loading-overlay" style="display: flex"><div class="ms-spinner"></div><div id="ms-loading-timer" class="ms-loading-timer"></div></div>
+<div id="ms-loading-overlay" class="ms-loading-overlay" style="display: flex"><div class="ms-spinner"></div>${statusHtml}</div>
 </body>
 </html>`;
 }
@@ -165,7 +193,7 @@ ${styleBlock}
 </head>
 <body>
 ${htmlBody}
-<div id="ms-loading-overlay" class="ms-loading-overlay" style="display: flex"><div class="ms-spinner"></div><div id="ms-loading-timer" class="ms-loading-timer"></div></div>
+<div id="ms-loading-overlay" class="ms-loading-overlay" style="display: flex"><div class="ms-spinner"></div></div>
 ${scriptSrc ? `<script src="${scriptSrc}" nonce="${nonce}"></script>` : ''}
 </body>
 </html>`;

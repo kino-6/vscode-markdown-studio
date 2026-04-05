@@ -11,16 +11,22 @@
         fill="#111827"/>
 
   <!-- ↓ -->
-  <path d="M88 20V68" stroke="#A855F7" stroke-width="8" stroke-linecap="round"/>
-  <path d="M76 56L88 72L100 56" stroke="#A855F7" stroke-width="8"
-        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M84 20H92V56H104L88 76L72 56H84Z"
+        fill="#A855F7"/>
 
-  <!-- diagram lines first -->
-  <path d="M54 89H74" stroke="#2563EB" stroke-width="4" stroke-linecap="round"/>
-  <path d="M42 96L64 103" stroke="#2563EB" stroke-width="4" stroke-linecap="round"/>
-  <path d="M86 96L64 103" stroke="#2563EB" stroke-width="4" stroke-linecap="round"/>
+  <!-- ===== diagram (線を先に描く) ===== -->
 
-  <!-- diagram boxes after -->
+  <!-- 横線（ちょい長めに） -->
+  <path d="M52 89H76" stroke="#2563EB" stroke-width="4"
+        stroke-linecap="round"/>
+
+  <!-- 斜め線（箱の中まで潜らせる） -->
+  <path d="M42 96L64 106" stroke="#2563EB" stroke-width="4"
+        stroke-linecap="round"/>
+  <path d="M86 96L64 106" stroke="#2563EB" stroke-width="4"
+        stroke-linecap="round"/>
+
+  <!-- ===== 箱（後で描く＝自然に接続） ===== -->
   <rect x="30" y="82" width="24" height="14" rx="3" fill="#2563EB"/>
   <rect x="74" y="82" width="24" height="14" rx="3" fill="#2563EB"/>
   <rect x="52" y="100" width="24" height="12" rx="3" fill="#2563EB"/>

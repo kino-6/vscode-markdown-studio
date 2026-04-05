@@ -79,12 +79,25 @@ vi.mock('../../src/preview/previewAssets', () => ({
   })),
 }));
 
+vi.mock('../../src/commands/validateEnvironmentCore', () => ({
+  validateEnvironment: vi.fn(async () => ({ ok: true, lines: ['✅ Java detected'] })),
+}));
+
+vi.mock('../../src/extension', () => ({
+  dependencyStatus: undefined,
+}));
+
+vi.mock('../../src/infra/config', () => ({
+  getConfig: vi.fn(() => ({ javaPath: 'java', style: {} })),
+}));
+
 /* ------------------------------------------------------------------ */
 /*  Imports (after mocks)                                              */
 /* ------------------------------------------------------------------ */
 
 import { openOrRefreshPreview, _resetPanelForTesting } from '../../src/preview/webviewPanel';
-import { renderBody } from '../../src/preview/buildHtml';
+import { renderBody, buildLoadingHtml } from '../../src/preview/buildHtml';
+import { validateEnvironment } from '../../src/commands/validateEnvironmentCore';
 import * as vscode from 'vscode';
 
 /* ------------------------------------------------------------------ */
@@ -452,5 +465,99 @@ describe('change handler – render-start and render-error messages', () => {
       { type: 'render-start', generation: 1 },
       { type: 'update-body', html: '<h1>mock body</h1>', generation: 1 },
     ]);
+  });
+});
+
+
+/* ------------------------------------------------------------------ */
+/*  Integration tests: environment validation wiring (Task 6.5/6.6)    */
+/* ------------------------------------------------------------------ */
+
+describe('webviewPanel environment validation integration', () => {
+  beforeEach(() => {
+    _resetPanelForTesting();
+    mockPanel = createMockPanel();
+    vi.clearAllMocks();
+    (vscode.window.createWebviewPanel as ReturnType<typeof vi.fn>).mockImplementation(() => mockPanel);
+  });
+
+  /**
+   * Task 6.5: webviewPanel calls validateEnvironment and passes lines to buildLoadingHtml
+   */
+  it('calls validateEnvironment and passes lines to buildLoadingHtml on new panel', async () => {
+    const envLines = ['✅ Java detected', '❌ Chromium missing'];
+    (validateEnvironment as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: false,
+      lines: envLines,
+    });
+
+    await openOrRefreshPreview(fakeContext(), fakeDocument());
+
+    expect(validateEnvironment).toHaveBeenCalledTimes(1);
+    expect(buildLoadingHtml).toHaveBeenCalledWith(
+      mockPanel.webview,
+      expect.any(Object),
+      envLines,
+    );
+  });
+
+  it('calls validateEnvironment and passes lines to buildLoadingHtml on panel reuse', async () => {
+    // First call — create panel
+    await openOrRefreshPreview(fakeContext(), fakeDocument());
+    vi.clearAllMocks();
+
+    const envLines = ['✅ Java detected (managed Corretto)'];
+    (validateEnvironment as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      lines: envLines,
+    });
+
+    // Second call — reuse panel
+    await openOrRefreshPreview(fakeContext(), fakeDocument('file:///other.md'));
+
+    expect(validateEnvironment).toHaveBeenCalledTimes(1);
+    expect(buildLoadingHtml).toHaveBeenCalledWith(
+      mockPanel.webview,
+      expect.any(Object),
+      envLines,
+    );
+  });
+
+  /**
+   * Task 6.6: webviewPanel falls back to empty array when validateEnvironment throws
+   */
+  it('falls back to empty array when validateEnvironment throws on new panel', async () => {
+    (validateEnvironment as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('Java binary not found'),
+    );
+
+    await openOrRefreshPreview(fakeContext(), fakeDocument());
+
+    expect(validateEnvironment).toHaveBeenCalledTimes(1);
+    expect(buildLoadingHtml).toHaveBeenCalledWith(
+      mockPanel.webview,
+      expect.any(Object),
+      [],
+    );
+  });
+
+  it('falls back to empty array when validateEnvironment throws on panel reuse', async () => {
+    // First call — create panel
+    await openOrRefreshPreview(fakeContext(), fakeDocument());
+    vi.clearAllMocks();
+
+    (validateEnvironment as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('timeout'),
+    );
+
+    // Second call — reuse panel
+    await openOrRefreshPreview(fakeContext(), fakeDocument('file:///other.md'));
+
+    expect(validateEnvironment).toHaveBeenCalledTimes(1);
+    expect(buildLoadingHtml).toHaveBeenCalledWith(
+      mockPanel.webview,
+      expect.any(Object),
+      [],
+    );
   });
 });

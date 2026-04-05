@@ -2,7 +2,7 @@
   "name": "markdown-studio",
   "displayName": "Markdown Studio",
   "description": "Local-first Markdown authoring studio with integrated diagram rendering (Mermaid, PlantUML), SVG support, and secure PDF export.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "local",
   "license": "MIT",
   "repository": {
@@ -13,15 +13,19 @@
     "vscode": "^1.92.0"
   },
   "categories": [
-    "Other"
+    "Programming Languages",
+    "Visualization",
+    "Formatters"
+  ],
+  "keywords": [
+    "markdown",
+    "pdf",
+    "mermaid",
+    "plantuml",
+    "preview"
   ],
   "activationEvents": [
-    "onLanguage:markdown",
-    "onCommand:markdownStudio.openPreview",
-    "onCommand:markdownStudio.exportPdf",
-    "onCommand:markdownStudio.validateEnvironment",
-    "onCommand:markdownStudio.reloadPreview",
-    "onCommand:markdownStudio.setupDependencies"
+    "onLanguage:markdown"
   ],
   "icon": "icon/icon.png",
   "main": "./dist/extension.js",

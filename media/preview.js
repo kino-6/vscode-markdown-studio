@@ -111,39 +111,19 @@ function addCopyButtons() {
   }
 }
 
-let _loadingTimerId = null;
-let _loadingStartTime = 0;
-
-function _updateTimerText() {
-  const el = document.getElementById('ms-loading-timer');
-  if (!el) return;
-  const elapsed = ((Date.now() - _loadingStartTime) / 1000).toFixed(1);
-  el.textContent = `${elapsed}s`;
-}
-
 function showLoadingOverlay() {
   let overlay = document.getElementById('ms-loading-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.id = 'ms-loading-overlay';
     overlay.className = 'ms-loading-overlay';
-    overlay.innerHTML = '<div class="ms-spinner"></div><div id="ms-loading-timer" class="ms-loading-timer"></div>';
+    overlay.innerHTML = '<div class="ms-spinner"></div>';
     document.body.appendChild(overlay);
   }
   overlay.style.display = 'flex';
-
-  // Start or restart the timer
-  if (_loadingTimerId) clearInterval(_loadingTimerId);
-  _loadingStartTime = Date.now();
-  _updateTimerText();
-  _loadingTimerId = setInterval(_updateTimerText, 100);
 }
 
 function hideLoadingOverlay() {
-  if (_loadingTimerId) {
-    clearInterval(_loadingTimerId);
-    _loadingTimerId = null;
-  }
   const overlay = document.getElementById('ms-loading-overlay');
   if (overlay) {
     overlay.style.display = 'none';

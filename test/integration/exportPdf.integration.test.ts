@@ -89,7 +89,7 @@ describe('exportToPdf smoke/integration', () => {
 
     const output = await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
 
-    expect(buildHtmlMock).toHaveBeenCalledWith('# Hello', expect.anything());
+    expect(buildHtmlMock).toHaveBeenCalledWith('# Hello', expect.anything(), undefined, undefined, expect.anything());
     expect(setContentMock).toHaveBeenCalledWith(
       expect.stringContaining('<style>.hljs { background: #f6f8fa; }</style>'),
       { waitUntil: 'networkidle' }

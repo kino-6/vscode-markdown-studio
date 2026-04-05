@@ -96,7 +96,7 @@ describe('showLoadingOverlay / hideLoadingOverlay', () => {
     expect(overlay.id).toBe('ms-loading-overlay');
     expect(overlay.className).toBe('ms-loading-overlay');
     expect(overlay.style.display).toBe('flex');
-    expect(overlay.innerHTML).toBe('<div class="ms-spinner"></div><div id="ms-loading-timer" class="ms-loading-timer"></div>');
+    expect(overlay.innerHTML).toBe('<div class="ms-spinner"></div>');
   });
 
   /**
@@ -145,5 +145,32 @@ describe('showLoadingOverlay / hideLoadingOverlay', () => {
     const overlay = elementsById['ms-loading-overlay'];
     expect(overlay).toBeDefined();
     expect(overlay.style.display).toBe('none');
+  });
+
+  /**
+   * Task 6.3: showLoadingOverlay() creates overlay with spinner and no timer div
+   * Validates: Requirements 3.1, 6.3
+   */
+  it('creates overlay with spinner and no timer div', () => {
+    showLoadingOverlay();
+
+    const overlay = elementsById['ms-loading-overlay'];
+    expect(overlay).toBeDefined();
+    expect(overlay.innerHTML).toContain('ms-spinner');
+    expect(overlay.innerHTML).not.toContain('ms-loading-timer');
+  });
+
+  /**
+   * Task 6.4: hideLoadingOverlay() hides overlay without clearInterval
+   * Validates: Requirements 3.3, 6.4
+   */
+  it('hides overlay without calling clearInterval', () => {
+    const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval');
+
+    showLoadingOverlay();
+    hideLoadingOverlay();
+
+    expect(clearIntervalSpy).not.toHaveBeenCalled();
+    clearIntervalSpy.mockRestore();
   });
 });

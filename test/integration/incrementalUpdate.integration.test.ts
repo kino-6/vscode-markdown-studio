@@ -97,6 +97,14 @@ vi.mock('vscode', () => {
   };
 });
 
+vi.mock('../../src/commands/validateEnvironmentCore', () => ({
+  validateEnvironment: vi.fn(async () => ({ ok: true, lines: ['✅ Java detected'] })),
+}));
+
+vi.mock('../../src/extension', () => ({
+  dependencyStatus: undefined,
+}));
+
 /* ------------------------------------------------------------------ */
 /*  Imports (after mocks are registered)                               */
 /* ------------------------------------------------------------------ */

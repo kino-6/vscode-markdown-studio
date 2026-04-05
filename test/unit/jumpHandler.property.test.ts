@@ -52,6 +52,18 @@ vi.mock('../../src/preview/previewAssets', () => ({
   })),
 }));
 
+vi.mock('../../src/commands/validateEnvironmentCore', () => ({
+  validateEnvironment: vi.fn(async () => ({ ok: true, lines: [] })),
+}));
+
+vi.mock('../../src/extension', () => ({
+  dependencyStatus: undefined,
+}));
+
+vi.mock('../../src/infra/config', () => ({
+  getConfig: vi.fn(() => ({ javaPath: 'java', style: {} })),
+}));
+
 /* ------------------------------------------------------------------ */
 /*  Import under test (after mocks)                                    */
 /* ------------------------------------------------------------------ */
