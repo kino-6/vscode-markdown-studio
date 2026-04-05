@@ -41,6 +41,7 @@ vi.mock('vscode', () => {
 
 vi.mock('../../src/preview/buildHtml', () => ({
   buildHtml: vi.fn(async () => '<html>mock</html>'),
+  buildLoadingHtml: vi.fn(() => '<html>loading</html>'),
   renderBody: vi.fn(async () => '<h1>mock body</h1>'),
 }));
 

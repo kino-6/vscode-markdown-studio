@@ -64,6 +64,31 @@ h2 {
 </style>`;
 }
 
+/**
+ * Returns a lightweight HTML page that shows only the loading spinner.
+ * Used as a placeholder while the full preview is being rendered.
+ */
+export function buildLoadingHtml(
+  webview?: vscode.Webview,
+  assets?: { styleUri: vscode.Uri; scriptUri?: vscode.Uri; hljsStyleUri?: vscode.Uri }
+): string {
+  const styleHref = assets?.styleUri.toString() ?? '';
+  const cspSource = webview?.cspSource ?? 'none';
+
+  return `<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'unsafe-inline';">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="${styleHref}">
+</head>
+<body>
+<div id="ms-loading-overlay" class="ms-loading-overlay" style="display: flex"><div class="ms-spinner"></div></div>
+</body>
+</html>`;
+}
+
 export async function renderBody(
   markdown: string,
   context: vscode.ExtensionContext

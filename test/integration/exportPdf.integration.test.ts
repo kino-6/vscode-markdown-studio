@@ -8,7 +8,7 @@ vi.mock('node:fs/promises', () => {
 
 vi.mock('../../src/preview/buildHtml', () => {
   const buildHtmlMock = vi.fn();
-  return { buildHtml: buildHtmlMock, __buildHtmlMock: buildHtmlMock };
+  return { buildHtml: buildHtmlMock, buildLoadingHtml: vi.fn(() => '<html>loading</html>'), __buildHtmlMock: buildHtmlMock };
 });
 
 vi.mock('playwright', () => {

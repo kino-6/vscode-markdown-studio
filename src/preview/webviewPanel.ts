@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { buildHtml, renderBody } from './buildHtml';
+import { buildHtml, buildLoadingHtml, renderBody } from './buildHtml';
 import { getPreviewAssetUris } from './previewAssets';
 
 /** Module-level reference to the current preview panel. */
@@ -71,6 +71,10 @@ export async function openOrRefreshPreview(
     );
 
     const assets = getPreviewAssetUris(currentPanel.webview, context);
+
+    // Show spinner immediately while buildHtml() renders the full content
+    currentPanel.webview.html = buildLoadingHtml(currentPanel.webview, assets);
+
     currentPanel.webview.html = await buildHtml(document.getText(), context, currentPanel.webview, assets);
 
     changeSubscription = vscode.workspace.onDidChangeTextDocument(async (event) => {
@@ -131,6 +135,10 @@ export async function openOrRefreshPreview(
   trackedUri = document.uri.toString();
 
   const assets = getPreviewAssetUris(panel.webview, context);
+
+  // Show spinner immediately while buildHtml() renders the full content
+  panel.webview.html = buildLoadingHtml(panel.webview, assets);
+
   panel.webview.html = await buildHtml(document.getText(), context, panel.webview, assets);
 
   // Register message handler for jump-to-line

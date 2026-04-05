@@ -156,7 +156,9 @@ window.addEventListener('message', (event) => {
   document.body.innerHTML = message.html;
   renderMermaidBlocks();
   addCopyButtons();
-  hideLoadingOverlay();
+  // innerHTML destroyed the overlay element — showLoadingOverlay() would
+  // re-create it, but the render is already done so just ensure it's gone.
+  // If a future render-start arrives it will re-create the overlay.
 });
 
 const vscode = acquireVsCodeApi();
