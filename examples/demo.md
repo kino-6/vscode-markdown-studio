@@ -465,6 +465,89 @@ gitGraph
 
 </details>
 
+<details>
+<summary>SVG: Basic Shapes</summary>
+
+```svg
+<svg viewBox="0 0 500 120" xmlns="http://www.w3.org/2000/svg" width="100%">
+  <rect x="10" y="10" width="100" height="80" rx="8" fill="#4CAF50"/>
+  <circle cx="180" cy="50" r="40" fill="#2196F3"/>
+  <ellipse cx="290" cy="50" rx="50" ry="30" fill="#FF9800"/>
+  <polygon points="400,10 440,90 360,90" fill="#9C27B0"/>
+  <text x="50" y="115" text-anchor="middle" fill="#888" font-size="10">rect</text>
+  <text x="180" y="115" text-anchor="middle" fill="#888" font-size="10">circle</text>
+  <text x="290" y="115" text-anchor="middle" fill="#888" font-size="10">ellipse</text>
+  <text x="400" y="115" text-anchor="middle" fill="#888" font-size="10">polygon</text>
+</svg>
+```
+
+</details>
+
+<details>
+<summary>SVG: Lines and Paths</summary>
+
+```svg
+<svg viewBox="0 0 500 120" xmlns="http://www.w3.org/2000/svg" width="100%">
+  <line x1="20" y1="20" x2="120" y2="100" stroke="#E91E63" stroke-width="3"/>
+  <polyline points="150,100 180,20 210,80 240,30 270,100" fill="none" stroke="#00BCD4" stroke-width="2"/>
+  <path d="M 300 80 Q 350 10 400 80 T 500 80" fill="none" stroke="#FF5722" stroke-width="2"/>
+  <text x="70" y="115" text-anchor="middle" fill="#888" font-size="10">line</text>
+  <text x="210" y="115" text-anchor="middle" fill="#888" font-size="10">polyline</text>
+  <text x="400" y="115" text-anchor="middle" fill="#888" font-size="10">path (curve)</text>
+</svg>
+```
+
+</details>
+
+<details>
+<summary>SVG: Text and Styling</summary>
+
+```svg
+<svg viewBox="0 0 500 100" xmlns="http://www.w3.org/2000/svg" width="100%">
+  <text x="20" y="30" font-size="24" font-weight="bold" fill="#333">Bold Title</text>
+  <text x="20" y="55" font-size="14" fill="#666">Regular body text with <tspan fill="#E91E63" font-weight="bold">colored</tspan> spans</text>
+  <text x="20" y="80" font-size="12" font-family="monospace" fill="#4CAF50">monospace: const x = 42;</text>
+  <rect x="300" y="10" width="180" height="70" rx="6" fill="none" stroke="#2196F3" stroke-width="2" stroke-dasharray="6,3"/>
+  <text x="390" y="50" text-anchor="middle" fill="#2196F3" font-size="12">dashed border</text>
+</svg>
+```
+
+</details>
+
+<details>
+<summary>SVG: Dashboard Layout</summary>
+
+```svg
+<svg viewBox="0 0 500 180" xmlns="http://www.w3.org/2000/svg" width="100%">
+  <!-- Card 1 -->
+  <rect x="10" y="10" width="150" height="80" rx="8" fill="#E8F5E9" stroke="#4CAF50" stroke-width="2"/>
+  <text x="85" y="40" text-anchor="middle" fill="#2E7D32" font-size="24" font-weight="bold">263</text>
+  <text x="85" y="60" text-anchor="middle" fill="#4CAF50" font-size="11">Unit Tests</text>
+  <text x="85" y="80" text-anchor="middle" fill="#66BB6A" font-size="10">✅ All Passing</text>
+
+  <!-- Card 2 -->
+  <rect x="175" y="10" width="150" height="80" rx="8" fill="#E3F2FD" stroke="#2196F3" stroke-width="2"/>
+  <text x="250" y="40" text-anchor="middle" fill="#1565C0" font-size="24" font-weight="bold">15</text>
+  <text x="250" y="60" text-anchor="middle" fill="#2196F3" font-size="11">Integration Tests</text>
+  <text x="250" y="80" text-anchor="middle" fill="#42A5F5" font-size="10">✅ All Passing</text>
+
+  <!-- Card 3 -->
+  <rect x="340" y="10" width="150" height="80" rx="8" fill="#FFF3E0" stroke="#FF9800" stroke-width="2"/>
+  <text x="415" y="40" text-anchor="middle" fill="#E65100" font-size="24" font-weight="bold">8</text>
+  <text x="415" y="60" text-anchor="middle" fill="#FF9800" font-size="11">E2E Tests</text>
+  <text x="415" y="80" text-anchor="middle" fill="#FFA726" font-size="10">✅ All Passing</text>
+
+  <!-- Bar chart -->
+  <rect x="10" y="110" width="480" height="60" rx="6" fill="none" stroke="#ddd" stroke-width="1"/>
+  <rect x="20" y="125" width="300" height="15" rx="3" fill="#4CAF50"/>
+  <text x="330" y="137" fill="#4CAF50" font-size="10">Rendering 60%</text>
+  <rect x="20" y="145" width="150" height="15" rx="3" fill="#2196F3"/>
+  <text x="180" y="157" fill="#2196F3" font-size="10">Security 30%</text>
+</svg>
+```
+
+</details>
+
 ---
 
 ## 9. PDF Export
