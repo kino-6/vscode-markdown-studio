@@ -45,3 +45,49 @@ export interface StyleConfig {
   lineHeight: number;
   margin: string;
 }
+
+export type PresetName = 'markdown-pdf' | 'github' | 'minimal' | 'academic' | 'custom';
+
+export interface HeadingStyle {
+  h1FontWeight: number;
+  h1MarginTop: string;
+  h1MarginBottom: string;
+  h1TextAlign?: string;
+  h2MarginTop: string;
+  h2MarginBottom: string;
+}
+
+export interface CodeBlockStyle {
+  background: string;
+  border: string;
+  borderRadius: string;
+  padding: string;
+}
+
+export interface PresetStyleDefaults {
+  fontFamily: string;
+  fontSize: number;
+  lineHeight: number;
+  margin: string;
+  codeFontFamily: string;
+  headingStyle: HeadingStyle;
+  codeBlockStyle: CodeBlockStyle;
+}
+
+export interface ResolvedStyleConfig {
+  fontFamily: string;
+  fontSize: number;
+  lineHeight: number;
+  margin: string;
+  codeFontFamily: string;
+  headingStyle: HeadingStyle;
+  codeBlockStyle: CodeBlockStyle;
+  presetName: PresetName;
+}
+
+export interface StyleConfigOverrides {
+  fontFamily?: string;
+  fontSize?: number;
+  lineHeight?: number;
+  margin?: string;
+}

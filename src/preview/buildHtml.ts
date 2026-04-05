@@ -2,17 +2,40 @@ import * as crypto from 'crypto';
 import * as vscode from 'vscode';
 import { renderMarkdownDocument } from '../renderers/renderMarkdown';
 import { getConfig } from '../infra/config';
-import { StyleConfig } from '../types/models';
+import { ResolvedStyleConfig } from '../types/models';
 
 const DEFAULT_FONT_FAMILY = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
 
-export function buildStyleBlock(style: StyleConfig): string {
+export function buildStyleBlock(style: ResolvedStyleConfig): string {
   const fontFamily = style.fontFamily.trim() === '' ? DEFAULT_FONT_FAMILY : style.fontFamily;
+  const { headingStyle: h, codeBlockStyle: cb } = style;
+  const h1TextAlignRule = h.h1TextAlign ? `\n  text-align: ${h.h1TextAlign};` : '';
   return `<style>/* md-studio-style */
 body {
   font-family: ${fontFamily};
   font-size: ${style.fontSize}px;
   line-height: ${style.lineHeight};
+}
+pre code {
+  font-family: ${style.codeFontFamily};
+}
+code {
+  font-family: ${style.codeFontFamily};
+}
+pre {
+  background: ${cb.background};
+  border: ${cb.border};
+  border-radius: ${cb.borderRadius};
+  padding: ${cb.padding};
+}
+h1 {
+  font-weight: ${h.h1FontWeight};
+  margin-top: ${h.h1MarginTop};
+  margin-bottom: ${h.h1MarginBottom};${h1TextAlignRule}
+}
+h2 {
+  margin-top: ${h.h2MarginTop};
+  margin-bottom: ${h.h2MarginBottom};
 }
 @media print {
   body {
@@ -21,10 +44,20 @@ body {
     line-height: ${style.lineHeight};
   }
   pre, code {
-    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-family: ${style.codeFontFamily};
   }
-  h1 { margin-top: 24px; margin-bottom: 16px; }
-  h2 { margin-top: 24px; margin-bottom: 16px; }
+  pre {
+    background: ${cb.background};
+    border: ${cb.border};
+    border-radius: ${cb.borderRadius};
+    padding: ${cb.padding};
+  }
+  h1 {
+    font-weight: ${h.h1FontWeight};
+    margin-top: ${h.h1MarginTop};
+    margin-bottom: ${h.h1MarginBottom};${h1TextAlignRule}
+  }
+  h2 { margin-top: ${h.h2MarginTop}; margin-bottom: ${h.h2MarginBottom}; }
   h3 { margin-top: 20px; margin-bottom: 12px; }
   h4, h5, h6 { margin-top: 16px; margin-bottom: 8px; }
 }

@@ -34,7 +34,7 @@ function createMockPanel(webview = createMockWebview()) {
 let mockPanel: ReturnType<typeof createMockPanel>;
 
 vi.mock('vscode', () => {
-  const configuration = { get: (_key: string, fallback: unknown) => fallback };
+  const configuration = { get: (_key: string, fallback: unknown) => fallback, inspect: (_key: string) => undefined };
 
   return {
     workspace: {

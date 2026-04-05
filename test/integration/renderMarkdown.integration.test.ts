@@ -11,6 +11,10 @@ vi.mock('../../src/infra/config', () => ({
       fontSize: 14,
       lineHeight: 1.6,
       margin: '20mm',
+      codeFontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
+      headingStyle: { h1FontWeight: 600, h1MarginTop: '24px', h1MarginBottom: '16px', h2MarginTop: '24px', h2MarginBottom: '16px' },
+      codeBlockStyle: { background: '#f6f8fa', border: '1px solid #d0d7de', borderRadius: '6px', padding: '1em' },
+      presetName: 'markdown-pdf',
     },
   })
 }));

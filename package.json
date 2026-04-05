@@ -113,6 +113,18 @@
           "default": false,
           "description": "Double-click in preview jumps to the corresponding source line."
         },
+        "markdownStudio.style.preset": {
+          "type": "string",
+          "default": "markdown-pdf",
+          "enum": [
+            "markdown-pdf",
+            "github",
+            "minimal",
+            "academic",
+            "custom"
+          ],
+          "description": "Style preset for preview and PDF export."
+        },
         "markdownStudio.style.fontFamily": {
           "type": "string",
           "default": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Helvetica, Arial, sans-serif",

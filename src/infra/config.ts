@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { PdfHeaderFooterConfig, StyleConfig } from '../types/models';
+import { PdfHeaderFooterConfig, ResolvedStyleConfig, StyleConfigOverrides } from '../types/models';
+import { resolvePreset } from './presets';
 
 export function clampFontSize(n: number): number {
   return Math.max(8, Math.min(32, n));
@@ -9,8 +10,6 @@ export function clampLineHeight(n: number): number {
   return Math.max(1.0, Math.min(3.0, n));
 }
 
-const DEFAULT_FONT_FAMILY = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
-
 export interface MarkdownStudioConfig {
   plantUmlMode: 'bundled-jar' | 'external-command' | 'docker';
   javaPath: string;
@@ -18,12 +17,40 @@ export interface MarkdownStudioConfig {
   blockExternalLinks: boolean;
   pdfHeaderFooter: PdfHeaderFooterConfig;
   sourceJumpEnabled: boolean;
-  style: StyleConfig;
+  style: ResolvedStyleConfig;
+}
+
+function hasUserValue(cfg: vscode.WorkspaceConfiguration, key: string): boolean {
+  const inspection = cfg.inspect(key);
+  if (!inspection) return false;
+  return (
+    inspection.globalValue !== undefined ||
+    inspection.workspaceValue !== undefined ||
+    inspection.workspaceFolderValue !== undefined
+  );
 }
 
 export function getConfig(): MarkdownStudioConfig {
   const cfg = vscode.workspace.getConfiguration('markdownStudio');
-  const rawFontFamily = cfg.get<string>('style.fontFamily', DEFAULT_FONT_FAMILY);
+
+  const presetName = cfg.get<string>('style.preset', 'markdown-pdf');
+
+  const overrides: Partial<StyleConfigOverrides> = {};
+  if (hasUserValue(cfg, 'style.fontFamily')) {
+    overrides.fontFamily = cfg.get<string>('style.fontFamily')!;
+  }
+  if (hasUserValue(cfg, 'style.fontSize')) {
+    overrides.fontSize = clampFontSize(cfg.get<number>('style.fontSize')!);
+  }
+  if (hasUserValue(cfg, 'style.lineHeight')) {
+    overrides.lineHeight = clampLineHeight(cfg.get<number>('style.lineHeight')!);
+  }
+  if (hasUserValue(cfg, 'export.margin')) {
+    overrides.margin = cfg.get<string>('export.margin')!;
+  }
+
+  const style = resolvePreset(presetName, overrides);
+
   return {
     plantUmlMode: cfg.get('plantuml.mode', 'bundled-jar'),
     javaPath: cfg.get('java.path', 'java'),
@@ -37,11 +64,6 @@ export function getConfig(): MarkdownStudioConfig {
       pageBreakEnabled: cfg.get<boolean>('export.pageBreak.enabled', true),
     },
     sourceJumpEnabled: cfg.get<boolean>('preview.sourceJump.enabled', false),
-    style: {
-      fontFamily: rawFontFamily.trim() === '' ? DEFAULT_FONT_FAMILY : rawFontFamily,
-      fontSize: clampFontSize(cfg.get<number>('style.fontSize', 14)),
-      lineHeight: clampLineHeight(cfg.get<number>('style.lineHeight', 1.6)),
-      margin: cfg.get<string>('export.margin', '20mm'),
-    },
+    style,
   };
 }
