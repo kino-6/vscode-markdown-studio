@@ -345,13 +345,33 @@ body.vscode-high-contrast .ms-loading-overlay {
 }
 ```
 
-## 正当性プロパティ
+## Correctness Properties
 
-1. **スピナー表示の一貫性**: `render-start` が送信された場合、対応する `update-body` または `render-error` が必ず送信される（スピナーが永久に残らない）
-2. **generation 順序保証**: `lastAppliedGeneration` は単調増加し、古い generation のメッセージは無視される
-3. **冪等性**: `showLoadingOverlay()` を複数回呼んでもオーバーレイは1つだけ存在する
-4. **hideLoadingOverlay の安全性**: オーバーレイが存在しない状態で呼んでもエラーにならない
-5. **初回ロード**: 初回 HTML 構築時、Mermaid レンダリング完了後にスピナーが非表示になる
+*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+
+### Property 1: Spinner consistency (render-start always followed by hide)
+
+*For any* text change event that triggers a render-start message, the Change_Handler SHALL eventually send either an `update-body` or `render-error` message with the same generation, ensuring the spinner is never left visible indefinitely.
+
+**Validates: Requirements 1.1, 2.1, 2.2, 3.2, 3.3**
+
+### Property 2: Monotonic generation ordering
+
+*For any* sequence of messages received by the Message_Handler, the `lastAppliedGeneration` value SHALL only increase, and messages with a generation less than or equal to the current `lastAppliedGeneration` SHALL be discarded without triggering Show_Loading or Hide_Loading.
+
+**Validates: Requirements 5.1, 5.2**
+
+### Property 3: Overlay idempotence and safety
+
+*For any* number of consecutive Show_Loading calls (without intervening Hide_Loading), exactly one Loading_Overlay element SHALL exist in the DOM. Calling Hide_Loading when no overlay exists SHALL complete without error.
+
+**Validates: Requirements 4.1, 4.2, 4.3**
+
+### Property 4: Message ordering invariant
+
+*For any* text change event, the Change_Handler SHALL send `render-start` before sending `update-body` or `render-error` for the same generation. No `update-body` or `render-error` SHALL be sent without a preceding `render-start` of the same generation.
+
+**Validates: Requirements 1.1, 2.1**
 
 ## エラーハンドリング
 

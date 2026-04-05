@@ -109,6 +109,33 @@ body.vscode-high-contrast svg polygon:not([fill]) {
   margin: 1rem 0;
 }
 
+.ms-code-wrapper {
+  position: relative;
+}
+
+.ms-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  font-size: 11px;
+  border: 1px solid var(--code-border, #d0d7de);
+  border-radius: 4px;
+  background: var(--code-bg, #f6f8fa);
+  color: var(--vscode-foreground, #333);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.ms-code-wrapper:hover .ms-copy-btn {
+  opacity: 1;
+}
+
+.ms-copy-btn:hover {
+  background: var(--table-header-bg, #eaeef2);
+}
+
 table {
   border-collapse: collapse;
   width: 100%;
@@ -141,6 +168,10 @@ tbody tr:nth-child(even) {
 
   a::after {
     content: "";
+  }
+
+  .ms-copy-btn {
+    display: none;
   }
 
   table {

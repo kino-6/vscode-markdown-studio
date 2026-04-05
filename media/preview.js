@@ -87,6 +87,30 @@ function findSourceLine(el) {
   return null;
 }
 
+function addCopyButtons() {
+  const blocks = document.querySelectorAll('pre');
+  for (const pre of blocks) {
+    if (pre.querySelector('.ms-copy-btn')) continue;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'ms-code-wrapper';
+    pre.parentNode.insertBefore(wrapper, pre);
+    wrapper.appendChild(pre);
+
+    const btn = document.createElement('button');
+    btn.className = 'ms-copy-btn';
+    btn.textContent = 'Copy';
+    btn.addEventListener('click', () => {
+      const code = pre.querySelector('code');
+      const text = code ? code.textContent : pre.textContent;
+      navigator.clipboard.writeText(text || '').then(() => {
+        btn.textContent = '✓ Copied';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+      });
+    });
+    wrapper.appendChild(btn);
+  }
+}
+
 let lastAppliedGeneration = -1;
 
 window.addEventListener('message', (event) => {
@@ -97,6 +121,7 @@ window.addEventListener('message', (event) => {
   lastAppliedGeneration = message.generation;
   document.body.innerHTML = message.html;
   renderMermaidBlocks();
+  addCopyButtons();
 });
 
 const vscode = acquireVsCodeApi();
@@ -105,6 +130,8 @@ window.addEventListener('DOMContentLoaded', () => {
   renderMermaidBlocks().catch((error) => {
     console.error('Mermaid rendering failed', error);
   });
+
+  addCopyButtons();
 
   observeThemeChanges((newThemeKind) => {
     try {
