@@ -75,7 +75,7 @@ export async function openOrRefreshPreview(
     // Show spinner immediately while buildHtml() renders the full content
     currentPanel.webview.html = buildLoadingHtml(currentPanel.webview, assets);
 
-    currentPanel.webview.html = await buildHtml(document.getText(), context, currentPanel.webview, assets);
+    currentPanel.webview.html = await buildHtml(document.getText(), context, currentPanel.webview, assets, document.uri);
 
     changeSubscription = vscode.workspace.onDidChangeTextDocument(async (event) => {
       if (event.document.uri.toString() !== trackedUri) return;
@@ -90,7 +90,7 @@ export async function openOrRefreshPreview(
 
       let htmlBody: string;
       try {
-        htmlBody = await renderBody(event.document.getText(), context);
+        htmlBody = await renderBody(event.document.getText(), context, event.document.uri, currentPanel!.webview);
       } catch (err) {
         console.error('[Markdown Studio] renderBody failed:', err);
         if (thisGeneration === generation) {
@@ -125,6 +125,8 @@ export async function openOrRefreshPreview(
       localResourceRoots: [
         vscode.Uri.joinPath(context.extensionUri, 'media'),
         vscode.Uri.joinPath(context.extensionUri, 'dist'),
+        vscode.Uri.joinPath(document.uri, '..'),
+        ...(vscode.workspace.workspaceFolders?.map(f => f.uri) ?? []),
       ],
     }
   );
@@ -139,7 +141,7 @@ export async function openOrRefreshPreview(
   // Show spinner immediately while buildHtml() renders the full content
   panel.webview.html = buildLoadingHtml(panel.webview, assets);
 
-  panel.webview.html = await buildHtml(document.getText(), context, panel.webview, assets);
+  panel.webview.html = await buildHtml(document.getText(), context, panel.webview, assets, document.uri);
 
   // Register message handler for jump-to-line
   messageSubscription = panel.webview.onDidReceiveMessage(
@@ -159,7 +161,7 @@ export async function openOrRefreshPreview(
 
     let htmlBody: string;
     try {
-      htmlBody = await renderBody(event.document.getText(), context);
+      htmlBody = await renderBody(event.document.getText(), context, event.document.uri, panel.webview);
     } catch (err) {
       console.error('[Markdown Studio] renderBody failed:', err);
       if (thisGeneration === generation) {

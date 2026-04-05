@@ -214,8 +214,10 @@ tbody tr:nth-child(even) {
   width: 100%;
   height: 100%;
   display: none;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 12px;
   background: rgba(0, 0, 0, 0.15);
   z-index: 9999;
   pointer-events: none;
@@ -237,4 +239,10 @@ body.vscode-high-contrast .ms-loading-overlay {
 
 @keyframes ms-spin {
   to { transform: rotate(360deg); }
+}
+
+.ms-loading-timer {
+  font-family: var(--vscode-font-family, sans-serif);
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground, #888);
 }

@@ -84,16 +84,52 @@ export function buildLoadingHtml(
 <link rel="stylesheet" href="${styleHref}">
 </head>
 <body>
-<div id="ms-loading-overlay" class="ms-loading-overlay" style="display: flex"><div class="ms-spinner"></div></div>
+<div id="ms-loading-overlay" class="ms-loading-overlay" style="display: flex"><div class="ms-spinner"></div><div id="ms-loading-timer" class="ms-loading-timer"></div></div>
 </body>
 </html>`;
 }
 
+/**
+ * Resolves relative image paths in rendered HTML to absolute URIs.
+ * - Webview context: converts to vscode-resource:// via webview.asWebviewUri()
+ * - PDF context (no webview): converts to absolute file system paths
+ * - Skips absolute URLs (http://, https://) and data: URIs
+ */
+export function resolveImagePaths(
+  htmlBody: string,
+  documentUri: vscode.Uri,
+  webview?: vscode.Webview
+): string {
+  const documentDir = vscode.Uri.joinPath(documentUri, '..');
+  return htmlBody.replace(
+    /<img([^>]*)\bsrc="([^"]+)"/g,
+    (match, before, src) => {
+      // Skip absolute URLs and data URIs
+      if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) {
+        return match;
+      }
+      // Resolve relative path against document directory
+      const absoluteUri = vscode.Uri.joinPath(documentDir, src);
+      if (webview) {
+        const webviewUri = webview.asWebviewUri(absoluteUri);
+        return `<img${before}src="${webviewUri.toString()}"`;
+      }
+      // PDF context: use file:// path
+      return `<img${before}src="${absoluteUri.fsPath}"`;
+    }
+  );
+}
+
 export async function renderBody(
   markdown: string,
-  context: vscode.ExtensionContext
+  context: vscode.ExtensionContext,
+  documentUri?: vscode.Uri,
+  webview?: vscode.Webview
 ): Promise<string> {
-  const { htmlBody } = await renderMarkdownDocument(markdown, context);
+  let { htmlBody } = await renderMarkdownDocument(markdown, context);
+  if (documentUri) {
+    htmlBody = resolveImagePaths(htmlBody, documentUri, webview);
+  }
   return htmlBody;
 }
 
@@ -101,9 +137,14 @@ export async function buildHtml(
   markdown: string,
   context: vscode.ExtensionContext,
   webview?: vscode.Webview,
-  assets?: { styleUri: vscode.Uri; scriptUri: vscode.Uri; hljsStyleUri?: vscode.Uri }
+  assets?: { styleUri: vscode.Uri; scriptUri: vscode.Uri; hljsStyleUri?: vscode.Uri },
+  documentUri?: vscode.Uri
 ): Promise<string> {
   const rendered = await renderMarkdownDocument(markdown, context);
+  let htmlBody = rendered.htmlBody;
+  if (documentUri) {
+    htmlBody = resolveImagePaths(htmlBody, documentUri, webview);
+  }
   const styleHref = assets?.styleUri.toString() ?? '';
   const scriptSrc = assets?.scriptUri.toString() ?? '';
   const hljsStyleHref = assets?.hljsStyleUri?.toString() ?? '';
@@ -123,8 +164,8 @@ export async function buildHtml(
 ${styleBlock}
 </head>
 <body>
-${rendered.htmlBody}
-<div id="ms-loading-overlay" class="ms-loading-overlay" style="display: flex"><div class="ms-spinner"></div></div>
+${htmlBody}
+<div id="ms-loading-overlay" class="ms-loading-overlay" style="display: flex"><div class="ms-spinner"></div><div id="ms-loading-timer" class="ms-loading-timer"></div></div>
 ${scriptSrc ? `<script src="${scriptSrc}" nonce="${nonce}"></script>` : ''}
 </body>
 </html>`;

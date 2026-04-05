@@ -96,7 +96,7 @@ describe('showLoadingOverlay / hideLoadingOverlay', () => {
     expect(overlay.id).toBe('ms-loading-overlay');
     expect(overlay.className).toBe('ms-loading-overlay');
     expect(overlay.style.display).toBe('flex');
-    expect(overlay.innerHTML).toBe('<div class="ms-spinner"></div>');
+    expect(overlay.innerHTML).toBe('<div class="ms-spinner"></div><div id="ms-loading-timer" class="ms-loading-timer"></div>');
   });
 
   /**

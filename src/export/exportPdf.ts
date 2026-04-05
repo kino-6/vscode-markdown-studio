@@ -8,7 +8,7 @@ import { buildHtml } from '../preview/buildHtml';
 
 export async function exportToPdf(document: vscode.TextDocument, context: vscode.ExtensionContext): Promise<string> {
   const cfg = getConfig();
-  let html = await buildHtml(document.getText(), context);
+  let html = await buildHtml(document.getText(), context, undefined, undefined, document.uri);
 
   // Inline the hljs theme CSS so PDF code blocks are colorized.
   // There's no webview in the PDF path, so we read the CSS from disk
