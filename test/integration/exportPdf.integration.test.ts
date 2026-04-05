@@ -39,7 +39,13 @@ vi.mock('../../src/infra/config', () => ({
       footerEnabled: true,
       footerTemplate: null,
       pageBreakEnabled: true,
-    }
+    },
+    style: {
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+      fontSize: 14,
+      lineHeight: 1.6,
+      margin: '20mm',
+    },
   })
 }));
 

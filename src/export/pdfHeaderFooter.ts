@@ -61,7 +61,7 @@ export function injectPageBreakCss(html: string): string {
  * Playwright-compatible page.pdf() options including header/footer
  * templates and margins.
  */
-export function buildPdfOptions(config: PdfHeaderFooterConfig, documentTitle: string): PdfTemplateOptions {
+export function buildPdfOptions(config: PdfHeaderFooterConfig, documentTitle: string, customMargin?: string): PdfTemplateOptions {
   const displayHeaderFooter = config.headerEnabled || config.footerEnabled;
 
   let headerTemplate: string;
@@ -78,15 +78,42 @@ export function buildPdfOptions(config: PdfHeaderFooterConfig, documentTitle: st
     footerTemplate = '<span></span>';
   }
 
-  return {
-    displayHeaderFooter,
-    headerTemplate,
-    footerTemplate,
-    margin: {
+  let margin: { top: string; bottom: string; left: string; right: string };
+
+  if (customMargin) {
+    if (displayHeaderFooter) {
+      // When header/footer enabled: use customMargin for left/right,
+      // ensure top/bottom are at least customMargin
+      const topBase = config.headerEnabled ? '20mm' : customMargin;
+      const bottomBase = config.footerEnabled ? '20mm' : customMargin;
+      margin = {
+        top: topBase,
+        bottom: bottomBase,
+        left: customMargin,
+        right: customMargin,
+      };
+    } else {
+      // When header/footer disabled: use customMargin for all sides
+      margin = {
+        top: customMargin,
+        bottom: customMargin,
+        left: customMargin,
+        right: customMargin,
+      };
+    }
+  } else {
+    margin = {
       top: config.headerEnabled ? '20mm' : '10mm',
       bottom: config.footerEnabled ? '20mm' : '10mm',
       left: '10mm',
       right: '10mm',
-    },
+    };
+  }
+
+  return {
+    displayHeaderFooter,
+    headerTemplate,
+    footerTemplate,
+    margin,
   };
 }

@@ -67,7 +67,7 @@ Build a VSIX package and install it into VS Code:
 
 ```bash
 npm run package
-code --install-extension dist/markdown-studio-0.1.0.vsix
+code --install-extension dist/markdown-studio-*.vsix
 ```
 
 For development, use the one-step reinstall command (clears webview cache to avoid ServiceWorker errors):

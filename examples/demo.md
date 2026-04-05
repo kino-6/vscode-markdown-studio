@@ -152,13 +152,74 @@ wv --> Developer : Live preview
 Dangerous elements (`<script>`, `<foreignObject>`, event handlers) are stripped automatically.
 
 ```svg
-<svg viewBox="0 0 360 80" xmlns="http://www.w3.org/2000/svg" width="100%">
-  <rect x="5" y="5" width="110" height="70" rx="10" fill="#4CAF50" />
-  <text x="60" y="48" text-anchor="middle" fill="white" font-size="18" font-weight="bold">Parse</text>
-  <rect x="125" y="5" width="110" height="70" rx="10" fill="#2196F3" />
-  <text x="180" y="48" text-anchor="middle" fill="white" font-size="18" font-weight="bold">Render</text>
-  <rect x="245" y="5" width="110" height="70" rx="10" fill="#FF9800" />
-  <text x="300" y="48" text-anchor="middle" fill="white" font-size="18" font-weight="bold">Export</text>
+<svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" width="100%">
+  <defs>
+    <linearGradient id="gParse" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4CAF50"/>
+      <stop offset="100%" stop-color="#81C784"/>
+    </linearGradient>
+    <linearGradient id="gRender" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2196F3"/>
+      <stop offset="100%" stop-color="#64B5F6"/>
+    </linearGradient>
+    <linearGradient id="gExport" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF9800"/>
+      <stop offset="100%" stop-color="#FFB74D"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="600" height="320" rx="12" fill="#f8f9fa" stroke="#dee2e6" stroke-width="1"/>
+
+  <!-- Title -->
+  <text x="300" y="32" text-anchor="middle" font-size="16" font-weight="bold" fill="#333">Markdown Studio Pipeline</text>
+
+  <!-- Parse stage -->
+  <rect x="30" y="60" width="160" height="80" rx="12" fill="url(#gParse)"/>
+  <text x="110" y="95" text-anchor="middle" fill="white" font-size="15" font-weight="bold">Parse</text>
+  <text x="110" y="118" text-anchor="middle" fill="white" font-size="11">markdown-it + scanner</text>
+
+  <!-- Render stage -->
+  <rect x="220" y="60" width="160" height="80" rx="12" fill="url(#gRender)"/>
+  <text x="300" y="95" text-anchor="middle" fill="white" font-size="15" font-weight="bold">Render</text>
+  <text x="300" y="118" text-anchor="middle" fill="white" font-size="11">Mermaid · PlantUML · SVG</text>
+
+  <!-- Export stage -->
+  <rect x="410" y="60" width="160" height="80" rx="12" fill="url(#gExport)"/>
+  <text x="490" y="95" text-anchor="middle" fill="white" font-size="15" font-weight="bold">Export</text>
+  <text x="490" y="118" text-anchor="middle" fill="white" font-size="11">Playwright → PDF</text>
+
+  <!-- Arrows between stages -->
+  <polygon points="195,100 215,92 215,108" fill="#555"/>
+  <polygon points="385,100 405,92 405,108" fill="#555"/>
+
+  <!-- Security badge -->
+  <circle cx="110" cy="200" r="30" fill="#E8F5E9" stroke="#4CAF50" stroke-width="2"/>
+  <text x="110" y="196" text-anchor="middle" fill="#2E7D32" font-size="20">🔒</text>
+  <text x="110" y="215" text-anchor="middle" fill="#2E7D32" font-size="8">CSP + Nonce</text>
+
+  <!-- Sanitize badge -->
+  <circle cx="300" cy="200" r="30" fill="#E3F2FD" stroke="#2196F3" stroke-width="2"/>
+  <text x="300" y="196" text-anchor="middle" fill="#1565C0" font-size="20">🛡️</text>
+  <text x="300" y="215" text-anchor="middle" fill="#1565C0" font-size="8">HTML Sanitize</text>
+
+  <!-- Local-first badge -->
+  <circle cx="490" cy="200" r="30" fill="#FFF3E0" stroke="#FF9800" stroke-width="2"/>
+  <text x="490" y="196" text-anchor="middle" fill="#E65100" font-size="20">💻</text>
+  <text x="490" y="215" text-anchor="middle" fill="#E65100" font-size="8">Local-First</text>
+
+  <!-- Connecting lines -->
+  <line x1="110" y1="140" x2="110" y2="170" stroke="#4CAF50" stroke-width="2" stroke-dasharray="4"/>
+  <line x1="300" y1="140" x2="300" y2="170" stroke="#2196F3" stroke-width="2" stroke-dasharray="4"/>
+  <line x1="490" y1="140" x2="490" y2="170" stroke="#FF9800" stroke-width="2" stroke-dasharray="4"/>
+
+  <!-- Bottom path decoration -->
+  <path d="M 60 270 Q 150 250 300 270 Q 450 290 540 270" fill="none" stroke="#90A4AE" stroke-width="2" stroke-dasharray="6,3"/>
+
+  <!-- Feature labels along the path -->
+  <text x="120" y="295" text-anchor="middle" fill="#666" font-size="10">Diagrams</text>
+  <text x="300" y="305" text-anchor="middle" fill="#666" font-size="10">Syntax Highlighting</text>
+  <text x="480" y="295" text-anchor="middle" fill="#666" font-size="10">Theme Aware</text>
 </svg>
 ```
 
@@ -447,4 +508,4 @@ The PDF uses the same HTML pipeline as the preview.
 
 ---
 
-*Markdown Studio v0.1.0*
+*Markdown Studio v0.2.0*

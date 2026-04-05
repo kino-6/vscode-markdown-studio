@@ -5,7 +5,13 @@ vi.mock('../../src/infra/config', () => ({
     plantUmlMode: 'bundled-jar',
     javaPath: 'java',
     pageFormat: 'A4',
-    blockExternalLinks: true
+    blockExternalLinks: true,
+    style: {
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+      fontSize: 14,
+      lineHeight: 1.6,
+      margin: '20mm',
+    },
   })
 }));
 

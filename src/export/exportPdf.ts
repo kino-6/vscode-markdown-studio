@@ -53,7 +53,7 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
 
     const outputPath = path.join(path.dirname(document.uri.fsPath), `${path.basename(document.uri.fsPath, '.md')}.pdf`);
     const documentTitle = path.basename(document.uri.fsPath, '.md');
-    const pdfOptions = buildPdfOptions(cfg.pdfHeaderFooter, documentTitle);
+    const pdfOptions = buildPdfOptions(cfg.pdfHeaderFooter, documentTitle, cfg.style.margin);
     await page.pdf({
       path: outputPath,
       format: cfg.pageFormat,

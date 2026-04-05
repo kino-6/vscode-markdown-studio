@@ -38,3 +38,10 @@ export interface PdfTemplateOptions {
   footerTemplate: string;
   margin: { top: string; bottom: string; left: string; right: string };
 }
+
+export interface StyleConfig {
+  fontFamily: string;
+  fontSize: number;
+  lineHeight: number;
+  margin: string;
+}

@@ -2,7 +2,7 @@
   "name": "markdown-studio",
   "displayName": "Markdown Studio",
   "description": "Local-first Markdown authoring studio with integrated diagram rendering (Mermaid, PlantUML), SVG support, and secure PDF export.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "local",
   "license": "MIT",
   "repository": {
@@ -69,8 +69,12 @@
           "type": "string",
           "default": "A4",
           "enum": [
+            "A3",
             "A4",
-            "Letter"
+            "A5",
+            "Letter",
+            "Legal",
+            "Tabloid"
           ],
           "description": "Page format for PDF export."
         },
@@ -108,6 +112,26 @@
           "type": "boolean",
           "default": false,
           "description": "Double-click in preview jumps to the corresponding source line."
+        },
+        "markdownStudio.style.fontFamily": {
+          "type": "string",
+          "default": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Helvetica, Arial, sans-serif",
+          "description": "Font family for body text in preview and PDF export."
+        },
+        "markdownStudio.style.fontSize": {
+          "type": "number",
+          "default": 14,
+          "description": "Font size in pixels for body text in preview and PDF export (clamped to 8–32)."
+        },
+        "markdownStudio.style.lineHeight": {
+          "type": "number",
+          "default": 1.6,
+          "description": "Line height for body text in preview and PDF export (clamped to 1.0–3.0)."
+        },
+        "markdownStudio.export.margin": {
+          "type": "string",
+          "default": "20mm",
+          "description": "Page margin for PDF export. Accepts CSS units (mm, cm, in, px)."
         }
       }
     }
@@ -123,7 +147,7 @@
     "test:e2e": "vscode-test",
     "test:ci": "npm run lint && npm run test:unit && npm run test:integration",
     "package": "npm run build && rm -f dist/*.vsix && vsce package -o dist/",
-    "reinstall": "npm run package && code --uninstall-extension local.markdown-studio; rm -rf ~/Library/Application\\ Support/Code/Service\\ Worker/CacheStorage && code --install-extension dist/markdown-studio-0.1.0.vsix"
+    "reinstall": "bash dev_reinstall.sh"
   },
   "dependencies": {
     "highlight.js": "^11.11.1",
