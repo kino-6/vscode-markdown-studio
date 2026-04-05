@@ -238,24 +238,47 @@ class DiagramConfig:
 
 ---
 
-## 6. Security Model
+## 6. Images and Security
 
-- ✅ No external API calls
-- ✅ No SaaS dependency or CDN assets
-- ✅ Restrictive CSP with random nonce
-- ✅ HTML sanitization before rendering
-- ✅ SVG sanitization strips scripts, event handlers, foreign objects
-- ✅ External links and images blocked by default
+Markdown Studio is local-first. The default security policy (`blockExternalLinks = true`) blocks external resources while allowing local files.
 
-### External image (blocked by policy)
+### ✅ Local image (relative path — works)
+
+![Local SVG](images/logo.svg)
+
+Relative paths from the Markdown file are resolved and displayed correctly.
+
+### ✅ Local image (absolute path — works)
+
+Images with absolute file paths also work in the preview.
+
+### ❌ External image (blocked by policy)
 
 ![Remote image](https://example.com/image.png)
 
-The image above is replaced with a policy notice in the preview.
+External URLs (`https://...`) are blocked by default. The image above shows a policy notice instead.
 
-### External link (blocked by policy)
+### ❌ External link (blocked by policy)
 
 [External link](https://example.com) — blocked by default ✋
+
+External links are replaced with a blocked notice in the preview.
+
+### How to allow external resources
+
+Set `markdownStudio.security.blockExternalLinks` to `false` in VS Code settings to allow external images and links. This is not recommended for corporate/secure environments.
+
+### Security Summary
+
+| Resource Type | Default | Configurable |
+|--------------|---------|-------------|
+| Local images (relative path) | ✅ Allowed | — |
+| Local images (absolute path) | ✅ Allowed | — |
+| External images (https://) | ❌ Blocked | `blockExternalLinks: false` |
+| External links (https://) | ❌ Blocked | `blockExternalLinks: false` |
+| Inline SVG | ✅ Allowed | — |
+| Mermaid diagrams | ✅ Allowed | — |
+| PlantUML diagrams | ✅ Allowed | — |
 
 ---
 
