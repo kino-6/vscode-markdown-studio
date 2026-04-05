@@ -428,18 +428,55 @@ function isDomainAllowed(url: string, allowedDomains: string[]): boolean {
 
 ## 正当性プロパティ
 
-以下の性質が常に成り立つことを保証する:
+*プロパティとは、システムのすべての有効な実行において真であるべき特性や振る舞いのことです。人間が読める仕様と機械が検証可能な正当性保証の橋渡しとなる形式的な記述です。*
 
-1. **モード網羅性**: `∀ config: ExternalResourceConfig, config.mode ∈ {"block-all", "whitelist", "allow-all"}`
-2. **block-all の完全性**: `mode === "block-all" ⟹ フィルタ後のHTMLに外部URL（https://）を含む <a> タグまたは <img> タグが存在しない`
-3. **allow-all の透過性**: `mode === "allow-all" ⟹ filterExternalResources(html, config) === html`
-4. **whitelist の正確性**: `mode === "whitelist" ∧ isDomainAllowed(url, allowedDomains) ⟹ そのURLを含むリソースはフィルタ後も保持される`
-5. **whitelist のブロック性**: `mode === "whitelist" ∧ ¬isDomainAllowed(url, allowedDomains) ⟹ そのURLを含むリソースはブロック表示に置換される`
-6. **後方互換性**: `blockExternalLinks: true ∧ 新設定未設定 ⟹ mode === "block-all"`
-7. **後方互換性（false）**: `blockExternalLinks: false ∧ 新設定未設定 ⟹ mode === "allow-all"`
-8. **デフォルト安全性**: `設定未指定 ⟹ mode === "whitelist" ∧ allowedDomains にGitHubドメインが含まれる`
-9. **ドメイン照合の大文字小文字非依存**: `isDomainAllowed("https://GitHub.COM/...", ["github.com"]) === true`
-10. **無効URL安全性**: `extractDomain(invalidUrl) === null ⟹ isDomainAllowed(invalidUrl, anyDomains) === false`
+### Property 1: allow-all の恒等性
+
+*任意の* HTML文字列に対して、mode が `allow-all` の場合、`filterExternalResources` は入力HTMLをそのまま返す（入力と出力が同一である）。
+
+**Validates: Requirement 3.1**
+
+### Property 2: block-all の完全性
+
+*任意の* 外部リンクまたは外部画像を含むHTML文字列に対して、mode が `block-all` の場合、`filterExternalResources` の出力には `https://` を含む `<a>` タグまたは `<img>` タグが存在しない。
+
+**Validates: Requirements 3.2, 3.3**
+
+### Property 3: whitelist の正確性
+
+*任意の* ドメインリストとそのドメインを含むURLを持つHTML文字列に対して、mode が `whitelist` の場合、許可ドメインのリソースは出力に保持され、非許可ドメインのリソースはブロック表示に置換される。
+
+**Validates: Requirements 3.4, 3.5**
+
+### Property 4: ドメイン照合の大文字小文字非依存
+
+*任意の* ドメイン文字列に対して、`isDomainAllowed` の結果はURLおよび allowedDomains の大文字小文字に依存しない（例: `GitHub.COM` と `github.com` は同一として扱われる）。
+
+**Validates: Requirements 2.1, 2.5**
+
+### Property 5: ドメイン照合の正確性
+
+*任意の* ドメインと allowedDomains リストに対して、`isDomainAllowed` はドメインがリストに含まれる場合のみ `true` を返し、含まれない場合は `false` を返す。
+
+**Validates: Requirements 2.3, 2.4**
+
+### Property 6: 無効URLの安全なフォールバック
+
+*任意の* 無効なURL文字列に対して、`isDomainAllowed` は常に `false` を返す（安全側にフォールバック）。
+
+**Validates: Requirements 2.2, 2.6, 6.1**
+
+### Property 7: ローカルリソースの保護
+
+*任意の* モードとローカルリソース（`vscode-resource://`、相対パス等）を含むHTML文字列に対して、`filterExternalResources` はローカルリソースを変更しない。
+
+**Validates: Requirement 3.6**
+
+### Property 8: 新設定の優先
+
+*任意の* レガシー設定値と新設定値の組み合わせに対して、両方が存在する場合、`resolveExternalResourceConfig` は新設定の値を返す。
+
+**Validates: Requirement 4.3**
 
 ## エラーハンドリング
 
