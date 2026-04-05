@@ -25,6 +25,16 @@ const body: any = {
 (globalThis as any).document = {
   body,
   querySelectorAll: () => [],
+  getElementById: () => null,
+  createElement: (tag: string) => ({
+    tagName: tag.toUpperCase(),
+    id: '',
+    className: '',
+    innerHTML: '',
+    style: {} as Record<string, string>,
+    children: [] as any[],
+    appendChild(child: any) { this.children.push(child); },
+  }),
 };
 
 // Capture all registered event listeners

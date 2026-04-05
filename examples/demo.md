@@ -244,7 +244,9 @@ Markdown Studio is local-first. The default security policy (`blockExternalLinks
 
 ### ✅ Local image (relative path — works)
 
-![Local SVG](images/logo.svg)
+![Local PNG](icon/icon.png)
+
+![Extension Icon](icon/icon.svg)
 
 Relative paths from the Markdown file are resolved and displayed correctly.
 

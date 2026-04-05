@@ -247,14 +247,18 @@ describe('change handler – incremental updates (R1/R2/R3/R5/R6)', () => {
     (renderBody as ReturnType<typeof vi.fn>).mockResolvedValue('<h1>mock body</h1>');
   });
 
-  it('matching URI fires postMessage with { type: "update-body", html, generation }', async () => {
+  it('matching URI fires postMessage with render-start then update-body', async () => {
     const panel = await openOrRefreshPreview(fakeContext(), fakeDocument('file:///test.md'));
 
     const handler = getChangeHandler();
     await handler(fakeChangeEvent('file:///test.md'));
 
-    expect(panel.webview.postMessage).toHaveBeenCalledTimes(1);
-    expect(panel.webview.postMessage).toHaveBeenCalledWith({
+    expect(panel.webview.postMessage).toHaveBeenCalledTimes(2);
+    expect(panel.webview.postMessage).toHaveBeenNthCalledWith(1, {
+      type: 'render-start',
+      generation: 1,
+    });
+    expect(panel.webview.postMessage).toHaveBeenNthCalledWith(2, {
       type: 'update-body',
       html: '<h1>mock body</h1>',
       generation: 1,
@@ -297,9 +301,11 @@ describe('change handler – incremental updates (R1/R2/R3/R5/R6)', () => {
     resolveFirst('<h1>First</h1>');
     await call1;
 
-    // Only the second (newer) render should have been posted
-    expect(panel.webview.postMessage).toHaveBeenCalledTimes(1);
-    expect(panel.webview.postMessage).toHaveBeenCalledWith(
+    // Both render-start messages are sent, but only the second update-body is posted
+    const updateBodyCalls = (panel.webview.postMessage as ReturnType<typeof vi.fn>).mock.calls
+      .filter((c: unknown[]) => (c[0] as { type: string }).type === 'update-body');
+    expect(updateBodyCalls).toHaveLength(1);
+    expect(updateBodyCalls[0][0]).toEqual(
       expect.objectContaining({ html: '<h1>Second</h1>' }),
     );
   });
@@ -318,7 +324,7 @@ describe('change handler – incremental updates (R1/R2/R3/R5/R6)', () => {
     expect(panel.webview.postMessage).not.toHaveBeenCalled();
   });
 
-  it('renderBody error is caught and logged, no postMessage call', async () => {
+  it('renderBody error sends render-start then render-error', async () => {
     const panel = await openOrRefreshPreview(fakeContext(), fakeDocument('file:///test.md'));
 
     const handler = getChangeHandler();
@@ -332,8 +338,118 @@ describe('change handler – incremental updates (R1/R2/R3/R5/R6)', () => {
       '[Markdown Studio] renderBody failed:',
       expect.any(Error),
     );
-    expect(panel.webview.postMessage).not.toHaveBeenCalled();
+    expect(panel.webview.postMessage).toHaveBeenCalledTimes(2);
+    expect(panel.webview.postMessage).toHaveBeenNthCalledWith(1, {
+      type: 'render-start',
+      generation: 1,
+    });
+    expect(panel.webview.postMessage).toHaveBeenNthCalledWith(2, {
+      type: 'render-error',
+      generation: 1,
+    });
 
     consoleErrorSpy.mockRestore();
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  render-start / render-error message tests (Task 5.6)               */
+/* ------------------------------------------------------------------ */
+
+describe('change handler – render-start and render-error messages', () => {
+  beforeEach(() => {
+    _resetPanelForTesting();
+    mockPanel = createMockPanel();
+    vi.clearAllMocks();
+    (renderBody as ReturnType<typeof vi.fn>).mockResolvedValue('<h1>mock body</h1>');
+  });
+
+  it('sends render-start before calling renderBody()', async () => {
+    const callOrder: string[] = [];
+
+    (renderBody as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+      // At the point renderBody is called, render-start should already have been sent
+      callOrder.push('renderBody');
+      return '<h1>mock body</h1>';
+    });
+
+    mockPanel.webview.postMessage = vi.fn(async (msg: { type: string }) => {
+      callOrder.push(msg.type);
+      return true;
+    });
+
+    await openOrRefreshPreview(fakeContext(), fakeDocument('file:///test.md'));
+    const handler = getChangeHandler();
+    await handler(fakeChangeEvent('file:///test.md'));
+
+    expect(callOrder.indexOf('render-start')).toBeLessThan(callOrder.indexOf('renderBody'));
+  });
+
+  it('on renderBody() error with current generation, render-error is sent', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    (renderBody as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('fail'));
+
+    const panel = await openOrRefreshPreview(fakeContext(), fakeDocument('file:///test.md'));
+    const handler = getChangeHandler();
+    await handler(fakeChangeEvent('file:///test.md'));
+
+    const messages = (panel.webview.postMessage as ReturnType<typeof vi.fn>).mock.calls.map(
+      (c: unknown[]) => c[0] as { type: string; generation: number },
+    );
+    expect(messages).toEqual([
+      { type: 'render-start', generation: 1 },
+      { type: 'render-error', generation: 1 },
+    ]);
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('on renderBody() error with stale generation, render-error is NOT sent', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    let rejectFirst!: (err: Error) => void;
+    const firstPromise = new Promise<string>((_, rej) => { rejectFirst = rej; });
+
+    (renderBody as ReturnType<typeof vi.fn>)
+      .mockReturnValueOnce(firstPromise)
+      .mockResolvedValueOnce('<h1>Second</h1>');
+
+    const panel = await openOrRefreshPreview(fakeContext(), fakeDocument('file:///test.md'));
+    const handler = getChangeHandler();
+
+    // Fire first change (will hang on renderBody)
+    const call1 = handler(fakeChangeEvent('file:///test.md', '# First'));
+    // Fire second change (advances generation)
+    const call2 = handler(fakeChangeEvent('file:///test.md', '# Second'));
+
+    await call2;
+
+    // Now reject the first (stale) render
+    rejectFirst(new Error('stale fail'));
+    await call1;
+
+    const messages = (panel.webview.postMessage as ReturnType<typeof vi.fn>).mock.calls.map(
+      (c: unknown[]) => c[0] as { type: string },
+    );
+    // First render-start (gen 1), second render-start (gen 2), second update-body (gen 2)
+    // No render-error for the stale first render
+    const renderErrors = messages.filter((m) => m.type === 'render-error');
+    expect(renderErrors).toHaveLength(0);
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('successful render sends render-start then update-body in order', async () => {
+    const panel = await openOrRefreshPreview(fakeContext(), fakeDocument('file:///test.md'));
+    const handler = getChangeHandler();
+    await handler(fakeChangeEvent('file:///test.md'));
+
+    const messages = (panel.webview.postMessage as ReturnType<typeof vi.fn>).mock.calls.map(
+      (c: unknown[]) => c[0] as { type: string; generation: number },
+    );
+    expect(messages).toEqual([
+      { type: 'render-start', generation: 1 },
+      { type: 'update-body', html: '<h1>mock body</h1>', generation: 1 },
+    ]);
   });
 });

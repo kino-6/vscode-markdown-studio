@@ -79,11 +79,22 @@ export async function openOrRefreshPreview(
       generation++;
       const thisGeneration = generation;
 
+      currentPanel!.webview.postMessage({
+        type: 'render-start',
+        generation: thisGeneration,
+      });
+
       let htmlBody: string;
       try {
         htmlBody = await renderBody(event.document.getText(), context);
       } catch (err) {
         console.error('[Markdown Studio] renderBody failed:', err);
+        if (thisGeneration === generation) {
+          currentPanel!.webview.postMessage({
+            type: 'render-error',
+            generation: thisGeneration,
+          });
+        }
         return;
       }
 
@@ -133,11 +144,22 @@ export async function openOrRefreshPreview(
     generation++;
     const thisGeneration = generation;
 
+    panel.webview.postMessage({
+      type: 'render-start',
+      generation: thisGeneration,
+    });
+
     let htmlBody: string;
     try {
       htmlBody = await renderBody(event.document.getText(), context);
     } catch (err) {
       console.error('[Markdown Studio] renderBody failed:', err);
+      if (thisGeneration === generation) {
+        panel.webview.postMessage({
+          type: 'render-error',
+          generation: thisGeneration,
+        });
+      }
       return;
     }
 

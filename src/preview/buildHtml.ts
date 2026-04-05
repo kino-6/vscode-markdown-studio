@@ -99,6 +99,7 @@ ${styleBlock}
 </head>
 <body>
 ${rendered.htmlBody}
+<div id="ms-loading-overlay" class="ms-loading-overlay" style="display: flex"><div class="ms-spinner"></div></div>
 ${scriptSrc ? `<script src="${scriptSrc}" nonce="${nonce}"></script>` : ''}
 </body>
 </html>`;

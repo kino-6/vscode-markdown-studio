@@ -164,11 +164,16 @@ describe('Incremental update – end-to-end integration', () => {
       contentChanges: [],
     });
 
-    // 4. Verify postMessage was called with the incremental update
-    expect(panel.webview.postMessage).toHaveBeenCalledTimes(1);
+    // 4. Verify postMessage was called with render-start + update-body
+    expect(panel.webview.postMessage).toHaveBeenCalledTimes(2);
+
+    const renderStartMsg = (panel.webview.postMessage as ReturnType<typeof vi.fn>)
+      .mock.calls[0][0];
+    expect(renderStartMsg.type).toBe('render-start');
+    expect(renderStartMsg.generation).toBe(1);
 
     const message = (panel.webview.postMessage as ReturnType<typeof vi.fn>)
-      .mock.calls[0][0];
+      .mock.calls[1][0];
 
     expect(message.type).toBe('update-body');
     expect(message.generation).toBe(1);
@@ -199,9 +204,12 @@ describe('Incremental update – end-to-end integration', () => {
       contentChanges: [],
     });
 
-    const message = (mockPanel.webview.postMessage as ReturnType<typeof vi.fn>)
-      .mock.calls[0][0];
+    const calls = (mockPanel.webview.postMessage as ReturnType<typeof vi.fn>).mock.calls;
 
+    // render-start is sent first, then update-body
+    expect(calls[0][0].type).toBe('render-start');
+
+    const message = calls[1][0];
     expect(message.type).toBe('update-body');
     expect(message.html).toContain('<strong>bold</strong>');
     expect(message.html).toContain('<em>italic</em>');
@@ -236,9 +244,18 @@ describe('Incremental update – end-to-end integration', () => {
     });
 
     const calls = (mockPanel.webview.postMessage as ReturnType<typeof vi.fn>).mock.calls;
-    expect(calls).toHaveLength(2);
+    // Each edit sends render-start + update-body = 4 messages total
+    expect(calls).toHaveLength(4);
+    // First edit: render-start then update-body
+    expect(calls[0][0].type).toBe('render-start');
     expect(calls[0][0].generation).toBe(1);
-    expect(calls[1][0].generation).toBe(2);
-    expect(calls[1][0].html).toContain('v3</h1>');
+    expect(calls[1][0].type).toBe('update-body');
+    expect(calls[1][0].generation).toBe(1);
+    // Second edit: render-start then update-body
+    expect(calls[2][0].type).toBe('render-start');
+    expect(calls[2][0].generation).toBe(2);
+    expect(calls[3][0].type).toBe('update-body');
+    expect(calls[3][0].generation).toBe(2);
+    expect(calls[3][0].html).toContain('v3</h1>');
   });
 });

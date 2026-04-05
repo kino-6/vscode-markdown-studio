@@ -23,6 +23,7 @@
     "onCommand:markdownStudio.reloadPreview",
     "onCommand:markdownStudio.setupDependencies"
   ],
+  "icon": "icon/icon.png",
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [

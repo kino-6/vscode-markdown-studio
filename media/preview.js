@@ -111,10 +111,44 @@ function addCopyButtons() {
   }
 }
 
+function showLoadingOverlay() {
+  let overlay = document.getElementById('ms-loading-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'ms-loading-overlay';
+    overlay.className = 'ms-loading-overlay';
+    overlay.innerHTML = '<div class="ms-spinner"></div>';
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = 'flex';
+}
+
+function hideLoadingOverlay() {
+  const overlay = document.getElementById('ms-loading-overlay');
+  if (overlay) {
+    overlay.style.display = 'none';
+  }
+}
+
 let lastAppliedGeneration = -1;
 
 window.addEventListener('message', (event) => {
   const message = event.data;
+
+  if (message.type === 'render-start') {
+    if (message.generation > lastAppliedGeneration) {
+      showLoadingOverlay();
+    }
+    return;
+  }
+
+  if (message.type === 'render-error') {
+    if (message.generation > lastAppliedGeneration) {
+      hideLoadingOverlay();
+    }
+    return;
+  }
+
   if (message.type !== 'update-body') return;
   if (message.generation <= lastAppliedGeneration) return;
 
@@ -122,13 +156,17 @@ window.addEventListener('message', (event) => {
   document.body.innerHTML = message.html;
   renderMermaidBlocks();
   addCopyButtons();
+  hideLoadingOverlay();
 });
 
 const vscode = acquireVsCodeApi();
 
 window.addEventListener('DOMContentLoaded', () => {
-  renderMermaidBlocks().catch((error) => {
+  renderMermaidBlocks().then(() => {
+    hideLoadingOverlay();
+  }).catch((error) => {
     console.error('Mermaid rendering failed', error);
+    hideLoadingOverlay();
   });
 
   addCopyButtons();
@@ -158,4 +196,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-export { THEME_MAP, detectThemeKind, getMermaidTheme, observeThemeChanges, findSourceLine, lastAppliedGeneration };
+window.showLoadingOverlay = showLoadingOverlay;
+window.hideLoadingOverlay = hideLoadingOverlay;
+
+export { THEME_MAP, detectThemeKind, getMermaidTheme, observeThemeChanges, findSourceLine, lastAppliedGeneration, showLoadingOverlay, hideLoadingOverlay };

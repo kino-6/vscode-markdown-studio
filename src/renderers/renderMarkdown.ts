@@ -8,6 +8,16 @@ import { renderPlantUml } from './renderPlantUml';
 
 const parser = createMarkdownParser();
 
+function padToLineCount(replacement: string, sourceFence: string): string {
+  const sourceNewlines = (sourceFence.match(/\n/g) || []).length;
+  const replacementNewlines = (replacement.match(/\n/g) || []).length;
+  const diff = sourceNewlines - replacementNewlines;
+  if (diff > 0) {
+    return replacement + '\n'.repeat(diff);
+  }
+  return replacement;
+}
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
@@ -60,6 +70,7 @@ export async function renderMarkdownDocument(
       }
     }
 
+    replacement = padToLineCount(replacement, sourceFence);
     transformed = transformed.replace(sourceFence, replacement);
   }
 
