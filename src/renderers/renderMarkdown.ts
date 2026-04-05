@@ -5,6 +5,7 @@ import { scanFencedBlocks } from '../parser/scanFencedBlocks';
 import { RenderedMarkdown } from '../types/models';
 import { renderMermaidBlock } from './renderMermaid';
 import { renderPlantUml } from './renderPlantUml';
+import { filterExternalResources } from './resourceFilter';
 
 const parser = createMarkdownParser();
 
@@ -78,11 +79,7 @@ export async function renderMarkdownDocument(
   // CSP + webview sandbox provide the security boundary.
   let htmlBody = parser.render(transformed);
 
-  if (getConfig().blockExternalLinks) {
-    htmlBody = htmlBody.replace(/<a\s+([^>]*href="https?:\/\/[^"]+?"[^>]*)>/g, '<span class="ms-link-blocked" title="External link blocked">');
-    htmlBody = htmlBody.replace(/<\/a>/g, '</span>');
-    htmlBody = htmlBody.replace(/<img\s+([^>]*src="https?:\/\/[^"]+?"[^>]*)>/g, '<div class="ms-error">External image blocked by policy.</div>');
-  }
+  htmlBody = filterExternalResources(htmlBody, getConfig().externalResources);
 
   return { htmlBody, errors };
 }

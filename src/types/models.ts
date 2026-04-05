@@ -91,3 +91,17 @@ export interface StyleConfigOverrides {
   lineHeight?: number;
   margin?: string;
 }
+
+
+export type ExternalResourceMode = "block-all" | "whitelist" | "allow-all";
+
+export const DEFAULT_ALLOWED_DOMAINS: readonly string[] = [
+  "github.com",
+  "raw.githubusercontent.com",
+  "user-images.githubusercontent.com",
+] as const;
+
+export interface ExternalResourceConfig {
+  mode: ExternalResourceMode;
+  allowedDomains: string[];
+}

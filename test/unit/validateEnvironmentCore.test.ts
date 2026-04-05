@@ -7,7 +7,7 @@ const baseConfig: MarkdownStudioConfig = {
   plantUmlMode: 'bundled-jar',
   javaPath: 'java',
   pageFormat: 'A4',
-  blockExternalLinks: true,
+  externalResources: { mode: 'block-all', allowedDomains: [] },
   pdfHeaderFooter: {
     headerEnabled: true,
     headerTemplate: null,

@@ -82,7 +82,35 @@
         "markdownStudio.security.blockExternalLinks": {
           "type": "boolean",
           "default": true,
-          "description": "Block external links and remote resources in preview/export by default."
+          "description": "Block external links and remote resources in preview/export by default.",
+          "deprecationMessage": "非推奨: markdownStudio.security.externalResources.mode を使用してください"
+        },
+        "markdownStudio.security.externalResources.mode": {
+          "type": "string",
+          "default": "whitelist",
+          "enum": [
+            "block-all",
+            "whitelist",
+            "allow-all"
+          ],
+          "enumDescriptions": [
+            "Block all external resources",
+            "Allow only whitelisted domains",
+            "Allow all external resources"
+          ],
+          "description": "外部リソースの制御モード"
+        },
+        "markdownStudio.security.externalResources.allowedDomains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "github.com",
+            "raw.githubusercontent.com",
+            "user-images.githubusercontent.com"
+          ],
+          "description": "ホワイトリストモードで許可するドメインのリスト"
         },
         "markdownStudio.export.header.enabled": {
           "type": "boolean",

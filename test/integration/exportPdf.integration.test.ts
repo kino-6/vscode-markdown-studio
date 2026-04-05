@@ -30,7 +30,7 @@ vi.mock('playwright', () => {
 vi.mock('../../src/infra/config', () => ({
   getConfig: () => ({
     pageFormat: 'A4',
-    blockExternalLinks: true,
+    externalResources: { mode: 'block-all', allowedDomains: [] },
     javaPath: 'java',
     plantUmlMode: 'bundled-jar',
     pdfHeaderFooter: {

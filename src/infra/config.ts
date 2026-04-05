@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { PdfHeaderFooterConfig, ResolvedStyleConfig, StyleConfigOverrides } from '../types/models';
+import { DEFAULT_ALLOWED_DOMAINS, ExternalResourceConfig, ExternalResourceMode, PdfHeaderFooterConfig, ResolvedStyleConfig, StyleConfigOverrides } from '../types/models';
 import { resolvePreset } from './presets';
 
 export function clampFontSize(n: number): number {
@@ -14,7 +14,7 @@ export interface MarkdownStudioConfig {
   plantUmlMode: 'bundled-jar' | 'external-command' | 'docker';
   javaPath: string;
   pageFormat: 'A3' | 'A4' | 'A5' | 'Letter' | 'Legal' | 'Tabloid';
-  blockExternalLinks: boolean;
+  externalResources: ExternalResourceConfig;
   pdfHeaderFooter: PdfHeaderFooterConfig;
   sourceJumpEnabled: boolean;
   style: ResolvedStyleConfig;
@@ -28,6 +28,36 @@ function hasUserValue(cfg: vscode.WorkspaceConfiguration, key: string): boolean 
     inspection.workspaceValue !== undefined ||
     inspection.workspaceFolderValue !== undefined
   );
+}
+
+export function resolveExternalResourceConfig(
+  cfg: vscode.WorkspaceConfiguration
+): ExternalResourceConfig {
+  const hasNewMode = hasUserValue(cfg, 'security.externalResources.mode');
+  const hasLegacy = hasUserValue(cfg, 'security.blockExternalLinks');
+
+  // New settings explicitly set → use new settings
+  if (hasNewMode) {
+    return {
+      mode: cfg.get<ExternalResourceMode>('security.externalResources.mode', 'whitelist'),
+      allowedDomains: cfg.get<string[]>('security.externalResources.allowedDomains', [...DEFAULT_ALLOWED_DOMAINS]),
+    };
+  }
+
+  // Legacy only → migrate
+  if (hasLegacy) {
+    const blockAll = cfg.get<boolean>('security.blockExternalLinks', true);
+    return {
+      mode: blockAll ? 'block-all' : 'allow-all',
+      allowedDomains: [...DEFAULT_ALLOWED_DOMAINS],
+    };
+  }
+
+  // Neither set → defaults
+  return {
+    mode: 'whitelist',
+    allowedDomains: [...DEFAULT_ALLOWED_DOMAINS],
+  };
 }
 
 export function getConfig(): MarkdownStudioConfig {
@@ -55,7 +85,7 @@ export function getConfig(): MarkdownStudioConfig {
     plantUmlMode: cfg.get('plantuml.mode', 'bundled-jar'),
     javaPath: cfg.get('java.path', 'java'),
     pageFormat: cfg.get('export.pageFormat', 'A4'),
-    blockExternalLinks: cfg.get('security.blockExternalLinks', true),
+    externalResources: resolveExternalResourceConfig(cfg),
     pdfHeaderFooter: {
       headerEnabled: cfg.get<boolean>('export.header.enabled', true),
       headerTemplate: cfg.get<string | null>('export.header.template', null),

@@ -6,7 +6,7 @@ vi.mock('../../src/infra/config', () => ({
     plantUmlMode: 'bundled-jar',
     javaPath: 'java',
     pageFormat: 'A4',
-    blockExternalLinks: false,
+    externalResources: { mode: 'allow-all', allowedDomains: [] },
     style: {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
       fontSize: 14,

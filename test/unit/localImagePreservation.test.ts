@@ -46,7 +46,7 @@ vi.mock('../../src/infra/config', () => ({
     plantUmlMode: 'bundled-jar',
     javaPath: 'java',
     pageFormat: 'A4',
-    blockExternalLinks: false,
+    externalResources: { mode: 'allow-all', allowedDomains: [] },
     pdfHeaderFooter: {
       headerEnabled: false,
       headerTemplate: null,

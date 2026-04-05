@@ -28,6 +28,7 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
 * Item
 
 - 日本語
+  - 2byte文字テスト
 
 ---
 
@@ -244,9 +245,9 @@ Markdown Studio is local-first. The default security policy (`blockExternalLinks
 
 ### ✅ Local image (relative path — works)
 
-![Local PNG](icon/icon.png)
+![Local SVG](images/logo.svg)
 
-![Extension Icon](icon/icon.svg)
+![Extension Icon](../icon/icon.svg)
 
 Relative paths from the Markdown file are resolved and displayed correctly.
 
