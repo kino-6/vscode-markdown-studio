@@ -24,6 +24,9 @@
   "exclude": [
     "test/e2e",
     "test/unit/themeDetection.property.test.ts",
-    "test/unit/themeObserver.test.ts"
+    "test/unit/themeObserver.test.ts",
+    "test/unit/findSourceLine.property.test.ts",
+    "test/unit/messageHandler.test.ts",
+    "test/unit/previewInitResilience.property.test.ts"
   ]
 }

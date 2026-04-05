@@ -7,7 +7,15 @@ const baseConfig: MarkdownStudioConfig = {
   plantUmlMode: 'bundled-jar',
   javaPath: 'java',
   pageFormat: 'A4',
-  blockExternalLinks: true
+  blockExternalLinks: true,
+  pdfHeaderFooter: {
+    headerEnabled: true,
+    headerTemplate: null,
+    footerEnabled: true,
+    footerTemplate: null,
+    pageBreakEnabled: true,
+  },
+  sourceJumpEnabled: false,
 };
 
 describe('validateEnvironment', () => {
@@ -23,7 +31,7 @@ describe('validateEnvironment', () => {
 
     expect(result.ok).toBe(true);
     expect(result.lines).toEqual([
-      '✅ Java detected',
+      '✅ Java detected (system)',
       '✅ Bundled PlantUML jar found',
       '✅ Temp directory writable'
     ]);
@@ -89,7 +97,7 @@ describe('validateEnvironment', () => {
     }, managedDeps);
 
     expect(result.ok).toBe(true);
-    expect(result.lines).toContain('✅ Managed Corretto JDK available');
+    expect(result.lines).toContain('✅ Java detected (managed Corretto)');
     expect(result.lines).toContain('✅ Managed Chromium browser available');
   });
 
@@ -108,8 +116,10 @@ describe('validateEnvironment', () => {
       now: () => 6
     }, managedDeps);
 
+    // When managedDeps has no javaPath, system java is used
+    // The implementation doesn't add a separate "Managed Corretto" line
     expect(result.ok).toBe(false);
-    expect(result.lines).toContain('❌ Managed Corretto JDK not available');
+    expect(result.lines).toContain('✅ Java detected (system)');
     expect(result.lines).toContain('❌ Managed Chromium browser not available');
   });
 
@@ -146,7 +156,7 @@ describe('validateEnvironment', () => {
     }, managedDeps);
 
     expect(result.ok).toBe(false);
-    expect(result.lines).toContain('✅ Managed Corretto JDK available');
+    expect(result.lines).toContain('✅ Java detected (managed Corretto)');
     expect(result.lines).toContain('❌ Managed Chromium browser not available');
   });
 });

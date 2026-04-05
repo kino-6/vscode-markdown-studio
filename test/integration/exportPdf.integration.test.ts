@@ -32,7 +32,14 @@ vi.mock('../../src/infra/config', () => ({
     pageFormat: 'A4',
     blockExternalLinks: true,
     javaPath: 'java',
-    plantUmlMode: 'bundled-jar'
+    plantUmlMode: 'bundled-jar',
+    pdfHeaderFooter: {
+      headerEnabled: true,
+      headerTemplate: null,
+      footerEnabled: true,
+      footerTemplate: null,
+      pageBreakEnabled: true,
+    }
   })
 }));
 
@@ -126,8 +133,56 @@ describe('exportToPdf smoke/integration', () => {
     const output = await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
     expect(output).toBe('/tmp/sample.pdf');
 
-    // HTML should be passed without the style injection
+    // HTML should be passed without the hljs style injection (page-break CSS may still be present)
     const htmlArg = setContentMock.mock.calls[0][0] as string;
-    expect(htmlArg).not.toContain('<style>');
+    expect(htmlArg).not.toContain('.hljs');
+  });
+
+  it('PDF export with default settings includes header/footer options', async () => {
+    buildHtmlMock.mockResolvedValue('<html><head></head><body>content</body></html>');
+    readFileMock.mockResolvedValue('.hljs { background: #f6f8fa; }');
+    accessMock.mockResolvedValue(undefined);
+    setContentMock.mockResolvedValue(undefined);
+    pdfMock.mockResolvedValue(undefined);
+    closeMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({ setContent: setContentMock, pdf: pdfMock });
+    launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
+
+    const document = {
+      getText: () => '# Hello',
+      uri: { fsPath: '/tmp/sample.md' }
+    } as any;
+
+    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+
+    expect(pdfMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        displayHeaderFooter: true,
+        headerTemplate: expect.stringContaining('sample'),
+        footerTemplate: expect.stringContaining('pageNumber'),
+        margin: expect.objectContaining({ top: '20mm', bottom: '20mm' }),
+      })
+    );
+  });
+
+  it('PDF export injects page-break CSS when enabled', async () => {
+    buildHtmlMock.mockResolvedValue('<html><head></head><body>content</body></html>');
+    readFileMock.mockResolvedValue('.hljs { background: #f6f8fa; }');
+    accessMock.mockResolvedValue(undefined);
+    setContentMock.mockResolvedValue(undefined);
+    pdfMock.mockResolvedValue(undefined);
+    closeMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({ setContent: setContentMock, pdf: pdfMock });
+    launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
+
+    const document = {
+      getText: () => '# Hello',
+      uri: { fsPath: '/tmp/sample.md' }
+    } as any;
+
+    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+
+    const htmlArg = setContentMock.mock.calls[0][0] as string;
+    expect(htmlArg).toContain('page-break-before');
   });
 });

@@ -26,6 +26,12 @@ const datasetProxy = new Proxy(dataset, {
   addEventListener: vi.fn(),
 };
 
+(globalThis as any).acquireVsCodeApi = () => ({
+  postMessage: vi.fn(),
+  getState: vi.fn(),
+  setState: vi.fn(),
+});
+
 // --- MutationObserver mock ---
 
 let observerCallback: MutationCallback;

@@ -7,7 +7,7 @@ describe('parser and fenced block scanning', () => {
     const parser = createMarkdownParser();
     const html = parser.render('# Title\n\nThis is **bold**');
 
-    expect(html).toContain('<h1>Title</h1>');
+    expect(html).toContain('<h1 data-source-line="0">Title</h1>');
     expect(html).toContain('<strong>bold</strong>');
   });
 

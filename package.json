@@ -78,6 +78,36 @@
           "type": "boolean",
           "default": true,
           "description": "Block external links and remote resources in preview/export by default."
+        },
+        "markdownStudio.export.header.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable header in PDF export. When enabled, a header with the document title is added to each page."
+        },
+        "markdownStudio.export.header.template": {
+          "type": ["string", "null"],
+          "default": null,
+          "description": "Custom HTML template for the PDF export header. Use Playwright CSS classes (pageNumber, totalPages, title, date, url) for dynamic content. When null, the built-in default template is used."
+        },
+        "markdownStudio.export.footer.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable footer in PDF export. When enabled, a footer with page numbers is added to each page."
+        },
+        "markdownStudio.export.footer.template": {
+          "type": ["string", "null"],
+          "default": null,
+          "description": "Custom HTML template for the PDF export footer. Use Playwright CSS classes (pageNumber, totalPages, title, date, url) for dynamic content. When null, the built-in default template is used."
+        },
+        "markdownStudio.export.pageBreak.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable CSS page-break support in PDF export. When enabled, page-break-before and page-break-after CSS properties are honored."
+        },
+        "markdownStudio.preview.sourceJump.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Double-click in preview jumps to the corresponding source line."
         }
       }
     }

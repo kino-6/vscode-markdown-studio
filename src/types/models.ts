@@ -23,3 +23,18 @@ export interface PlantUmlResult {
   svg?: string;
   error?: string;
 }
+
+export interface PdfHeaderFooterConfig {
+  headerEnabled: boolean;
+  headerTemplate: string | null;
+  footerEnabled: boolean;
+  footerTemplate: string | null;
+  pageBreakEnabled: boolean;
+}
+
+export interface PdfTemplateOptions {
+  displayHeaderFooter: boolean;
+  headerTemplate: string;
+  footerTemplate: string;
+  margin: { top: string; bottom: string; left: string; right: string };
+}

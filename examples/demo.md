@@ -25,6 +25,10 @@ Open this file and run **Markdown Studio: Open Secure Preview** (`Cmd+Shift+P`).
 - Unordered item
 - Another item
 
+* Item
+
+- 日本語
+
 ---
 
 ## 2. Mermaid Diagrams

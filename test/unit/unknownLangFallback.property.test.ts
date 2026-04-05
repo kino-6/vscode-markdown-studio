@@ -47,9 +47,12 @@ const KNOWN_LANGUAGES = new Set([
 ]);
 
 // Arbitrary for unknown language names: non-empty strings not in KNOWN_LANGUAGES
+// Generate language names that are definitely not recognized by hljs
+// Use a prefix that no registered language starts with
 const unknownLangArb = fc
-  .string({ minLength: 1 })
-  .filter((s) => !KNOWN_LANGUAGES.has(s.toLowerCase()));
+  .string({ minLength: 1, maxLength: 15 })
+  .map((s) => 'zzlang' + s.replace(/[^a-zA-Z0-9]/g, ''))
+  .filter((s) => s.length > 6);
 
 // Arbitrary for code content (non-empty to produce a meaningful block)
 const codeContentArb = fc.string({ minLength: 1 });

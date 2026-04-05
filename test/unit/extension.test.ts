@@ -37,6 +37,7 @@ vi.mock('../../src/commands/exportPdf', () => ({ exportPdfCommand: vi.fn() }));
 vi.mock('../../src/commands/openPreview', () => ({ openPreviewCommand: vi.fn() }));
 vi.mock('../../src/commands/validateEnvironment', () => ({ validateEnvironmentCommand: vi.fn() }));
 vi.mock('../../src/infra/tempFiles', () => ({ cleanupTempFiles: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../../src/preview/webviewPanel', () => ({ destroyPreviewPanel: vi.fn() }));
 
 describe('extension activation', () => {
   let context: any;
@@ -64,11 +65,12 @@ describe('extension activation', () => {
     expect(ensureAllMock).toHaveBeenCalledWith(context);
     expect(showWarningMessage).not.toHaveBeenCalled();
 
-    // 4 commands registered: openPreview, exportPdf, validateEnvironment, setupDependencies
-    expect(registerCommand).toHaveBeenCalledTimes(4);
+    // 5 commands registered: openPreview, exportPdf, validateEnvironment, reloadPreview, setupDependencies
+    expect(registerCommand).toHaveBeenCalledTimes(5);
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.openPreview', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.exportPdf', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.validateEnvironment', expect.any(Function));
+    expect(registerCommand).toHaveBeenCalledWith('markdownStudio.reloadPreview', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.setupDependencies', expect.any(Function));
   });
 
@@ -88,7 +90,7 @@ describe('extension activation', () => {
       expect.stringContaining('Setup Dependencies')
     );
     // Commands still registered despite failure
-    expect(registerCommand).toHaveBeenCalledTimes(4);
+    expect(registerCommand).toHaveBeenCalledTimes(5);
   });
 
   it('still activates and registers commands when ensureAll throws', async () => {
@@ -101,7 +103,7 @@ describe('extension activation', () => {
       expect.stringContaining('unexpected crash')
     );
     // All commands still registered
-    expect(registerCommand).toHaveBeenCalledTimes(4);
+    expect(registerCommand).toHaveBeenCalledTimes(5);
   });
 
   it('setupDependencies command calls reinstall and shows success', async () => {

@@ -31,11 +31,17 @@ function observeThemeChanges(callback) {
   return observer;
 }
 
-mermaid.initialize({
-  startOnLoad: false,
-  securityLevel: 'strict',
-  theme: getMermaidTheme(detectThemeKind()),
-});
+let mermaidReady = true;
+try {
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: 'strict',
+    theme: getMermaidTheme(detectThemeKind()),
+  });
+} catch (err) {
+  mermaidReady = false;
+  console.error('[Markdown Studio] mermaid.initialize() failed:', err);
+}
 
 function safeText(text) {
   return text ?? '';
@@ -50,6 +56,10 @@ function safeDecode(input) {
 }
 
 async function renderMermaidBlocks() {
+  if (!mermaidReady) {
+    console.warn('[Markdown Studio] Skipping Mermaid rendering — initialization failed');
+    return;
+  }
   const blocks = Array.from(document.querySelectorAll('.mermaid-host[data-mermaid-src]'));
   for (const [index, block] of blocks.entries()) {
     const encoded = safeText(block.getAttribute('data-mermaid-src'));
@@ -65,21 +75,60 @@ async function renderMermaidBlocks() {
   }
 }
 
+function findSourceLine(el) {
+  while (el && el !== document.body) {
+    const attr = el.getAttribute('data-source-line');
+    if (attr !== null) {
+      const line = parseInt(attr, 10);
+      if (Number.isFinite(line)) return line;
+    }
+    el = el.parentElement;
+  }
+  return null;
+}
+
+let lastAppliedGeneration = -1;
+
+window.addEventListener('message', (event) => {
+  const message = event.data;
+  if (message.type !== 'update-body') return;
+  if (message.generation <= lastAppliedGeneration) return;
+
+  lastAppliedGeneration = message.generation;
+  document.body.innerHTML = message.html;
+  renderMermaidBlocks();
+});
+
+const vscode = acquireVsCodeApi();
+
 window.addEventListener('DOMContentLoaded', () => {
   renderMermaidBlocks().catch((error) => {
     console.error('Mermaid rendering failed', error);
   });
 
   observeThemeChanges((newThemeKind) => {
-    mermaid.initialize({
-      startOnLoad: false,
-      securityLevel: 'strict',
-      theme: getMermaidTheme(newThemeKind),
-    });
+    try {
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        theme: getMermaidTheme(newThemeKind),
+      });
+      mermaidReady = true;
+    } catch (err) {
+      mermaidReady = false;
+      console.error('[Markdown Studio] Mermaid re-init on theme change failed:', err);
+    }
     renderMermaidBlocks().catch((error) => {
       console.error('Mermaid re-rendering failed after theme change', error);
     });
   });
+
+  document.body.addEventListener('dblclick', (event) => {
+    const line = findSourceLine(event.target);
+    if (line !== null) {
+      vscode.postMessage({ type: 'jumpToLine', line });
+    }
+  });
 });
 
-export { THEME_MAP, detectThemeKind, getMermaidTheme, observeThemeChanges };
+export { THEME_MAP, detectThemeKind, getMermaidTheme, observeThemeChanges, findSourceLine, lastAppliedGeneration };

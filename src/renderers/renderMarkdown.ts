@@ -47,7 +47,7 @@ function sanitizeHtmlOutput(html: string): string {
       'div'
     ]),
     allowedAttributes: {
-      '*': ['class', 'id', 'style', 'title',
+      '*': ['class', 'id', 'style', 'title', 'data-source-line',
         'fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin',
         'fill-opacity', 'stroke-opacity', 'opacity',
         'font-family', 'font-size', 'font-weight', 'font-style',

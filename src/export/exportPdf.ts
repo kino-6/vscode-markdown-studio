@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import * as vscode from 'vscode';
 import { dependencyStatus } from '../extension';
+import { buildPdfOptions, injectPageBreakCss } from './pdfHeaderFooter';
 import { getConfig } from '../infra/config';
 import { buildHtml } from '../preview/buildHtml';
 
@@ -18,6 +19,11 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
     html = html.replace('</head>', `<style>${hljsCss}</style>\n</head>`);
   } catch {
     // CSS file missing — degrade gracefully, code blocks render without color
+  }
+
+  // Inject page-break CSS if enabled
+  if (cfg.pdfHeaderFooter.pageBreakEnabled) {
+    html = injectPageBreakCss(html);
   }
 
   // Point Playwright at the managed Chromium directory when available
@@ -46,11 +52,17 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
     await page.setContent(html, { waitUntil: 'networkidle' });
 
     const outputPath = path.join(path.dirname(document.uri.fsPath), `${path.basename(document.uri.fsPath, '.md')}.pdf`);
+    const documentTitle = path.basename(document.uri.fsPath, '.md');
+    const pdfOptions = buildPdfOptions(cfg.pdfHeaderFooter, documentTitle);
     await page.pdf({
       path: outputPath,
       format: cfg.pageFormat,
       printBackground: true,
-      preferCSSPageSize: true
+      preferCSSPageSize: true,
+      displayHeaderFooter: pdfOptions.displayHeaderFooter,
+      headerTemplate: pdfOptions.headerTemplate,
+      footerTemplate: pdfOptions.footerTemplate,
+      margin: pdfOptions.margin,
     });
 
     await fs.access(outputPath);

@@ -26,6 +26,12 @@ const datasetProxy = new Proxy(dataset, {
   addEventListener: vi.fn(),
 };
 
+(globalThis as any).acquireVsCodeApi = () => ({
+  postMessage: vi.fn(),
+  getState: vi.fn(),
+  setState: vi.fn(),
+});
+
 // Mock mermaid — preview.js calls mermaid.initialize() at module level
 vi.mock('mermaid', () => ({
   default: {

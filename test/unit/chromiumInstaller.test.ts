@@ -98,13 +98,6 @@ describe("chromiumInstaller", () => {
     it("falls back to CLI when programmatic install fails and CLI path resolves", async () => {
       mockInstallBrowsers.mockRejectedValueOnce(new Error("API unavailable"));
 
-      // Intercept Node's module resolution so require.resolve("playwright/cli") succeeds
-      const origResolve = (Module as any)._resolveFilename;
-      (Module as any)._resolveFilename = function (request: string, ...rest: unknown[]) {
-        if (request === "playwright/cli") return "/fake/playwright/cli.js";
-        return origResolve.call(this, request, ...rest);
-      };
-
       mockRunProcess.mockResolvedValueOnce({
         exitCode: 0,
         stdout: "",
@@ -112,17 +105,19 @@ describe("chromiumInstaller", () => {
         timedOut: false,
       });
 
-      try {
-        const result = await chromiumInstaller.install(storageDir, progress);
-        expect(mockRunProcess).toHaveBeenCalledWith(
-          process.execPath,
-          ["/fake/playwright/cli.js", "install", "chromium"],
-          120_000
-        );
-        expect(result.ok).toBe(true);
-      } finally {
-        (Module as any)._resolveFilename = origResolve;
-      }
+      const result = await chromiumInstaller.install(storageDir, progress);
+
+      // The implementation uses require.resolve("playwright-core/package.json")
+      // to find the CLI path, so we just verify the shape of the call
+      expect(mockRunProcess).toHaveBeenCalledWith(
+        process.execPath,
+        expect.arrayContaining(["install", "chromium"]),
+        120_000
+      );
+      // The first arg after execPath should end with cli.js
+      const args = mockRunProcess.mock.calls[0][1] as string[];
+      expect(args[0]).toMatch(/cli\.js$/);
+      expect(result.ok).toBe(true);
     });
 
     it("returns ok:false when CLI fallback exits with non-zero code", async () => {

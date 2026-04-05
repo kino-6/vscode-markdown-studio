@@ -2,6 +2,14 @@ import * as crypto from 'crypto';
 import * as vscode from 'vscode';
 import { renderMarkdownDocument } from '../renderers/renderMarkdown';
 
+export async function renderBody(
+  markdown: string,
+  context: vscode.ExtensionContext
+): Promise<string> {
+  const { htmlBody } = await renderMarkdownDocument(markdown, context);
+  return htmlBody;
+}
+
 export async function buildHtml(
   markdown: string,
   context: vscode.ExtensionContext,
@@ -15,11 +23,12 @@ export async function buildHtml(
   const cspSource = webview?.cspSource ?? 'none';
   const nonce = crypto.randomUUID();
 
+  // CSP: 'unsafe-eval' is required because Mermaid 11.x uses new Function() internally
   return `<!doctype html>
 <html>
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} data:; style-src ${cspSource} 'unsafe-inline'; script-src ${cspSource} 'nonce-${nonce}'; font-src ${cspSource};">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} data:; style-src ${cspSource} 'unsafe-inline'; script-src ${cspSource} 'nonce-${nonce}' 'unsafe-eval'; font-src ${cspSource};">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="${styleHref}">
 <link rel="stylesheet" href="${hljsStyleHref}">
