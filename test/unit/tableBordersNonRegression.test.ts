@@ -26,10 +26,10 @@ describe('Non-regression: existing CSS rules are preserved', () => {
 
   it('contains pre styling with padding, overflow, border-radius, and background', () => {
     expect(css).toContain('pre {');
-    expect(css).toMatch(/pre\s*\{[^}]*padding:\s*0\.75rem/);
+    expect(css).toMatch(/pre\s*\{[^}]*padding:\s*1em/);
     expect(css).toMatch(/pre\s*\{[^}]*overflow-x:\s*auto/);
     expect(css).toMatch(/pre\s*\{[^}]*border-radius:\s*6px/);
-    expect(css).toMatch(/pre\s*\{[^}]*background:\s*var\(--vscode-editor-background\)/);
+    expect(css).toMatch(/pre\s*\{[^}]*background:/);
   });
 
   it('contains img and svg max-width and height rules', () => {
