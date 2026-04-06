@@ -38,7 +38,7 @@ export function wrapWithLineNumbers(highlightedHtml: string): string {
       (line, i) =>
         `<span class="ms-code-line"><span class="ms-line-number" data-line="${i + 1}"></span>${line}</span>`,
     )
-    .join('\n');
+    .join('');
 }
 
 /**
@@ -50,16 +50,22 @@ export function extractCodeContent(lineNumberedHtml: string): string {
     return '';
   }
 
-  // Remove the outer <span class="ms-code-line">...</span> wrappers and
-  // the inner <span class="ms-line-number" data-line="N"></span> prefixes.
-  const lines = lineNumberedHtml.split('\n');
-  const extracted = lines.map((line) => {
-    // Strip outer wrapper
-    let content = line.replace(/^<span class="ms-code-line">/, '').replace(/<\/span>$/, '');
-    // Strip line number element
-    content = content.replace(/<span class="ms-line-number" data-line="\d+"><\/span>/, '');
-    return content;
-  });
+  // Each line is: <span class="ms-code-line"><span class="ms-line-number" data-line="N"></span>CONTENT</span>
+  // Lines are concatenated without separators (join('')), so we split on the boundary pattern.
+  const linePrefix = '<span class="ms-code-line"><span class="ms-line-number" data-line="';
+  const lineSuffix = '</span>';
 
-  return extracted.join('\n');
+  // Split into individual line blocks
+  const parts = lineNumberedHtml.split('<span class="ms-code-line">');
+  const contents: string[] = [];
+  for (const part of parts) {
+    if (part === '') continue;
+    // Remove the line number element: <span class="ms-line-number" data-line="N"></span>
+    const withoutLineNum = part.replace(/<span class="ms-line-number" data-line="\d+"><\/span>/, '');
+    // Remove the trailing </span> (closing ms-code-line)
+    const content = withoutLineNum.replace(/<\/span>$/, '');
+    contents.push(content);
+  }
+
+  return contents.join('\n');
 }
