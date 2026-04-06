@@ -117,6 +117,7 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
   try {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle' });
+    await page.setViewportSize({ width: 980, height: 1400 });
 
     const outputPath = path.join(path.dirname(document.uri.fsPath), `${path.basename(document.uri.fsPath, '.md')}.pdf`);
     const documentTitle = path.basename(document.uri.fsPath, '.md');

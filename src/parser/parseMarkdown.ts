@@ -40,7 +40,14 @@ export function createMarkdownParser(options?: { lineNumbers?: boolean }): Markd
     md.renderer.rules.fence = (tokens, idx, opts, env, self) => {
       const token = tokens[idx];
       const code = token.content;
-      const lineCount = countLines(code);
+      // markdown-it appends a trailing \n to token.content which the browser
+      // renders as an extra blank line inside <code>.  When the content ends
+      // with \n, subtract 1 so the line-number column matches the visible
+      // code lines exactly.  For single-line blocks (countLines == 1) keep 1.
+      let lineCount = countLines(code);
+      if (lineCount > 1 && code.endsWith('\n')) {
+        lineCount--;
+      }
       const rendered = originalFence(tokens, idx, opts, env, self);
       if (lineCount > 0) {
         return wrapWithLineNumbers(rendered, lineCount);

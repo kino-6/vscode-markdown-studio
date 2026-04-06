@@ -9,9 +9,9 @@ import { wrapWithLineNumbers, countLines, extractCodeContent } from '../../src/p
  * and wrapWithLineNumbers produces correct number of lines in the line-numbers column.
  */
 
-/** Extract line numbers from the table-based line-numbers pre element */
+/** Extract line numbers from the div-based line-numbers pre element */
 function extractLineNumbers(html: string): number[] {
-  const match = html.match(/<td class="ms-line-numbers"[^>]*><pre>([\s\S]*?)<\/pre><\/td>/);
+  const match = html.match(/<div class="ms-line-numbers"[^>]*><pre>([\s\S]*?)<\/pre><\/div>/);
   if (!match) return [];
   return match[1].split('\n').map((n) => parseInt(n, 10));
 }
@@ -73,7 +73,7 @@ describe('lineNumbers property tests – Property 1: line count correctness', ()
  * Property 3: extractCodeContent(wrapWithLineNumbers(html, n)) === html
  */
 describe('lineNumbers property tests – Property 3: round-trip preservation', () => {
-  it('Property 3: round-trip through wrapWithLineNumbers → extractCodeContent preserves HTML', () => {
+  it('Property 3: round-trip through wrapWithLineNumbers → extractCodeContent preserves HTML (after trailing newline trim)', () => {
     const codeHtmlArb = fc
       .array(fc.string(), { minLength: 1, maxLength: 30 })
       .map((lines) => `<pre><code>${lines.join('\n')}</code></pre>`)
@@ -87,7 +87,11 @@ describe('lineNumbers property tests – Property 3: round-trip preservation', (
           const wrapped = wrapWithLineNumbers(html, lineCount);
           const extracted = extractCodeContent(wrapped);
 
-          expect(extracted).toBe(html);
+          // wrapWithLineNumbers strips a trailing \n before </code></pre>
+          // to prevent an extra blank line in the browser, so the round-trip
+          // result matches the trimmed version of the original HTML.
+          const expected = html.replace(/\n<\/code><\/pre>/, '</code></pre>');
+          expect(extracted).toBe(expected);
         },
       ),
       { numRuns: 200 },

@@ -45,11 +45,11 @@ describe('wrapWithLineNumbers', () => {
     expect(result).toContain('<pre>1\n2</pre>');
   });
 
-  it('places code html inside ms-code-content td', () => {
+  it('places code html inside ms-code-content div', () => {
     const html = '<pre><code>a\nb</code></pre>';
     const result = wrapWithLineNumbers(html, 2);
 
-    expect(result).toContain(`<td class="ms-code-content">${html}</td>`);
+    expect(result).toContain(`<div class="ms-code-content">${html}</div>`);
   });
 
   it('generates correct line numbers for 3 lines', () => {
@@ -68,10 +68,10 @@ describe('wrapWithLineNumbers', () => {
   });
 
   it('idempotency check uses ms-line-numbers class', () => {
-    const alreadyWrapped = '<div class="ms-code-wrapper"><table class="ms-code-table"><tr>'
-      + '<td class="ms-line-numbers" aria-hidden="true"><pre>1\n2</pre></td>'
-      + '<td class="ms-code-content"><pre><code>a\nb</code></pre></td>'
-      + '</tr></table></div>';
+    const alreadyWrapped = '<div class="ms-code-wrapper"><div class="ms-code-table">'
+      + '<div class="ms-line-numbers" aria-hidden="true"><pre>1\n2</pre></div>'
+      + '<div class="ms-code-content"><pre><code>a\nb</code></pre></div>'
+      + '</div></div>';
 
     expect(wrapWithLineNumbers(alreadyWrapped, 2)).toBe(alreadyWrapped);
   });

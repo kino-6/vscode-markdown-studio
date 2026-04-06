@@ -91,10 +91,23 @@ function addCopyButtons() {
   const blocks = document.querySelectorAll('pre');
   for (const pre of blocks) {
     if (pre.querySelector('.ms-copy-btn')) continue;
-    const wrapper = document.createElement('div');
-    wrapper.className = 'ms-code-wrapper';
-    pre.parentNode.insertBefore(wrapper, pre);
-    wrapper.appendChild(pre);
+
+    // If this <pre> is already inside a line-number table wrapper,
+    // attach the Copy button to the existing wrapper instead of creating a new one.
+    const existingWrapper = pre.closest('.ms-code-wrapper');
+    let wrapper;
+    if (existingWrapper) {
+      // Skip line-number gutter <pre> — only add button for the code column
+      if (pre.closest('.ms-line-numbers')) continue;
+      wrapper = existingWrapper;
+    } else {
+      wrapper = document.createElement('div');
+      wrapper.className = 'ms-code-wrapper';
+      pre.parentNode.insertBefore(wrapper, pre);
+      wrapper.appendChild(pre);
+    }
+
+    if (wrapper.querySelector('.ms-copy-btn')) continue;
 
     const btn = document.createElement('button');
     btn.className = 'ms-copy-btn';
@@ -108,6 +121,24 @@ function addCopyButtons() {
       });
     });
     wrapper.appendChild(btn);
+  }
+}
+
+/**
+ * Clip code-content height to match the line-numbers <pre> height.
+ * This prevents extra blank lines at the bottom of code blocks caused by
+ * trailing newlines that markdown-it injects into <code> elements.
+ */
+function clipCodeToLineNumbers() {
+  const grids = document.querySelectorAll('.ms-code-table');
+  for (const grid of grids) {
+    const lineNumsPre = grid.querySelector('.ms-line-numbers pre');
+    const codeDiv = grid.querySelector('.ms-code-content');
+    if (lineNumsPre && codeDiv) {
+      const targetHeight = lineNumsPre.offsetHeight;
+      codeDiv.style.maxHeight = targetHeight + 'px';
+      codeDiv.style.overflow = 'hidden';
+    }
   }
 }
 
@@ -172,6 +203,7 @@ window.addEventListener('message', (event) => {
   document.body.innerHTML = message.html;
   renderMermaidBlocks();
   addCopyButtons();
+  clipCodeToLineNumbers();
   registerTocLinkHandlers();
   // innerHTML destroyed the overlay element — showLoadingOverlay() would
   // re-create it, but the render is already done so just ensure it's gone.
@@ -189,6 +221,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   addCopyButtons();
+  clipCodeToLineNumbers();
   registerTocLinkHandlers();
 
   observeThemeChanges((newThemeKind) => {

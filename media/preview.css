@@ -200,6 +200,11 @@ tbody tr:nth-child(even) {
     page-break-inside: avoid;
   }
 
+  pre code {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
   code {
     background: rgba(175, 184, 193, 0.2);
   }
@@ -355,9 +360,10 @@ body.vscode-high-contrast .ms-toc a {
 }
 
 .ms-code-table {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 1fr;
   width: 100%;
-  border-collapse: collapse;
-  border-spacing: 0;
 }
 
 .ms-code-table pre {
@@ -374,10 +380,9 @@ body.vscode-high-contrast .ms-toc a {
 }
 
 .ms-line-numbers {
-  vertical-align: top;
-  width: 1px;
   user-select: none;
   -webkit-user-select: none;
+  min-width: 0;
 }
 
 .ms-line-numbers pre {
@@ -390,8 +395,8 @@ body.vscode-high-contrast .ms-toc a {
 }
 
 .ms-code-content {
-  vertical-align: top;
-  width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .ms-code-content pre {
