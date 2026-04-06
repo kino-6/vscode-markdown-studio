@@ -347,3 +347,37 @@ body.vscode-high-contrast .ms-toc a {
     content: "";
   }
 }
+
+/* ── Code block line numbers ─────────────────────────── */
+
+.ms-code-line {
+  display: block;
+  line-height: 1.45;
+}
+
+.ms-line-number {
+  display: inline-block;
+  min-width: 2.5em;
+  padding-right: 1em;
+  text-align: right;
+  color: #999;
+  border-right: 1px solid #ddd;
+  margin-right: 1em;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.vscode-dark .ms-line-number,
+body.vscode-high-contrast .ms-line-number {
+  color: #666;
+  border-right-color: #444;
+}
+
+@media print {
+  .ms-line-number {
+    color: #999;
+    border-right: 1px solid #ccc;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}

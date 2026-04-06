@@ -25,12 +25,12 @@ export function addSourceLineAttributes(md: MarkdownIt): void {
   }
 }
 
-export function createMarkdownParser(): MarkdownIt {
+export function createMarkdownParser(options?: { lineNumbers?: boolean }): MarkdownIt {
   const md = new MarkdownIt({
     html: true,
     linkify: true,
     typographer: true,
-    highlight: highlightCode
+    highlight: (code: string, lang: string) => highlightCode(code, lang, options?.lineNumbers)
   });
   addSourceLineAttributes(md);
   return md;

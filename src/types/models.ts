@@ -142,3 +142,8 @@ export interface TocResult {
   anchors: AnchorMapping[];
   diagnostics: TocDiagnostic[];
 }
+
+/** コードブロック設定 */
+export interface CodeBlockConfig {
+  lineNumbers: boolean;
+}

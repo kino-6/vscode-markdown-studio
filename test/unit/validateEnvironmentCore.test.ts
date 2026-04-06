@@ -26,6 +26,8 @@ const baseConfig: MarkdownStudioConfig = {
     codeBlockStyle: { background: '#f6f8fa', border: '1px solid #d0d7de', borderRadius: '6px', padding: '1em' },
     presetName: 'markdown-pdf',
   },
+  toc: { minLevel: 1, maxLevel: 3, orderedList: false, pageBreak: true },
+  codeBlock: { lineNumbers: false },
 };
 
 describe('validateEnvironment', () => {

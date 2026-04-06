@@ -196,6 +196,11 @@
           "type": "boolean",
           "default": true,
           "description": "PDFエクスポート時にTOCの前後に改ページを挿入する"
+        },
+        "markdownStudio.codeBlock.lineNumbers": {
+          "type": "boolean",
+          "default": false,
+          "description": "コードブロックに行番号を表示する"
         }
       }
     }

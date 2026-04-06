@@ -1,3 +1,4 @@
+import MarkdownIt from 'markdown-it';
 import * as vscode from 'vscode';
 import { getConfig } from '../infra/config';
 import { createMarkdownParser } from '../parser/parseMarkdown';
@@ -11,14 +12,12 @@ import { renderMermaidBlock } from './renderMermaid';
 import { renderPlantUml } from './renderPlantUml';
 import { filterExternalResources } from './resourceFilter';
 
-const parser = createMarkdownParser();
-
 /**
  * Install a markdown-it renderer rule that adds `id` attributes to heading tags
  * based on the resolved anchor mappings. Returns a cleanup function to restore
  * the original rule.
  */
-function installHeadingIdRule(anchors: AnchorMapping[]): () => void {
+function installHeadingIdRule(parser: MarkdownIt, anchors: AnchorMapping[]): () => void {
   const original = parser.renderer.rules['heading_open'];
   let headingIndex = 0;
 
@@ -77,6 +76,9 @@ export async function renderMarkdownDocument(
   markdown: string,
   context: vscode.ExtensionContext
 ): Promise<RenderedMarkdown> {
+  const config = getConfig();
+  const parser = createMarkdownParser({ lineNumbers: config.codeBlock.lineNumbers });
+
   const errors: RenderedMarkdown['errors'] = [];
   const fencedBlocks = scanFencedBlocks(markdown);
 
@@ -126,7 +128,7 @@ export async function renderMarkdownDocument(
   // 2. Resolve unique anchor IDs
   const anchors = resolveAnchors(headings);
   // 3. Install heading ID renderer rule so rendered headings get id attributes
-  const removeHeadingIdRule = installHeadingIdRule(anchors);
+  const removeHeadingIdRule = installHeadingIdRule(parser, anchors);
 
   // No HTML sanitization — all content is local/user-authored.
   // CSP + webview sandbox provide the security boundary.
@@ -138,7 +140,6 @@ export async function renderMarkdownDocument(
   }
 
   // 4. Build TOC HTML and replace markers
-  const config = getConfig();
   const tocHtml = buildTocHtml(anchors, config.toc);
   htmlBody = replaceTocMarker(htmlBody, tocHtml);
 

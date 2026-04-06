@@ -27,6 +27,7 @@ const mockConfig = vi.hoisted(() => ({
       presetName: 'markdown-pdf',
     },
     toc: { minLevel: 1, maxLevel: 3, orderedList: false, pageBreak: true },
+    codeBlock: { lineNumbers: false },
   },
 }));
 

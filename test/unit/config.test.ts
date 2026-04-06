@@ -58,3 +58,12 @@ describe('getConfig().toc', () => {
     });
   });
 });
+
+describe('getConfig().codeBlock', () => {
+  it('returns default codeBlock config with lineNumbers disabled', () => {
+    const config = getConfig();
+    expect(config.codeBlock).toEqual({
+      lineNumbers: false,
+    });
+  });
+});
