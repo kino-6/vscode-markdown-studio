@@ -1,5 +1,6 @@
 import MarkdownIt from 'markdown-it';
 import { highlightCode } from './highlightCode';
+import { wrapWithLineNumbers, countLines } from './lineNumbers';
 
 export function addSourceLineAttributes(md: MarkdownIt): void {
   const blockTokenTypes = [
@@ -30,8 +31,23 @@ export function createMarkdownParser(options?: { lineNumbers?: boolean }): Markd
     html: true,
     linkify: true,
     typographer: true,
-    highlight: (code: string, lang: string) => highlightCode(code, lang, options?.lineNumbers)
+    highlight: (code: string, lang: string) => highlightCode(code, lang)
   });
   addSourceLineAttributes(md);
+
+  if (options?.lineNumbers) {
+    const originalFence = md.renderer.rules.fence!;
+    md.renderer.rules.fence = (tokens, idx, opts, env, self) => {
+      const token = tokens[idx];
+      const code = token.content;
+      const lineCount = countLines(code);
+      const rendered = originalFence(tokens, idx, opts, env, self);
+      if (lineCount > 0) {
+        return wrapWithLineNumbers(rendered, lineCount);
+      }
+      return rendered;
+    };
+  }
+
   return md;
 }

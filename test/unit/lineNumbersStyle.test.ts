@@ -30,38 +30,35 @@ function makeStyleConfig(): ResolvedStyleConfig {
 }
 
 describe('lineNumbersStyle', () => {
-  // Requirement 4.4: buildStyleBlock output includes @media print line number styles
-  it('buildStyleBlock includes @media print styles for .ms-line-number (Req 4.4)', () => {
+  // buildStyleBlock @media print uses .ms-line-numbers pre
+  it('buildStyleBlock includes @media print styles for .ms-line-numbers pre', () => {
     const output = buildStyleBlock(makeStyleConfig());
 
     expect(output).toContain('@media print');
-    expect(output).toContain('.ms-line-number');
-    // Verify print-specific line number properties
-    expect(output).toContain('user-select: none');
+    expect(output).toContain('.ms-line-numbers pre');
     expect(output).toContain('border-right');
   });
 
-  // Requirement 3.2: preview.css contains user-select: none for line numbers
-  it('preview.css contains user-select: none on .ms-line-number (Req 3.2)', () => {
+  // preview.css contains user-select: none for .ms-line-numbers
+  it('preview.css contains user-select: none on .ms-line-numbers', () => {
     const cssPath = path.resolve(__dirname, '../../media/preview.css');
     const css = fs.readFileSync(cssPath, 'utf-8');
 
-    // Verify .ms-line-number rule includes user-select: none
-    expect(css).toContain('.ms-line-number');
+    expect(css).toContain('.ms-line-numbers');
     expect(css).toContain('user-select: none');
   });
 
-  // Requirement 5.3: dark theme CSS classes exist for line numbers
-  it('preview.css contains dark theme styles for .ms-line-number (Req 5.3)', () => {
+  // dark theme CSS classes exist for .ms-line-numbers
+  it('preview.css contains dark theme styles for .ms-line-numbers', () => {
     const cssPath = path.resolve(__dirname, '../../media/preview.css');
     const css = fs.readFileSync(cssPath, 'utf-8');
 
-    expect(css).toContain('body.vscode-dark .ms-line-number');
-    expect(css).toContain('body.vscode-high-contrast .ms-line-number');
+    expect(css).toContain('body.vscode-dark .ms-line-numbers');
+    expect(css).toContain('body.vscode-high-contrast .ms-line-numbers');
   });
 
-  // Requirement 7.1: package.json defines markdownStudio.codeBlock.lineNumbers setting
-  it('package.json defines markdownStudio.codeBlock.lineNumbers configuration (Req 7.1)', () => {
+  // package.json defines markdownStudio.codeBlock.lineNumbers setting
+  it('package.json defines markdownStudio.codeBlock.lineNumbers configuration', () => {
     const pkgPath = path.resolve(__dirname, '../../package.json');
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
 

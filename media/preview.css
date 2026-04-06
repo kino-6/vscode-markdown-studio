@@ -350,37 +350,65 @@ body.vscode-high-contrast .ms-toc a {
 
 /* ── Code block line numbers ─────────────────────────── */
 
-.ms-code-line {
-  display: block;
-  line-height: 1.45;
-  white-space: pre;
-  overflow-wrap: normal;
+.ms-code-wrapper {
+  margin: 1rem 0;
 }
 
-.ms-line-number {
-  display: inline-block;
-  min-width: 2.5em;
-  padding-right: 1em;
-  text-align: right;
-  color: #999;
-  border-right: 1px solid #ddd;
-  margin-right: 1em;
+.ms-code-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.ms-code-table pre {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+}
+
+.ms-code-wrapper > .ms-code-table {
+  background: var(--code-bg, #f6f8fa);
+  border: 1px solid var(--code-border, #d0d7de);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.ms-line-numbers {
+  vertical-align: top;
+  width: 1px;
   user-select: none;
   -webkit-user-select: none;
-  white-space: nowrap;
 }
 
-body.vscode-dark .ms-line-number,
-body.vscode-high-contrast .ms-line-number {
+.ms-line-numbers pre {
+  text-align: right;
+  color: #999;
+  padding: 1em 0.75em 1em 1em;
+  border-right: 1px solid #ddd;
+  background: transparent;
+  overflow: hidden;
+}
+
+.ms-code-content {
+  vertical-align: top;
+  width: 100%;
+}
+
+.ms-code-content pre {
+  padding: 1em;
+  overflow-x: auto;
+  background: transparent;
+}
+
+body.vscode-dark .ms-line-numbers pre,
+body.vscode-high-contrast .ms-line-numbers pre {
   color: #666;
   border-right-color: #444;
 }
 
 @media print {
-  .ms-line-number {
+  .ms-line-numbers pre {
     color: #999;
     border-right: 1px solid #ccc;
-    user-select: none;
-    -webkit-user-select: none;
   }
 }

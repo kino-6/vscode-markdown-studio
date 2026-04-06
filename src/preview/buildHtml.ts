@@ -60,11 +60,9 @@ h2 {
   h2 { margin-top: ${h.h2MarginTop}; margin-bottom: ${h.h2MarginBottom}; }
   h3 { margin-top: 20px; margin-bottom: 12px; }
   h4, h5, h6 { margin-top: 16px; margin-bottom: 8px; }
-  .ms-line-number {
+  .ms-line-numbers pre {
     color: #999;
     border-right: 1px solid #ccc;
-    user-select: none;
-    -webkit-user-select: none;
   }
 }
 </style>`;

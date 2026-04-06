@@ -1,71 +1,53 @@
 /**
  * Line number HTML generation for code blocks.
  *
- * Takes highlight.js output HTML and wraps each line with line number elements.
- * highlight.js `<span class="hljs-*">` tokens are never modified.
+ * Uses a two-column table layout to separate line numbers from code content.
+ * This ensures line numbers are never included when copying code text,
+ * because they live in a separate <td> element.
  */
 
 /**
- * Wraps highlighted HTML code with line number elements.
+ * Wraps a `<pre><code>...</code></pre>` block with a two-column table:
+ * left column = line numbers, right column = original code block.
  *
- * Input: HTML string produced by highlight.js (may contain `<span class="hljs-*">` tokens)
- * Output: Each line wrapped in `<span class="ms-code-line">` with a
- *         `<span class="ms-line-number" data-line="N">` prefix.
- *
- * - Returns empty string for empty input (empty code block, Req 1.3).
- * - Trailing empty line from a trailing newline does not get a line number.
- * - Already line-numbered HTML is detected and returned as-is (idempotency, Req 8.2).
+ * - Returns the input unchanged for empty code.
+ * - Already wrapped HTML (contains ms-line-numbers) is returned as-is (idempotency).
  */
-export function wrapWithLineNumbers(highlightedHtml: string): string {
-  if (highlightedHtml === '') {
-    return '';
+export function wrapWithLineNumbers(codeHtml: string, lineCount: number): string {
+  if (lineCount <= 0) {
+    return codeHtml;
   }
 
-  // Idempotency: if already wrapped, return as-is
-  if (highlightedHtml.includes('class="ms-line-number"')) {
-    return highlightedHtml;
+  if (codeHtml.includes('class="ms-line-numbers"')) {
+    return codeHtml;
   }
 
-  let lines = highlightedHtml.split('\n');
+  const nums = Array.from({ length: lineCount }, (_, i) => i + 1).join('\n');
 
-  // Drop trailing empty line caused by a trailing newline
-  if (lines.length > 1 && lines[lines.length - 1] === '') {
-    lines = lines.slice(0, -1);
-  }
-
-  return lines
-    .map(
-      (line, i) =>
-        `<span class="ms-code-line"><span class="ms-line-number">${i + 1}</span>${line}</span>`,
-    )
-    .join('');
+  return `<div class="ms-code-wrapper"><table class="ms-code-table"><tr>`
+    + `<td class="ms-line-numbers" aria-hidden="true"><pre>${nums}</pre></td>`
+    + `<td class="ms-code-content">${codeHtml}</td>`
+    + `</tr></table></div>`;
 }
 
 /**
- * Extracts the code content from line-numbered HTML, stripping line number
- * wrapper elements. Test utility for round-trip verification.
+ * Count the number of lines in a code string.
+ * Trailing newline does not count as an extra line.
  */
-export function extractCodeContent(lineNumberedHtml: string): string {
-  if (lineNumberedHtml === '') {
-    return '';
+export function countLines(code: string): number {
+  if (code === '') return 0;
+  const lines = code.split('\n');
+  if (lines[lines.length - 1] === '') {
+    return lines.length - 1;
   }
+  return lines.length;
+}
 
-  // Each line is: <span class="ms-code-line"><span class="ms-line-number" data-line="N"></span>CONTENT</span>
-  // Lines are concatenated without separators (join('')), so we split on the boundary pattern.
-  const linePrefix = '<span class="ms-code-line"><span class="ms-line-number" data-line="';
-  const lineSuffix = '</span>';
-
-  // Split into individual line blocks
-  const parts = lineNumberedHtml.split('<span class="ms-code-line">');
-  const contents: string[] = [];
-  for (const part of parts) {
-    if (part === '') continue;
-    // Remove the line number element: <span class="ms-line-number">N</span>
-    const withoutLineNum = part.replace(/<span class="ms-line-number">\d+<\/span>/, '');
-    // Remove the trailing </span> (closing ms-code-line)
-    const content = withoutLineNum.replace(/<\/span>$/, '');
-    contents.push(content);
-  }
-
-  return contents.join('\n');
+/**
+ * Extracts the code content from line-numbered HTML.
+ * Test utility for round-trip verification.
+ */
+export function extractCodeContent(wrappedHtml: string): string {
+  const match = wrappedHtml.match(/<td class="ms-code-content">([\s\S]*?)<\/td>/);
+  return match ? match[1] : wrappedHtml;
 }

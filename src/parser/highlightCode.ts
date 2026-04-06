@@ -1,5 +1,4 @@
 import hljs from 'highlight.js/lib/core';
-import { wrapWithLineNumbers } from './lineNumbers';
 
 import typescript from 'highlight.js/lib/languages/typescript';
 import javascript from 'highlight.js/lib/languages/javascript';
@@ -58,15 +57,11 @@ hljs.registerLanguage('plaintext', plaintext);
  * is recognized. Returns an empty string if the language is unknown, empty,
  * or if highlighting fails — allowing markdown-it to fall back to its default
  * HTML escaping.
- *
- * When `lineNumbers` is true, the highlighted output is wrapped with line
- * number elements via `wrapWithLineNumbers()`.
  */
-export function highlightCode(code: string, lang: string, lineNumbers?: boolean): string {
+export function highlightCode(code: string, lang: string): string {
   if (lang && hljs.getLanguage(lang)) {
     try {
-      const highlighted = hljs.highlight(code, { language: lang }).value;
-      return lineNumbers ? wrapWithLineNumbers(highlighted) : highlighted;
+      return hljs.highlight(code, { language: lang }).value;
     } catch {
       return '';
     }

@@ -1,74 +1,86 @@
 import { describe, it, expect } from 'vitest';
-import { wrapWithLineNumbers } from '../../src/parser/lineNumbers';
+import { wrapWithLineNumbers, countLines } from '../../src/parser/lineNumbers';
 
-/** Extract all line number values from the output HTML */
-function extractLineNumbers(html: string): number[] {
-  const matches = [...html.matchAll(/<span class="ms-line-number">(\d+)<\/span>/g)];
-  return matches.map((m) => parseInt(m[1], 10));
-}
+describe('countLines', () => {
+  it('returns 0 for empty string', () => {
+    expect(countLines('')).toBe(0);
+  });
+
+  it('returns 1 for single-line string', () => {
+    expect(countLines('hello')).toBe(1);
+  });
+
+  it('returns 3 for three-line string', () => {
+    expect(countLines('a\nb\nc')).toBe(3);
+  });
+
+  it('trailing newline does not count as extra line', () => {
+    expect(countLines('a\nb\n')).toBe(2);
+  });
+
+  it('returns 1 for single line with trailing newline', () => {
+    expect(countLines('hello\n')).toBe(1);
+  });
+});
 
 describe('wrapWithLineNumbers', () => {
-  // Requirement 1.3: empty code block produces no line number elements
-  it('returns empty string for empty input (Req 1.3)', () => {
-    const result = wrapWithLineNumbers('');
-    expect(result).toBe('');
-    expect(extractLineNumbers(result)).toHaveLength(0);
+  it('returns input unchanged when lineCount is 0', () => {
+    const html = '<pre><code>hello</code></pre>';
+    expect(wrapWithLineNumbers(html, 0)).toBe(html);
   });
 
-  // Requirement 1.1: multi-line code produces sequential line numbers starting from 1
-  it('generates sequential line numbers for multi-line code (Req 1.1)', () => {
-    const code = 'line one\nline two\nline three';
-    const result = wrapWithLineNumbers(code);
-    const lineNums = extractLineNumbers(result);
-
-    expect(lineNums).toEqual([1, 2, 3]);
+  it('returns input unchanged when lineCount is negative', () => {
+    const html = '<pre><code>hello</code></pre>';
+    expect(wrapWithLineNumbers(html, -1)).toBe(html);
   });
 
-  it('wraps each line in ms-code-line span (Req 1.1)', () => {
-    const code = 'a\nb';
-    const result = wrapWithLineNumbers(code);
+  it('wraps code in table structure with line numbers', () => {
+    const html = '<pre><code>a\nb</code></pre>';
+    const result = wrapWithLineNumbers(html, 2);
 
-    expect(result).toContain('<span class="ms-code-line">');
-    expect(result).toContain('<span class="ms-line-number">1</span>');
-    expect(result).toContain('<span class="ms-line-number">2</span>');
+    expect(result).toContain('class="ms-code-wrapper"');
+    expect(result).toContain('class="ms-code-table"');
+    expect(result).toContain('class="ms-line-numbers"');
+    expect(result).toContain('class="ms-code-content"');
+    expect(result).toContain('<pre>1\n2</pre>');
   });
 
-  it('handles single-line code correctly (Req 1.1)', () => {
-    const result = wrapWithLineNumbers('hello');
-    const lineNums = extractLineNumbers(result);
+  it('places code html inside ms-code-content td', () => {
+    const html = '<pre><code>a\nb</code></pre>';
+    const result = wrapWithLineNumbers(html, 2);
 
-    expect(lineNums).toEqual([1]);
+    expect(result).toContain(`<td class="ms-code-content">${html}</td>`);
   });
 
-  it('drops trailing empty line from trailing newline (Req 1.1)', () => {
-    const code = 'first\nsecond\n';
-    const result = wrapWithLineNumbers(code);
-    const lineNums = extractLineNumbers(result);
+  it('generates correct line numbers for 3 lines', () => {
+    const html = '<pre><code>a\nb\nc</code></pre>';
+    const result = wrapWithLineNumbers(html, 3);
 
-    // Should have 2 lines, not 3 — trailing newline doesn't create an extra numbered line
-    expect(lineNums).toEqual([1, 2]);
+    expect(result).toContain('<pre>1\n2\n3</pre>');
   });
 
-  // Requirement 2.3: plain text (no language / no hljs spans) still gets line numbers
-  it('adds line numbers to plain text without hljs spans (Req 2.3)', () => {
-    const plainText = 'no highlighting here\njust plain text\nthird line';
-    const result = wrapWithLineNumbers(plainText);
-    const lineNums = extractLineNumbers(result);
+  it('is idempotent – already wrapped HTML is returned as-is', () => {
+    const html = '<pre><code>a\nb</code></pre>';
+    const once = wrapWithLineNumbers(html, 2);
+    const twice = wrapWithLineNumbers(once, 2);
 
-    expect(lineNums).toEqual([1, 2, 3]);
-    expect(result).toContain('no highlighting here');
-    expect(result).toContain('just plain text');
-    expect(result).toContain('third line');
+    expect(twice).toBe(once);
   });
 
-  it('preserves plain text content inside line wrappers (Req 2.3)', () => {
-    const result = wrapWithLineNumbers('foo\nbar');
+  it('idempotency check uses ms-line-numbers class', () => {
+    const alreadyWrapped = '<div class="ms-code-wrapper"><table class="ms-code-table"><tr>'
+      + '<td class="ms-line-numbers" aria-hidden="true"><pre>1\n2</pre></td>'
+      + '<td class="ms-code-content"><pre><code>a\nb</code></pre></td>'
+      + '</tr></table></div>';
 
-    expect(result).toContain(
-      '<span class="ms-code-line"><span class="ms-line-number">1</span>foo</span>',
-    );
-    expect(result).toContain(
-      '<span class="ms-code-line"><span class="ms-line-number">2</span>bar</span>',
-    );
+    expect(wrapWithLineNumbers(alreadyWrapped, 2)).toBe(alreadyWrapped);
+  });
+
+  it('single line produces line number 1', () => {
+    const html = '<pre><code>hello</code></pre>';
+    const result = wrapWithLineNumbers(html, 1);
+
+    expect(result).toContain('<pre>1</pre>');
+    expect(result).toContain('class="ms-line-numbers"');
   });
 });
