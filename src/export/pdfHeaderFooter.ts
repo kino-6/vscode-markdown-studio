@@ -57,6 +57,37 @@ export function injectPageBreakCss(html: string): string {
 }
 
 /**
+ * Detect <!-- TOC --> / <!-- /TOC --> comments in rendered HTML and wrap
+ * the content between them with page-break CSS.
+ *
+ * markdown-it outputs HTML comments as-is, so they appear in rendered HTML.
+ * This function finds them and wraps the TOC content in a div with
+ * page-break-before/after styles.
+ *
+ * Idempotent: if already wrapped, returns HTML unchanged.
+ */
+export function injectTocPageBreakCss(html: string): string {
+  // Check if already injected
+  if (html.includes('class="ms-toc-page-break"')) return html;
+
+  const startMarker = '<!-- TOC -->';
+  const endMarker = '<!-- /TOC -->';
+  const startIdx = html.indexOf(startMarker);
+  if (startIdx === -1) return html;
+  const endIdx = html.indexOf(endMarker, startIdx);
+  if (endIdx === -1) return html;
+
+  const before = html.slice(0, startIdx);
+  const tocContent = html.slice(startIdx + startMarker.length, endIdx);
+  const after = html.slice(endIdx + endMarker.length);
+
+  return before +
+    '<div class="ms-toc-page-break" style="page-break-before: always; page-break-after: always;">' +
+    startMarker + tocContent + endMarker +
+    '</div>' + after;
+}
+
+/**
  * Translates a PdfHeaderFooterConfig and document title into
  * Playwright-compatible page.pdf() options including header/footer
  * templates and margins.

@@ -111,6 +111,22 @@ function addCopyButtons() {
   }
 }
 
+function registerTocLinkHandlers() {
+  const links = document.querySelectorAll('.ms-toc a');
+  for (const link of links) {
+    link.addEventListener('click', (event) => {
+      const href = link.getAttribute('href');
+      if (!href || !href.startsWith('#')) return;
+      const targetId = decodeURIComponent(href.slice(1));
+      const target = document.getElementById(targetId);
+      if (target) {
+        event.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+  }
+}
+
 function showLoadingOverlay() {
   let overlay = document.getElementById('ms-loading-overlay');
   if (!overlay) {
@@ -156,6 +172,7 @@ window.addEventListener('message', (event) => {
   document.body.innerHTML = message.html;
   renderMermaidBlocks();
   addCopyButtons();
+  registerTocLinkHandlers();
   // innerHTML destroyed the overlay element — showLoadingOverlay() would
   // re-create it, but the render is already done so just ensure it's gone.
   // If a future render-start arrives it will re-create the overlay.
@@ -172,6 +189,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   addCopyButtons();
+  registerTocLinkHandlers();
 
   observeThemeChanges((newThemeKind) => {
     try {
@@ -201,4 +219,4 @@ window.addEventListener('DOMContentLoaded', () => {
 window.showLoadingOverlay = showLoadingOverlay;
 window.hideLoadingOverlay = hideLoadingOverlay;
 
-export { THEME_MAP, detectThemeKind, getMermaidTheme, observeThemeChanges, findSourceLine, lastAppliedGeneration, showLoadingOverlay, hideLoadingOverlay };
+export { THEME_MAP, detectThemeKind, getMermaidTheme, observeThemeChanges, findSourceLine, lastAppliedGeneration, showLoadingOverlay, hideLoadingOverlay, registerTocLinkHandlers };

@@ -63,6 +63,12 @@ let mockPanel: ReturnType<typeof createMockPanel>;
 vi.mock('vscode', () => {
   const configuration = { get: (_key: string, fallback: unknown) => fallback, inspect: (_key: string) => undefined };
 
+  const mockDiagnosticCollection = {
+    set: vi.fn(),
+    dispose: vi.fn(),
+    clear: vi.fn(),
+  };
+
   return {
     workspace: {
       getConfiguration: () => configuration,
@@ -76,6 +82,9 @@ vi.mock('vscode', () => {
       showInformationMessage: vi.fn(),
       showWarningMessage: vi.fn(),
       showTextDocument: vi.fn(),
+    },
+    languages: {
+      createDiagnosticCollection: vi.fn(() => mockDiagnosticCollection),
     },
     ViewColumn: { Beside: 2, One: 1 },
     Uri: {
@@ -94,6 +103,11 @@ vi.mock('vscode', () => {
       constructor(public anchor: unknown, public active: unknown) {}
     },
     TextEditorRevealType: { InCenter: 2 },
+    DiagnosticSeverity: { Error: 0, Warning: 1, Information: 2, Hint: 3 },
+    Diagnostic: class {
+      constructor(public range: unknown, public message: string, public severity: number) {}
+      source = '';
+    },
   };
 });
 

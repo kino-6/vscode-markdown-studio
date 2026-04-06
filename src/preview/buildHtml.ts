@@ -142,8 +142,8 @@ export function resolveImagePaths(
         const webviewUri = webview.asWebviewUri(absoluteUri);
         return `<img${before}src="${webviewUri.toString()}"`;
       }
-      // PDF context: use file:// path
-      return `<img${before}src="${absoluteUri.fsPath}"`;
+      // PDF context: use file:// URI so Chromium can load local resources
+      return `<img${before}src="file://${absoluteUri.fsPath}"`;
     }
   );
 }
@@ -181,11 +181,16 @@ export async function buildHtml(
   const styleBlock = buildStyleBlock(getConfig().style);
 
   // CSP: 'unsafe-eval' is required because Mermaid 11.x uses new Function() internally
+  // PDF context (no webview): omit CSP entirely — Playwright runs a local trusted Chromium
+  // and needs file:// access for images. The restrictive webview CSP would block local resources.
+  const cspTag = webview
+    ? `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} data:; style-src ${cspSource} 'unsafe-inline'; script-src ${cspSource} 'nonce-${nonce}' 'unsafe-eval'; font-src ${cspSource};">`
+    : '';
   return `<!doctype html>
 <html>
 <head>
 <meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} data:; style-src ${cspSource} 'unsafe-inline'; script-src ${cspSource} 'nonce-${nonce}' 'unsafe-eval'; font-src ${cspSource};">
+${cspTag}
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="${styleHref}">
 <link rel="stylesheet" href="${hljsStyleHref}">

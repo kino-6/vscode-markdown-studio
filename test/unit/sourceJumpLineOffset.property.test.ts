@@ -39,6 +39,7 @@ vi.mock('../../src/infra/config', () => ({
       headingStyle: { h1FontWeight: 600, h1MarginTop: '24px', h1MarginBottom: '16px', h2MarginTop: '24px', h2MarginBottom: '16px' },
       codeBlockStyle: { background: '#f6f8fa', border: '1px solid #d0d7de', borderRadius: '6px', padding: '1em' },
     },
+    toc: { minLevel: 1, maxLevel: 3, orderedList: false, pageBreak: true },
   }),
 }));
 

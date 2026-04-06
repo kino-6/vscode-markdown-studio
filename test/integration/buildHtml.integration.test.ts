@@ -20,7 +20,13 @@ describe('buildHtml composition', () => {
       errors: []
     });
 
-    const html = await buildHtml('# Hello', { extensionPath: '/tmp/ext' } as any);
+    const fakeWebview = { cspSource: 'https://webview' };
+    const fakeAssets = {
+      styleUri: { toString: () => 'style.css' },
+      scriptUri: { toString: () => 'script.js' }
+    };
+
+    const html = await buildHtml('# Hello', { extensionPath: '/tmp/ext' } as any, fakeWebview as any, fakeAssets as any);
 
     expect(html).toContain("default-src 'none'");
     expect(html).toContain('<div>safe body</div>');

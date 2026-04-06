@@ -82,11 +82,12 @@ describe('Non-regression: new table styles only target table-related elements', 
 
     while ((match = tableRuleRegex.exec(css)) !== null) {
       const selectorBlock = match[1].trim();
-      // Skip :root and body.vscode-dark blocks (they define variables, not table element styles)
+      // Skip :root, dark-theme variable blocks, TOC blocks (reuse table CSS vars), and @media
       if (
         selectorBlock === ':root' ||
         selectorBlock.includes('body.vscode-dark') ||
         selectorBlock.includes('body.vscode-high-contrast') ||
+        selectorBlock.includes('.ms-toc') ||
         selectorBlock.includes('@media')
       ) {
         continue;

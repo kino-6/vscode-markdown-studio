@@ -50,6 +50,10 @@
       {
         "command": "markdownStudio.setupDependencies",
         "title": "Markdown Studio: Setup Dependencies"
+      },
+      {
+        "command": "markdownStudio.insertToc",
+        "title": "Markdown Studio: Insert TOC"
       }
     ],
     "configuration": {
@@ -177,6 +181,21 @@
           "type": "string",
           "default": "20mm",
           "description": "Page margin for PDF export. Accepts CSS units (mm, cm, in, px)."
+        },
+        "markdownStudio.toc.levels": {
+          "type": "string",
+          "default": "1-3",
+          "description": "TOCに含める見出しレベルの範囲（例: '1-3', '2-4'）"
+        },
+        "markdownStudio.toc.orderedList": {
+          "type": "boolean",
+          "default": false,
+          "description": "TOCを番号付きリスト（ol）で生成する"
+        },
+        "markdownStudio.toc.pageBreak": {
+          "type": "boolean",
+          "default": true,
+          "description": "PDFエクスポート時にTOCの前後に改ページを挿入する"
         }
       }
     }

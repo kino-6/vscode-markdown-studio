@@ -6,6 +6,14 @@ import { cleanupTempFiles } from './infra/tempFiles';
 import { DependencyManager } from './deps/dependencyManager';
 import type { DependencyStatus } from './deps/types';
 import { destroyPreviewPanel } from './preview/webviewPanel';
+import { insertTocCommand } from './commands/insertToc';
+import { scanFencedBlocks } from './parser/scanFencedBlocks';
+import { findTocCommentMarkers } from './toc/tocCommentMarker';
+import { createMarkdownParser } from './parser/parseMarkdown';
+import { extractHeadings } from './toc/extractHeadings';
+import { resolveAnchors } from './toc/anchorResolver';
+import { buildTocMarkdown } from './toc/buildTocMarkdown';
+import { getConfig } from './infra/config';
 
 /** Module-level dependency status, accessible by other modules if needed. */
 export let dependencyStatus: DependencyStatus | undefined;
@@ -59,7 +67,35 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           `Markdown Studio: Dependency setup failed. ${message}`
         );
       }
-    })
+    }),
+    vscode.commands.registerCommand('markdownStudio.insertToc', async () => insertTocCommand()),
+    vscode.workspace.onWillSaveTextDocument((event) => {
+      if (event.document.languageId !== 'markdown') return;
+
+      const markdown = event.document.getText();
+      const fencedBlocks = scanFencedBlocks(markdown);
+      const fencedRanges = fencedBlocks.map(b => ({ startLine: b.startLine, endLine: b.endLine }));
+      const markers = findTocCommentMarkers(markdown, fencedRanges);
+
+      if (!markers) return;
+
+      const md = createMarkdownParser();
+      const headings = extractHeadings(markdown, md);
+      const anchors = resolveAnchors(headings);
+      const tocConfig = getConfig().toc;
+      const newTocText = buildTocMarkdown(anchors, tocConfig);
+
+      if (markers.content === newTocText) return;
+
+      const startPos = new vscode.Position(markers.startLine + 1, 0);
+      const endPos = new vscode.Position(markers.endLine, 0);
+      const edit = vscode.TextEdit.replace(
+        new vscode.Range(startPos, endPos),
+        newTocText ? newTocText + '\n' : '',
+      );
+
+      event.waitUntil(Promise.resolve([edit]));
+    }),
   );
 }
 

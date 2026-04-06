@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { DEFAULT_ALLOWED_DOMAINS, ExternalResourceConfig, ExternalResourceMode, PdfHeaderFooterConfig, ResolvedStyleConfig, StyleConfigOverrides } from '../types/models';
+import { DEFAULT_ALLOWED_DOMAINS, ExternalResourceConfig, ExternalResourceMode, PdfHeaderFooterConfig, ResolvedStyleConfig, StyleConfigOverrides, TocConfig } from '../types/models';
 import { resolvePreset } from './presets';
 
 export function clampFontSize(n: number): number {
@@ -18,6 +18,24 @@ export interface MarkdownStudioConfig {
   pdfHeaderFooter: PdfHeaderFooterConfig;
   sourceJumpEnabled: boolean;
   style: ResolvedStyleConfig;
+  toc: TocConfig;
+}
+
+/**
+ * Parse a levels string (e.g. "1-3") into minLevel/maxLevel.
+ * Returns defaults (1, 3) for invalid values.
+ */
+export function parseLevels(levels: string): { minLevel: number; maxLevel: number } {
+  const match = /^([1-6])-([1-6])$/.exec(levels.trim());
+  if (!match) {
+    return { minLevel: 1, maxLevel: 3 };
+  }
+  const min = Number(match[1]);
+  const max = Number(match[2]);
+  if (min > max) {
+    return { minLevel: 1, maxLevel: 3 };
+  }
+  return { minLevel: min, maxLevel: max };
 }
 
 function hasUserValue(cfg: vscode.WorkspaceConfiguration, key: string): boolean {
@@ -95,5 +113,10 @@ export function getConfig(): MarkdownStudioConfig {
     },
     sourceJumpEnabled: cfg.get<boolean>('preview.sourceJump.enabled', false),
     style,
+    toc: {
+      ...parseLevels(cfg.get<string>('toc.levels', '1-3')),
+      orderedList: cfg.get<boolean>('toc.orderedList', false),
+      pageBreak: cfg.get<boolean>('toc.pageBreak', true),
+    },
   };
 }

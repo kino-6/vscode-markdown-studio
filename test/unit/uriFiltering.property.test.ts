@@ -36,6 +36,12 @@ let mockPanel: ReturnType<typeof createMockPanel>;
 vi.mock('vscode', () => {
   const configuration = { get: (_key: string, fallback: unknown) => fallback, inspect: (_key: string) => undefined };
 
+  const mockDiagnosticCollection = {
+    set: vi.fn(),
+    dispose: vi.fn(),
+    clear: vi.fn(),
+  };
+
   return {
     workspace: {
       getConfiguration: () => configuration,
@@ -46,6 +52,9 @@ vi.mock('vscode', () => {
       showInformationMessage: vi.fn(),
       showWarningMessage: vi.fn(),
       showTextDocument: vi.fn(),
+    },
+    languages: {
+      createDiagnosticCollection: vi.fn(() => mockDiagnosticCollection),
     },
     ViewColumn: { Beside: 2, One: 1 },
     Uri: {
@@ -88,6 +97,23 @@ vi.mock('../../src/extension', () => ({
 
 vi.mock('../../src/infra/config', () => ({
   getConfig: vi.fn(() => ({ javaPath: 'java', style: {} })),
+}));
+
+vi.mock('../../src/parser/parseMarkdown', () => ({
+  createMarkdownParser: vi.fn(() => ({})),
+}));
+
+vi.mock('../../src/toc/extractHeadings', () => ({
+  extractHeadings: vi.fn(() => []),
+}));
+
+vi.mock('../../src/toc/anchorResolver', () => ({
+  resolveAnchors: vi.fn(() => []),
+}));
+
+vi.mock('../../src/toc/tocValidator', () => ({
+  validateAnchors: vi.fn(() => []),
+  publishDiagnostics: vi.fn(),
 }));
 
 /* ------------------------------------------------------------------ */

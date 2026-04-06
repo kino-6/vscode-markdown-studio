@@ -105,3 +105,40 @@ export interface ExternalResourceConfig {
   mode: ExternalResourceMode;
   allowedDomains: string[];
 }
+
+/** 抽出された見出しエントリ */
+export interface HeadingEntry {
+  level: number;       // 1〜6
+  text: string;        // プレーンテキスト（インライン書式除去済み）
+  line: number;        // ソース行番号（0-based）
+}
+
+/** 見出しとアンカーIDのマッピング */
+export interface AnchorMapping {
+  heading: HeadingEntry;
+  anchorId: string;
+}
+
+/** TOC生成設定 */
+export interface TocConfig {
+  minLevel: number;
+  maxLevel: number;
+  orderedList: boolean;
+  pageBreak: boolean;
+}
+
+/** TOC検証の診断情報 */
+export interface TocDiagnostic {
+  line: number;
+  anchorId: string;
+  expectedHeading: string;
+  message: string;
+}
+
+/** TOC生成結果 */
+export interface TocResult {
+  html: string;
+  headings: HeadingEntry[];
+  anchors: AnchorMapping[];
+  diagnostics: TocDiagnostic[];
+}

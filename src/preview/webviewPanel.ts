@@ -4,6 +4,16 @@ import { getPreviewAssetUris } from './previewAssets';
 import { validateEnvironment } from '../commands/validateEnvironmentCore';
 import { dependencyStatus } from '../extension';
 import { getConfig } from '../infra/config';
+import { createMarkdownParser } from '../parser/parseMarkdown';
+import { extractHeadings } from '../toc/extractHeadings';
+import { resolveAnchors } from '../toc/anchorResolver';
+import { validateAnchors, publishDiagnostics } from '../toc/tocValidator';
+
+/** Shared markdown-it parser for TOC heading extraction. */
+const tocParser = createMarkdownParser();
+
+/** Diagnostic collection for TOC anchor validation. */
+let tocDiagnostics: vscode.DiagnosticCollection | undefined;
 
 /** Module-level reference to the current preview panel. */
 let currentPanel: vscode.WebviewPanel | undefined;
@@ -19,6 +29,22 @@ let trackedUri: string | undefined;
 
 /** Generation counter – incremented on each text change to discard stale async renders. */
 let generation = 0;
+
+/**
+ * Run TOC validation on the given markdown text and publish diagnostics.
+ * Extracts headings, resolves anchors, validates them, and publishes results.
+ */
+function runTocValidation(markdown: string, documentUri: vscode.Uri): void {
+  if (!tocDiagnostics) {
+    tocDiagnostics = vscode.languages.createDiagnosticCollection('markdownStudio.toc');
+  }
+
+  const headings = extractHeadings(markdown, tocParser);
+  const anchors = resolveAnchors(headings);
+  const headingIds = new Set(anchors.map((a) => a.anchorId));
+  const diagnostics = validateAnchors(anchors, headingIds);
+  publishDiagnostics(diagnostics, documentUri, tocDiagnostics);
+}
 
 /**
  * Handles a `jumpToLine` message from the webview.
@@ -85,6 +111,9 @@ export async function openOrRefreshPreview(
 
     currentPanel.webview.html = await buildHtml(document.getText(), context, currentPanel.webview, assets, document.uri);
 
+    // Run TOC validation after initial render
+    runTocValidation(document.getText(), document.uri);
+
     changeSubscription = vscode.workspace.onDidChangeTextDocument(async (event) => {
       if (event.document.uri.toString() !== trackedUri) return;
 
@@ -117,6 +146,9 @@ export async function openOrRefreshPreview(
         html: htmlBody,
         generation: thisGeneration,
       });
+
+      // Run TOC validation on each text change
+      runTocValidation(event.document.getText(), event.document.uri);
     });
 
     return currentPanel;
@@ -156,6 +188,9 @@ export async function openOrRefreshPreview(
 
   panel.webview.html = await buildHtml(document.getText(), context, panel.webview, assets, document.uri);
 
+  // Run TOC validation after initial render
+  runTocValidation(document.getText(), document.uri);
+
   // Register message handler for jump-to-line
   messageSubscription = panel.webview.onDidReceiveMessage(
     (msg) => handleJumpToLine(document.uri, msg),
@@ -193,6 +228,9 @@ export async function openOrRefreshPreview(
       html: htmlBody,
       generation: thisGeneration,
     });
+
+    // Run TOC validation on each text change
+    runTocValidation(event.document.getText(), event.document.uri);
   });
 
   panel.onDidDispose(() => {
@@ -200,6 +238,8 @@ export async function openOrRefreshPreview(
     changeSubscription = undefined;
     messageSubscription?.dispose();
     messageSubscription = undefined;
+    tocDiagnostics?.dispose();
+    tocDiagnostics = undefined;
     currentPanel = undefined;
     trackedUri = undefined;
     generation = 0;
@@ -228,6 +268,8 @@ export function _resetPanelForTesting(): void {
   changeSubscription = undefined;
   messageSubscription?.dispose();
   messageSubscription = undefined;
+  tocDiagnostics?.dispose();
+  tocDiagnostics = undefined;
   currentPanel = undefined;
   trackedUri = undefined;
   generation = 0;

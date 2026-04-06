@@ -7,8 +7,13 @@ const showErrorMessage = vi.fn();
 const registerCommand = vi.fn().mockReturnValue({ dispose: vi.fn() });
 const subscriptionsPush = vi.fn();
 
+const onWillSaveTextDocument = vi.fn().mockReturnValue({ dispose: vi.fn() });
+
 vi.mock('vscode', () => ({
-  workspace: { getConfiguration: () => ({ get: (_: string, f: unknown) => f }) },
+  workspace: {
+    getConfiguration: () => ({ get: (_: string, f: unknown) => f }),
+    onWillSaveTextDocument,
+  },
   window: {
     showInformationMessage,
     showWarningMessage,
@@ -19,6 +24,9 @@ vi.mock('vscode', () => ({
   },
   ProgressLocation: { Notification: 15 },
   commands: { registerCommand },
+  Position: class { constructor(public line: number, public character: number) {} },
+  Range: class { constructor(public start: any, public end: any) {} },
+  TextEdit: { replace: vi.fn() },
 }));
 
 // Mock DependencyManager
@@ -36,8 +44,24 @@ vi.mock('../../src/deps/dependencyManager', () => ({
 vi.mock('../../src/commands/exportPdf', () => ({ exportPdfCommand: vi.fn() }));
 vi.mock('../../src/commands/openPreview', () => ({ openPreviewCommand: vi.fn() }));
 vi.mock('../../src/commands/validateEnvironment', () => ({ validateEnvironmentCommand: vi.fn() }));
+vi.mock('../../src/commands/insertToc', () => ({ insertTocCommand: vi.fn() }));
 vi.mock('../../src/infra/tempFiles', () => ({ cleanupTempFiles: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../../src/preview/webviewPanel', () => ({ destroyPreviewPanel: vi.fn() }));
+vi.mock('../../src/parser/scanFencedBlocks', () => ({ scanFencedBlocks: vi.fn().mockReturnValue([]) }));
+vi.mock('../../src/toc/tocCommentMarker', () => ({
+  findTocCommentMarkers: vi.fn(),
+  replaceTocContent: vi.fn(),
+  wrapWithMarkers: vi.fn(),
+}));
+vi.mock('../../src/parser/parseMarkdown', () => ({ createMarkdownParser: vi.fn().mockReturnValue({}) }));
+vi.mock('../../src/toc/extractHeadings', () => ({ extractHeadings: vi.fn().mockReturnValue([]) }));
+vi.mock('../../src/toc/anchorResolver', () => ({ resolveAnchors: vi.fn().mockReturnValue([]) }));
+vi.mock('../../src/toc/buildTocMarkdown', () => ({ buildTocMarkdown: vi.fn().mockReturnValue('') }));
+vi.mock('../../src/infra/config', () => ({
+  getConfig: () => ({
+    toc: { minLevel: 1, maxLevel: 3, orderedList: false, pageBreak: true },
+  }),
+}));
 
 describe('extension activation', () => {
   let context: any;
@@ -65,13 +89,14 @@ describe('extension activation', () => {
     expect(ensureAllMock).toHaveBeenCalledWith(context);
     expect(showWarningMessage).not.toHaveBeenCalled();
 
-    // 5 commands registered: openPreview, exportPdf, validateEnvironment, reloadPreview, setupDependencies
-    expect(registerCommand).toHaveBeenCalledTimes(5);
+    // 6 commands registered: openPreview, exportPdf, validateEnvironment, reloadPreview, setupDependencies, insertToc
+    expect(registerCommand).toHaveBeenCalledTimes(6);
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.openPreview', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.exportPdf', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.validateEnvironment', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.reloadPreview', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.setupDependencies', expect.any(Function));
+    expect(registerCommand).toHaveBeenCalledWith('markdownStudio.insertToc', expect.any(Function));
   });
 
   it('shows warning when ensureAll reports failures', async () => {
@@ -90,7 +115,7 @@ describe('extension activation', () => {
       expect.stringContaining('Setup Dependencies')
     );
     // Commands still registered despite failure
-    expect(registerCommand).toHaveBeenCalledTimes(5);
+    expect(registerCommand).toHaveBeenCalledTimes(6);
   });
 
   it('still activates and registers commands when ensureAll throws', async () => {
@@ -103,7 +128,7 @@ describe('extension activation', () => {
       expect.stringContaining('unexpected crash')
     );
     // All commands still registered
-    expect(registerCommand).toHaveBeenCalledTimes(5);
+    expect(registerCommand).toHaveBeenCalledTimes(6);
   });
 
   it('setupDependencies command calls reinstall and shows success', async () => {

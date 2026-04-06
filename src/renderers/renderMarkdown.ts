@@ -2,12 +2,57 @@ import * as vscode from 'vscode';
 import { getConfig } from '../infra/config';
 import { createMarkdownParser } from '../parser/parseMarkdown';
 import { scanFencedBlocks } from '../parser/scanFencedBlocks';
-import { RenderedMarkdown } from '../types/models';
+import { extractHeadings } from '../toc/extractHeadings';
+import { resolveAnchors } from '../toc/anchorResolver';
+import { buildTocHtml } from '../toc/buildToc';
+import { replaceTocMarker } from '../toc/tocMarker';
+import { AnchorMapping, RenderedMarkdown } from '../types/models';
 import { renderMermaidBlock } from './renderMermaid';
 import { renderPlantUml } from './renderPlantUml';
 import { filterExternalResources } from './resourceFilter';
 
 const parser = createMarkdownParser();
+
+/**
+ * Install a markdown-it renderer rule that adds `id` attributes to heading tags
+ * based on the resolved anchor mappings. Returns a cleanup function to restore
+ * the original rule.
+ */
+function installHeadingIdRule(anchors: AnchorMapping[]): () => void {
+  const original = parser.renderer.rules['heading_open'];
+  let headingIndex = 0;
+
+  // Build a map from heading line number to anchor ID for reliable matching
+  const lineToAnchorId = new Map<number, string>();
+  for (const { heading, anchorId } of anchors) {
+    lineToAnchorId.set(heading.line, anchorId);
+  }
+
+  parser.renderer.rules['heading_open'] = (tokens, idx, options, env, self) => {
+    const token = tokens[idx];
+    const line = token.map ? token.map[0] : -1;
+
+    // Try to match by source line first, fall back to sequential index
+    const anchorId = lineToAnchorId.get(line) ?? anchors[headingIndex]?.anchorId;
+    if (anchorId !== undefined) {
+      token.attrSet('id', anchorId);
+      headingIndex++;
+    }
+
+    if (original) {
+      return original(tokens, idx, options, env, self);
+    }
+    return self.renderToken(tokens, idx, options);
+  };
+
+  return () => {
+    if (original) {
+      parser.renderer.rules['heading_open'] = original;
+    } else {
+      delete parser.renderer.rules['heading_open'];
+    }
+  };
+}
 
 function padToLineCount(replacement: string, sourceFence: string): string {
   const sourceNewlines = (sourceFence.match(/\n/g) || []).length;
@@ -75,11 +120,29 @@ export async function renderMarkdownDocument(
     transformed = transformed.replace(sourceFence, replacement);
   }
 
+  // --- TOC generation pipeline ---
+  // 1. Extract headings from the original markdown (before diagram transforms)
+  const headings = extractHeadings(markdown, parser);
+  // 2. Resolve unique anchor IDs
+  const anchors = resolveAnchors(headings);
+  // 3. Install heading ID renderer rule so rendered headings get id attributes
+  const removeHeadingIdRule = installHeadingIdRule(anchors);
+
   // No HTML sanitization — all content is local/user-authored.
   // CSP + webview sandbox provide the security boundary.
-  let htmlBody = parser.render(transformed);
+  let htmlBody: string;
+  try {
+    htmlBody = parser.render(transformed);
+  } finally {
+    removeHeadingIdRule();
+  }
 
-  htmlBody = filterExternalResources(htmlBody, getConfig().externalResources);
+  // 4. Build TOC HTML and replace markers
+  const config = getConfig();
+  const tocHtml = buildTocHtml(anchors, config.toc);
+  htmlBody = replaceTocMarker(htmlBody, tocHtml);
+
+  htmlBody = filterExternalResources(htmlBody, config.externalResources);
 
   return { htmlBody, errors };
 }
