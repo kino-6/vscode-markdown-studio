@@ -71,6 +71,6 @@ describe('lineNumbersStyle', () => {
     const lineNumbersSetting = props['markdownStudio.codeBlock.lineNumbers'];
     expect(lineNumbersSetting).toBeDefined();
     expect(lineNumbersSetting.type).toBe('boolean');
-    expect(lineNumbersSetting.default).toBe(false);
+    expect(lineNumbersSetting.default).toBe(true);
   });
 });

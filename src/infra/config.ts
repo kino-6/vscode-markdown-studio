@@ -120,7 +120,7 @@ export function getConfig(): MarkdownStudioConfig {
       pageBreak: cfg.get<boolean>('toc.pageBreak', true),
     },
     codeBlock: {
-      lineNumbers: cfg.get<boolean>('codeBlock.lineNumbers', false),
+      lineNumbers: cfg.get<boolean>('codeBlock.lineNumbers', true),
     },
   };
 }

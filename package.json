@@ -199,7 +199,7 @@
         },
         "markdownStudio.codeBlock.lineNumbers": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "コードブロックに行番号を表示する"
         }
       }
