@@ -4,6 +4,32 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
 
 ---
 
+<!-- TOC -->
+- [Markdown Studio — Feature Demo](#markdown-studio-feature-demo)
+  - [1. Markdown Rendering](#1-markdown-rendering)
+  - [2. Mermaid Diagrams](#2-mermaid-diagrams)
+    - [Markdown Studio Architecture](#markdown-studio-architecture)
+    - [Extension Activation Flow](#extension-activation-flow)
+  - [3. PlantUML Diagrams](#3-plantuml-diagrams)
+    - [Extension Component Diagram](#extension-component-diagram)
+    - [Document Processing Sequence](#document-processing-sequence)
+  - [4. Inline SVG (Sanitized)](#4-inline-svg-sanitized)
+  - [5. Syntax Highlighting](#5-syntax-highlighting)
+  - [6. Images and Security](#6-images-and-security)
+    - [✅ Local image (relative path — works)](#-local-image-relative-path-works)
+    - [✅ Local image (absolute path — works)](#-local-image-absolute-path-works)
+    - [❌ External image (blocked by policy)](#-external-image-blocked-by-policy)
+    - [❌ External link (blocked by policy)](#-external-link-blocked-by-policy)
+    - [How to allow external resources](#how-to-allow-external-resources)
+    - [Security Summary](#security-summary)
+  - [7. Theme Adaptability](#7-theme-adaptability)
+  - [8. Diagram Type Catalog](#8-diagram-type-catalog)
+  - [9. PDF Export](#9-pdf-export)
+<!-- /TOC -->
+
+
+---
+
 ## 1. Markdown Rendering
 
 **Bold**, *italic*, ~~strikethrough~~, `inline code`

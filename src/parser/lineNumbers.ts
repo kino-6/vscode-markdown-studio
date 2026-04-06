@@ -36,7 +36,7 @@ export function wrapWithLineNumbers(highlightedHtml: string): string {
   return lines
     .map(
       (line, i) =>
-        `<span class="ms-code-line"><span class="ms-line-number" data-line="${i + 1}"></span>${line}</span>`,
+        `<span class="ms-code-line"><span class="ms-line-number">${i + 1}</span>${line}</span>`,
     )
     .join('');
 }
@@ -60,8 +60,8 @@ export function extractCodeContent(lineNumberedHtml: string): string {
   const contents: string[] = [];
   for (const part of parts) {
     if (part === '') continue;
-    // Remove the line number element: <span class="ms-line-number" data-line="N"></span>
-    const withoutLineNum = part.replace(/<span class="ms-line-number" data-line="\d+"><\/span>/, '');
+    // Remove the line number element: <span class="ms-line-number">N</span>
+    const withoutLineNum = part.replace(/<span class="ms-line-number">\d+<\/span>/, '');
     // Remove the trailing </span> (closing ms-code-line)
     const content = withoutLineNum.replace(/<\/span>$/, '');
     contents.push(content);

@@ -21,8 +21,8 @@ describe('Line numbers pipeline integration', () => {
 
     expect(html).toContain('class="ms-line-number"');
     expect(html).toContain('class="ms-code-line"');
-    expect(html).toContain('data-line="1"');
-    expect(html).toContain('data-line="2"');
+    expect(html).toContain('class="ms-line-number">1</span>');
+    expect(html).toContain('class="ms-line-number">2</span>');
   });
 
   /**

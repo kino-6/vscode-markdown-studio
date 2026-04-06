@@ -14,9 +14,9 @@ import { wrapWithLineNumbers } from '../../src/parser/lineNumbers';
  * **Validates: Requirements 1.1, 1.5, 2.3**
  */
 
-/** Extract all data-line attribute values from the output HTML */
+/** Extract all line number values from the output HTML */
 function extractLineNumbers(html: string): number[] {
-  const matches = [...html.matchAll(/data-line="(\d+)"/g)];
+  const matches = [...html.matchAll(/<span class="ms-line-number">(\d+)<\/span>/g)];
   return matches.map((m) => parseInt(m[1], 10));
 }
 

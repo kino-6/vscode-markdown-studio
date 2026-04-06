@@ -354,6 +354,7 @@ body.vscode-high-contrast .ms-toc a {
   display: block;
   line-height: 1.45;
   white-space: pre;
+  overflow-wrap: normal;
 }
 
 .ms-line-number {

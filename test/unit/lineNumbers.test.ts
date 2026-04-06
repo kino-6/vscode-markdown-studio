@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { wrapWithLineNumbers } from '../../src/parser/lineNumbers';
 
-/** Extract all data-line attribute values from the output HTML */
+/** Extract all line number values from the output HTML */
 function extractLineNumbers(html: string): number[] {
-  const matches = [...html.matchAll(/data-line="(\d+)"/g)];
+  const matches = [...html.matchAll(/<span class="ms-line-number">(\d+)<\/span>/g)];
   return matches.map((m) => parseInt(m[1], 10));
 }
 
@@ -29,8 +29,8 @@ describe('wrapWithLineNumbers', () => {
     const result = wrapWithLineNumbers(code);
 
     expect(result).toContain('<span class="ms-code-line">');
-    expect(result).toContain('<span class="ms-line-number" data-line="1">');
-    expect(result).toContain('<span class="ms-line-number" data-line="2">');
+    expect(result).toContain('<span class="ms-line-number">1</span>');
+    expect(result).toContain('<span class="ms-line-number">2</span>');
   });
 
   it('handles single-line code correctly (Req 1.1)', () => {
@@ -65,10 +65,10 @@ describe('wrapWithLineNumbers', () => {
     const result = wrapWithLineNumbers('foo\nbar');
 
     expect(result).toContain(
-      '<span class="ms-code-line"><span class="ms-line-number" data-line="1"></span>foo</span>',
+      '<span class="ms-code-line"><span class="ms-line-number">1</span>foo</span>',
     );
     expect(result).toContain(
-      '<span class="ms-code-line"><span class="ms-line-number" data-line="2"></span>bar</span>',
+      '<span class="ms-code-line"><span class="ms-line-number">2</span>bar</span>',
     );
   });
 });
