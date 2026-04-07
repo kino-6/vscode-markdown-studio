@@ -2,6 +2,19 @@
 
 All notable changes to Markdown Studio will be documented in this file.
 
+## [0.5.0] - 2026-04-07
+
+### Added
+
+- Task lists / checkboxes (`- [ ]` / `- [x]`) via markdown-it-task-lists
+- Footnotes (`[^1]` syntax) via markdown-it-footnote
+- Emoji (`:smile:` → 😄) via markdown-it-emoji
+- LaTeX math rendering (KaTeX) — inline `$...$` and display `$$...$$`
+- Definition lists (`term` / `: definition`) via markdown-it-deflist
+- Superscript (`^text^`) and subscript (`~text~`) via markdown-it-sup/sub
+- KaTeX CSS and woff2 fonts bundled for offline math rendering
+- Release checklist steering file
+
 ## [0.4.0] - 2026-04-07
 
 ### Added

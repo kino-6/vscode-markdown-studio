@@ -35,6 +35,15 @@ Markdown Studio is a **local-first** VS Code extension for Markdown preview and 
 - highlight.js with VS Code Dark+/Light+ color mapping
 - 25+ languages: TypeScript, JavaScript, Python, Java, Go, Rust, C/C++, C#, Ruby, PHP, Swift, Kotlin, SQL, Bash, Dockerfile, and more
 
+### Extended Markdown
+
+- Task lists / checkboxes: `- [ ]` unchecked, `- [x]` checked
+- Footnotes: `[^1]` references with auto-numbered footnote section
+- Emoji: `:smile:` → 😄, `:rocket:` → 🚀 (full GitHub shortcode set)
+- LaTeX math: inline `$E = mc^2$` and display `$$\int_0^1 x^2 dx$$` via KaTeX
+- Definition lists: `term` + `: definition` syntax
+- Superscript / subscript: `^sup^` and `~sub~`
+
 ### Style Presets
 
 Five built-in presets with per-setting overrides:
@@ -179,13 +188,13 @@ See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) for license details.
 Planned for future releases:
 
 - ~~Custom CSS file loading (`markdownStudio.style.customCssPath`)~~ → Implemented as `style.theme` + `style.customCss`
-- LaTeX math rendering (KaTeX) — inline `$...$` and display `$$...$$`
+- ~~LaTeX math rendering (KaTeX) — inline `$...$` and display `$$...$$`~~ ✅ v0.5.0
 - PDF Index with page numbers — TOC page with "Chapter ... p.N" style entries
-- Footnotes (`[^1]` syntax) via markdown-it plugin
-- Emoji (`:smile:` syntax) via markdown-it plugin
-- Task lists / checkboxes (`- [ ]` / `- [x]`) via markdown-it plugin
-- Definition lists (`term` / `: definition`) via markdown-it plugin
-- Superscript / subscript (`^sup^` / `~sub~`) via markdown-it plugin
+- ~~Footnotes (`[^1]` syntax) via markdown-it plugin~~ ✅ v0.5.0
+- ~~Emoji (`:smile:` syntax) via markdown-it plugin~~ ✅ v0.5.0
+- ~~Task lists / checkboxes (`- [ ]` / `- [x]`) via markdown-it plugin~~ ✅ v0.5.0
+- ~~Definition lists (`term` / `: definition`) via markdown-it plugin~~ ✅ v0.5.0
+- ~~Superscript / subscript (`^sup^` / `~sub~`) via markdown-it plugin~~ ✅ v0.5.0
 - PDF output filename customization
 - Dark / light theme auto-switching for preview
 - Pandoc-style / academic CSS templates (via custom CSS feature)
@@ -195,7 +204,7 @@ Planned for future releases:
 
 ### Style Strategy
 
-The default preset (`markdown-pdf`) follows the conventional Markdown Preview style familiar to most users. After custom CSS loading is implemented, additional output styles (Pandoc, LaTeX-like academic, etc.) will be provided as CSS templates that users can apply via `markdownStudio.style.customCssPath`.
+The default preset (`markdown-pdf`) follows the conventional Markdown Preview style familiar to most users. Additional output styles (Pandoc, LaTeX-like academic, etc.) are available as built-in themes via `markdownStudio.style.theme` or as CSS templates in `examples/custom-styles/`.
 
 ## Build and Run
 
