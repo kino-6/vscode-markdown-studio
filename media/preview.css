@@ -519,3 +519,43 @@ dd {
   margin-left: 1.5em;
   margin-bottom: 0.5em;
 }
+
+/* ── PDF Index (Table of Contents with page numbers) ── */
+
+.ms-pdf-index {
+  margin: 0;
+  padding: 1rem 0;
+}
+
+.ms-pdf-index-title {
+  margin-bottom: 1.5rem;
+}
+
+.ms-pdf-index-entry {
+  display: flex;
+  align-items: baseline;
+  margin: 0.3em 0;
+  font-size: 0.95em;
+}
+
+.ms-pdf-index-text {
+  white-space: nowrap;
+}
+
+.ms-pdf-index-dots {
+  flex: 1;
+  border-bottom: 1px dotted #999;
+  margin: 0 0.5em;
+  min-width: 2em;
+}
+
+.ms-pdf-index-page {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+@media print {
+  .ms-pdf-index {
+    padding: 0;
+  }
+}

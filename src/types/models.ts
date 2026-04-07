@@ -155,3 +155,9 @@ export interface CustomCssResult {
   /** 警告・エラーメッセージ（ログ出力用） */
   warnings: string[];
 }
+
+/** PDF Index設定 */
+export interface PdfIndexConfig {
+  enabled: boolean;
+  title: string;
+}

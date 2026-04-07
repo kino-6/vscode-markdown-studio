@@ -3,6 +3,7 @@ import path from 'node:path';
 import * as vscode from 'vscode';
 import { dependencyStatus } from '../extension';
 import { buildPdfOptions, injectPageBreakCss, injectTocPageBreakCss } from './pdfHeaderFooter';
+import { buildPdfIndexHtml, estimateIndexPageCount, HeadingPageEntry } from './pdfIndex';
 import { getConfig } from '../infra/config';
 import { loadCustomCss } from '../infra/customCssLoader';
 import { buildHtml } from '../preview/buildHtml';
@@ -172,6 +173,47 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
     }
 
     await page.setViewportSize({ width: 980, height: 1400 });
+
+    // --- PDF Index: 2-pass rendering ---
+    if (cfg.pdfIndex.enabled) {
+      const pageHeight = 1400;
+      const headingEntries: HeadingPageEntry[] = await page.evaluate(
+        ({ minLevel, maxLevel, ph }) => {
+          const entries: { level: number; text: string; pageNumber: number }[] = [];
+          const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+          for (const el of headings) {
+            const level = parseInt(el.tagName[1], 10);
+            if (level < minLevel || level > maxLevel) continue;
+            if (el.classList.contains('ms-pdf-index-title')) continue;
+            const rect = el.getBoundingClientRect();
+            const absoluteY = rect.top + window.scrollY;
+            const pageNumber = Math.floor(absoluteY / ph) + 1;
+            entries.push({ level, text: el.textContent || '', pageNumber });
+          }
+          return entries;
+        },
+        { minLevel: cfg.toc.minLevel, maxLevel: cfg.toc.maxLevel, ph: pageHeight }
+      );
+
+      if (headingEntries.length > 0) {
+        const indexPageCount = estimateIndexPageCount(headingEntries.length);
+        const indexHtml = buildPdfIndexHtml(headingEntries, cfg.pdfIndex.title, indexPageCount);
+        const htmlWithIndex = html.replace(/<body[^>]*>/, (match) => `${match}\n${indexHtml}`);
+        await page.setContent(htmlWithIndex, { waitUntil: 'networkidle' });
+        if (previewJsContent) {
+          await page.addScriptTag({
+            content: 'if(typeof acquireVsCodeApi==="undefined"){window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){return undefined},setState:function(){}};};}',
+          });
+          await page.addScriptTag({ content: previewJsContent });
+          await page.waitForFunction(() => {
+            const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
+            if (hosts.length === 0) return true;
+            return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
+          }, { timeout: 30_000 }).catch(() => {});
+        }
+        await page.setViewportSize({ width: 980, height: 1400 });
+      }
+    }
 
     const outputPath = path.join(path.dirname(document.uri.fsPath), `${path.basename(document.uri.fsPath, '.md')}.pdf`);
     const documentTitle = path.basename(document.uri.fsPath, '.md');
