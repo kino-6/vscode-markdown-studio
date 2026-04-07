@@ -212,7 +212,7 @@ window.addEventListener('message', (event) => {
 
 const vscode = acquireVsCodeApi();
 
-window.addEventListener('DOMContentLoaded', () => {
+function initPreview() {
   renderMermaidBlocks().then(() => {
     hideLoadingOverlay();
   }).catch((error) => {
@@ -247,7 +247,16 @@ window.addEventListener('DOMContentLoaded', () => {
       vscode.postMessage({ type: 'jumpToLine', line });
     }
   });
-});
+}
+
+// Support both normal webview loading and late injection (e.g. Playwright PDF export).
+// When the script is injected after DOMContentLoaded has already fired,
+// document.readyState will be 'interactive' or 'complete' — run immediately.
+if (typeof document !== 'undefined' && (document.readyState === 'interactive' || document.readyState === 'complete')) {
+  initPreview();
+} else if (typeof window !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', initPreview);
+}
 
 window.showLoadingOverlay = showLoadingOverlay;
 window.hideLoadingOverlay = hideLoadingOverlay;

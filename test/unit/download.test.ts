@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import * as http from "http";
 import * as fs from "fs";
 import * as path from "path";
@@ -106,6 +106,70 @@ describe("downloadFile", () => {
   it("creates parent directories if needed", async () => {
     const dest = path.join(tmpDir, "nested", "dir", "file.txt");
     await downloadFile(`${baseUrl}/ok`, dest);
+    const content = await fs.promises.readFile(dest, "utf-8");
+    expect(content).toBe("hello world");
+  });
+});
+
+describe("downloadFile with NetworkConfig", () => {
+  it("applies strictSSL=false (rejectUnauthorized: false)", async () => {
+    const dest = path.join(tmpDir, "strict-ssl-false.txt");
+    await downloadFile(`${baseUrl}/ok`, dest, {
+      caCertPaths: [],
+      strictSSL: false,
+    });
+    const content = await fs.promises.readFile(dest, "utf-8");
+    expect(content).toBe("hello world");
+  });
+
+  it("skips unreadable CA cert paths with warning", async () => {
+    const dest = path.join(tmpDir, "bad-ca.txt");
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      await downloadFile(`${baseUrl}/ok`, dest, {
+        caCertPaths: ["/nonexistent/cert.pem"],
+        strictSSL: true,
+      });
+      const content = await fs.promises.readFile(dest, "utf-8");
+      expect(content).toBe("hello world");
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("/nonexistent/cert.pem")
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it("reads valid CA cert files", async () => {
+    // Create a dummy cert file
+    const certPath = path.join(tmpDir, "test-ca.pem");
+    await fs.promises.writeFile(certPath, "-----BEGIN CERTIFICATE-----\ntest\n-----END CERTIFICATE-----\n");
+
+    const dest = path.join(tmpDir, "with-ca.txt");
+    await downloadFile(`${baseUrl}/ok`, dest, {
+      caCertPaths: [certPath],
+      strictSSL: true,
+    });
+    const content = await fs.promises.readFile(dest, "utf-8");
+    expect(content).toBe("hello world");
+  });
+
+  it("works with networkConfig but no proxy", async () => {
+    const dest = path.join(tmpDir, "no-proxy.txt");
+    await downloadFile(`${baseUrl}/ok`, dest, {
+      caCertPaths: [],
+      strictSSL: true,
+    });
+    const content = await fs.promises.readFile(dest, "utf-8");
+    expect(content).toBe("hello world");
+  });
+
+  it("propagates networkConfig through redirects", async () => {
+    const dest = path.join(tmpDir, "redirect-with-config.txt");
+    await downloadFile(`${baseUrl}/redirect-once`, dest, {
+      caCertPaths: [],
+      strictSSL: false,
+    });
     const content = await fs.promises.readFile(dest, "utf-8");
     expect(content).toBe("hello world");
   });

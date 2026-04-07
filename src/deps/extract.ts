@@ -1,38 +1,91 @@
 import * as child_process from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+import * as zlib from "zlib";
+import { pipeline } from "stream/promises";
+import * as tar from "tar-stream";
 import type { PlatformInfo } from "./types";
 
 /**
- * Extracts a .tar.gz archive into destDir using the system `tar` command.
- * Sets file permissions no broader than 0o755 on extracted executables.
+ * Extracts a .tar.gz archive into destDir using Node.js streams (zlib + tar-stream).
+ * No dependency on system `tar` command.
+ *
+ * Security:
+ * - Path traversal prevention: entries resolving outside destDir are skipped
+ * - Symlinks pointing outside destDir are skipped
+ * - File permissions capped at 0o755 on Unix
  */
 export async function extractTarGz(
   archivePath: string,
   destDir: string
 ): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    const proc = child_process.spawn("tar", ["xzf", archivePath, "-C", destDir], {
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+  const absoluteDestDir = path.resolve(destDir);
+  const extract = tar.extract();
 
-    let stderr = "";
-    proc.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString();
-    });
+  const entryPromises: Promise<void>[] = [];
 
-    proc.on("error", (err) => {
-      reject(new Error(`Failed to spawn tar: ${err.message}`));
-    });
+  extract.on("entry", (header, stream, next) => {
+    const entryPath = path.join(absoluteDestDir, header.name);
+    const resolvedPath = path.resolve(entryPath);
 
-    proc.on("close", (code) => {
-      if (code !== 0) {
-        reject(new Error(`tar exited with code ${code}: ${stderr.trim()}`));
+    // Path traversal check — also skip if resolved to destDir itself (for file entries)
+    if (!resolvedPath.startsWith(absoluteDestDir + path.sep)) {
+      stream.resume();
+      next();
+      return;
+    }
+
+    if (header.type === "directory") {
+      const p = fs.promises.mkdir(resolvedPath, { recursive: true }).then(() => {});
+      entryPromises.push(p);
+      stream.resume();
+      next();
+    } else if (header.type === "file") {
+      const p = fs.promises.mkdir(path.dirname(resolvedPath), { recursive: true }).then(() => {
+        return new Promise<void>((resolve, reject) => {
+          const writeStream = fs.createWriteStream(resolvedPath);
+          stream.pipe(writeStream);
+          writeStream.on("finish", () => {
+            // Set permissions on Unix (capped at 0o755)
+            if (process.platform !== "win32" && header.mode) {
+              const mode = header.mode & 0o755;
+              fs.promises.chmod(resolvedPath, mode).then(() => resolve()).catch(() => resolve());
+            } else {
+              resolve();
+            }
+          });
+          writeStream.on("error", reject);
+          stream.on("error", reject);
+        });
+      });
+      entryPromises.push(p);
+      next();
+    } else if (header.type === "symlink") {
+      // Check if symlink target is within destDir
+      const linkTarget = path.resolve(path.dirname(resolvedPath), header.linkname || "");
+      if (!linkTarget.startsWith(absoluteDestDir + path.sep) && linkTarget !== absoluteDestDir) {
+        // Symlink points outside destDir — skip
+        stream.resume();
+        next();
         return;
       }
-      resolve();
-    });
+      const p = fs.promises.mkdir(path.dirname(resolvedPath), { recursive: true }).then(() => {
+        return fs.promises.symlink(header.linkname || "", resolvedPath).catch(() => {});
+      });
+      entryPromises.push(p);
+      stream.resume();
+      next();
+    } else {
+      stream.resume();
+      next();
+    }
   });
+
+  const gunzip = zlib.createGunzip();
+  const readStream = fs.createReadStream(archivePath);
+
+  await pipeline(readStream, gunzip, extract);
+  await Promise.all(entryPromises);
 }
 
 /**

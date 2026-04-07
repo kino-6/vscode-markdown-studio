@@ -1,10 +1,36 @@
-import { spawn } from 'node:child_process';
+import { spawn, ChildProcess } from 'node:child_process';
 
 export interface ProcessResult {
   exitCode: number;
   stdout: string;
   stderr: string;
   timedOut: boolean;
+}
+
+/**
+ * Cross-platform process kill.
+ * Windows: uses taskkill /F /T /PID to kill the entire process tree.
+ * Unix: sends SIGKILL.
+ * Errors are silently ignored (best-effort).
+ */
+export function killProcess(child: ChildProcess): void {
+  if (!child.pid) return;
+
+  if (process.platform === 'win32') {
+    try {
+      spawn('taskkill', ['/F', '/T', '/PID', String(child.pid)], {
+        stdio: 'ignore',
+      });
+    } catch {
+      // Best-effort — process may already be terminated
+    }
+  } else {
+    try {
+      child.kill('SIGKILL');
+    } catch {
+      // Best-effort
+    }
+  }
 }
 
 export async function runProcess(
@@ -25,7 +51,7 @@ export async function runProcess(
 
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill('SIGKILL');
+      killProcess(child);
     }, timeoutMs);
 
     child.stdout.on('data', (chunk) => stdout.push(String(chunk)));

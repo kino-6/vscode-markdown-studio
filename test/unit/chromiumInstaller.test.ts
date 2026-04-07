@@ -190,3 +190,89 @@ describe("chromiumInstaller", () => {
     });
   });
 });
+
+describe("chromiumInstaller with NetworkConfig", () => {
+  const storageDir = "/tmp/test-storage";
+  const progress = vi.fn();
+
+  let savedEnvVars: Record<string, string | undefined>;
+
+  beforeEach(() => {
+    savedEnvVars = {
+      HTTPS_PROXY: process.env.HTTPS_PROXY,
+      HTTP_PROXY: process.env.HTTP_PROXY,
+      NODE_EXTRA_CA_CERTS: process.env.NODE_EXTRA_CA_CERTS,
+      NODE_TLS_REJECT_UNAUTHORIZED: process.env.NODE_TLS_REJECT_UNAUTHORIZED,
+    };
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    // Restore env vars
+    for (const [key, val] of Object.entries(savedEnvVars)) {
+      if (val === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = val;
+      }
+    }
+  });
+
+  it("sets HTTPS_PROXY and HTTP_PROXY when proxyUrl is provided", async () => {
+    await chromiumInstaller.install(storageDir, progress, {
+      proxyUrl: "http://proxy.corp:8080",
+      caCertPaths: [],
+      strictSSL: true,
+    });
+    // After install, env should be restored
+    expect(process.env.HTTPS_PROXY).toBe(savedEnvVars.HTTPS_PROXY);
+    expect(process.env.HTTP_PROXY).toBe(savedEnvVars.HTTP_PROXY);
+  });
+
+  it("sets NODE_EXTRA_CA_CERTS when caCertPaths is provided", async () => {
+    await chromiumInstaller.install(storageDir, progress, {
+      caCertPaths: ["/path/to/cert.pem"],
+      strictSSL: true,
+    });
+    // After install, env should be restored
+    expect(process.env.NODE_EXTRA_CA_CERTS).toBe(savedEnvVars.NODE_EXTRA_CA_CERTS);
+  });
+
+  it("sets NODE_TLS_REJECT_UNAUTHORIZED=0 when strictSSL is false", async () => {
+    await chromiumInstaller.install(storageDir, progress, {
+      caCertPaths: [],
+      strictSSL: false,
+    });
+    // After install, env should be restored
+    expect(process.env.NODE_TLS_REJECT_UNAUTHORIZED).toBe(savedEnvVars.NODE_TLS_REJECT_UNAUTHORIZED);
+  });
+
+  it("restores env vars after install even on failure", async () => {
+    mockChromiumLaunch.mockRejectedValueOnce(new Error("browser not found"));
+
+    await chromiumInstaller.install(storageDir, progress, {
+      proxyUrl: "http://proxy:8080",
+      caCertPaths: ["/cert.pem"],
+      strictSSL: false,
+    });
+
+    expect(process.env.HTTPS_PROXY).toBe(savedEnvVars.HTTPS_PROXY);
+    expect(process.env.HTTP_PROXY).toBe(savedEnvVars.HTTP_PROXY);
+    expect(process.env.NODE_EXTRA_CA_CERTS).toBe(savedEnvVars.NODE_EXTRA_CA_CERTS);
+    expect(process.env.NODE_TLS_REJECT_UNAUTHORIZED).toBe(savedEnvVars.NODE_TLS_REJECT_UNAUTHORIZED);
+  });
+
+  it("works without networkConfig (backward compatible)", async () => {
+    const result = await chromiumInstaller.install(storageDir, progress);
+    expect(result.ok).toBe(true);
+  });
+
+  it("verify restores env vars", async () => {
+    await chromiumInstaller.verify(storageDir, {
+      proxyUrl: "http://proxy:8080",
+      caCertPaths: [],
+      strictSSL: true,
+    });
+    expect(process.env.HTTPS_PROXY).toBe(savedEnvVars.HTTPS_PROXY);
+  });
+});

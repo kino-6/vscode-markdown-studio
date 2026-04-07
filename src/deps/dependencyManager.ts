@@ -5,6 +5,8 @@ import { readManifest, writeManifest, MANIFEST_VERSION } from "./manifest";
 import { correttoInstaller as defaultCorrettoInstaller } from "./correttoInstaller";
 import { chromiumInstaller as defaultChromiumInstaller } from "./chromiumInstaller";
 import { detectPlatform as defaultDetectPlatform } from "./platformDetector";
+import { resolveNetworkConfig as defaultResolveNetworkConfig } from "../infra/networkConfig";
+import type { NetworkConfig } from "../infra/networkConfig";
 
 /**
  * Injectable dependencies for testability.
@@ -16,6 +18,7 @@ export interface DependencyManagerDeps {
   writeManifest: typeof writeManifest;
   detectPlatform: typeof defaultDetectPlatform;
   fileExists: (path: string) => Promise<boolean>;
+  resolveNetworkConfig: typeof defaultResolveNetworkConfig;
 }
 
 const defaultFileExists = async (filePath: string): Promise<boolean> => {
@@ -34,6 +37,7 @@ const defaultDeps: DependencyManagerDeps = {
   writeManifest,
   detectPlatform: defaultDetectPlatform,
   fileExists: defaultFileExists,
+  resolveNetworkConfig: defaultResolveNetworkConfig,
 };
 
 export class DependencyManager {
@@ -81,6 +85,7 @@ export class DependencyManager {
       },
       async (progress) => {
         const platform = this.deps.detectPlatform();
+        const networkConfig = this.deps.resolveNetworkConfig();
 
         const installTasks: Promise<void>[] = [];
 
@@ -88,7 +93,8 @@ export class DependencyManager {
           installTasks.push(
             this.deps.correttoInstaller
               .install(storageDir, platform, (msg, inc) =>
-                progress.report({ message: msg, increment: inc })
+                progress.report({ message: msg, increment: inc }),
+                networkConfig
               )
               .then((result) => {
                 if (result.ok) {
@@ -109,7 +115,8 @@ export class DependencyManager {
           installTasks.push(
             this.deps.chromiumInstaller
               .install(storageDir, (msg, inc) =>
-                progress.report({ message: msg, increment: inc })
+                progress.report({ message: msg, increment: inc }),
+                networkConfig
               )
               .then((result) => {
                 if (result.ok) {

@@ -80,8 +80,21 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
     // CSS file missing — degrade gracefully, code blocks render without color
   }
 
+  // Read the bundled preview script path for later injection via Playwright.
+  // We inject it after setContent so DOMContentLoaded fires and Mermaid renders.
+  const previewJsPath = path.join(context.extensionPath, 'dist', 'preview.js');
+  let previewJsContent: string | undefined;
+  try {
+    previewJsContent = await fs.readFile(previewJsPath, 'utf-8');
+  } catch {
+    // preview.js missing — Mermaid diagrams will not render in PDF
+  }
+
   // Remove the loading overlay — it's only needed for the live preview webview
   html = html.replace(/<div id="ms-loading-overlay"[^>]*>.*?<\/div>\s*<\/div>/s, '');
+
+  // Force all <details> elements open for PDF — collapsed content would be invisible
+  html = html.replace(/<details(?![^>]*\bopen\b)/g, '<details open');
 
   // Inject page-break CSS if enabled
   if (cfg.pdfHeaderFooter.pageBreakEnabled) {
@@ -117,6 +130,28 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
   try {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle' });
+
+    // Inject the bundled preview script (contains Mermaid) into the Playwright page.
+    // We use addScriptTag after setContent so the DOM is ready.
+    // First, stub acquireVsCodeApi which only exists in VS Code webviews.
+    if (previewJsContent) {
+      await page.addScriptTag({
+        content: 'if(typeof acquireVsCodeApi==="undefined"){window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){return undefined},setState:function(){}};};}',
+      });
+      await page.addScriptTag({ content: previewJsContent });
+
+      // Wait for Mermaid diagrams to render.
+      // The IIFE script fires DOMContentLoaded listeners synchronously when added
+      // after DOM is ready, but mermaid.render is async — poll for SVG output.
+      await page.waitForFunction(() => {
+        const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
+        if (hosts.length === 0) return true;
+        return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
+      }, { timeout: 30_000 }).catch(() => {
+        // Timeout — proceed with PDF generation; some diagrams may be missing
+      });
+    }
+
     await page.setViewportSize({ width: 980, height: 1400 });
 
     const outputPath = path.join(path.dirname(document.uri.fsPath), `${path.basename(document.uri.fsPath, '.md')}.pdf`);

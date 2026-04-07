@@ -123,3 +123,105 @@ describe("findJavaBinary", () => {
     });
   });
 });
+
+import * as zlib from "zlib";
+import * as tar from "tar-stream";
+import { extractTarGz } from "../../src/deps/extract";
+
+function createTarGz(
+  entries: Array<{ name: string; type: 'file' | 'directory' | 'symlink'; content?: string; linkname?: string; mode?: number }>
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const pack = tar.pack();
+    const chunks: Buffer[] = [];
+
+    for (const entry of entries) {
+      if (entry.type === 'file') {
+        pack.entry({ name: entry.name, type: 'file', mode: entry.mode ?? 0o644 }, entry.content ?? '');
+      } else if (entry.type === 'directory') {
+        pack.entry({ name: entry.name, type: 'directory', mode: entry.mode ?? 0o755 });
+      } else if (entry.type === 'symlink') {
+        pack.entry({ name: entry.name, type: 'symlink', linkname: entry.linkname ?? '' });
+      }
+    }
+    pack.finalize();
+
+    const gzip = zlib.createGzip();
+    pack.pipe(gzip);
+    gzip.on('data', (chunk: Buffer) => chunks.push(chunk));
+    gzip.on('end', () => resolve(Buffer.concat(chunks)));
+    gzip.on('error', reject);
+  });
+}
+
+describe("extractTarGz", () => {
+  it("extracts files correctly", async () => {
+    const destDir = path.join(tmpDir, "extract-normal");
+    await fs.promises.mkdir(destDir, { recursive: true });
+
+    const archive = await createTarGz([
+      { name: "dir/", type: "directory" },
+      { name: "dir/hello.txt", type: "file", content: "hello world" },
+      { name: "dir/sub/nested.txt", type: "file", content: "nested" },
+    ]);
+    const archivePath = path.join(tmpDir, "normal.tar.gz");
+    await fs.promises.writeFile(archivePath, archive);
+
+    await extractTarGz(archivePath, destDir);
+
+    const content = await fs.promises.readFile(path.join(destDir, "dir", "hello.txt"), "utf-8");
+    expect(content).toBe("hello world");
+
+    const nested = await fs.promises.readFile(path.join(destDir, "dir", "sub", "nested.txt"), "utf-8");
+    expect(nested).toBe("nested");
+  });
+
+  it("skips path traversal entries", async () => {
+    const destDir = path.join(tmpDir, "extract-traversal");
+    await fs.promises.mkdir(destDir, { recursive: true });
+
+    const archive = await createTarGz([
+      { name: "../evil.txt", type: "file", content: "evil" },
+      { name: "safe.txt", type: "file", content: "safe" },
+    ]);
+    const archivePath = path.join(tmpDir, "traversal.tar.gz");
+    await fs.promises.writeFile(archivePath, archive);
+
+    await extractTarGz(archivePath, destDir);
+
+    // Evil file should not exist outside destDir
+    expect(fs.existsSync(path.join(tmpDir, "evil.txt"))).toBe(false);
+    // Safe file should exist
+    const content = await fs.promises.readFile(path.join(destDir, "safe.txt"), "utf-8");
+    expect(content).toBe("safe");
+  });
+
+  it("skips symlinks pointing outside destDir", async () => {
+    const destDir = path.join(tmpDir, "extract-symlink");
+    await fs.promises.mkdir(destDir, { recursive: true });
+
+    const archive = await createTarGz([
+      { name: "safe.txt", type: "file", content: "safe" },
+      { name: "evil-link", type: "symlink", linkname: "/etc/passwd" },
+    ]);
+    const archivePath = path.join(tmpDir, "symlink.tar.gz");
+    await fs.promises.writeFile(archivePath, archive);
+
+    await extractTarGz(archivePath, destDir);
+
+    // Safe file should exist
+    expect(fs.existsSync(path.join(destDir, "safe.txt"))).toBe(true);
+    // Evil symlink should not exist
+    expect(fs.existsSync(path.join(destDir, "evil-link"))).toBe(false);
+  });
+
+  it("throws on corrupted archive", async () => {
+    const destDir = path.join(tmpDir, "extract-corrupt");
+    await fs.promises.mkdir(destDir, { recursive: true });
+
+    const archivePath = path.join(tmpDir, "corrupt.tar.gz");
+    await fs.promises.writeFile(archivePath, "not a real archive");
+
+    await expect(extractTarGz(archivePath, destDir)).rejects.toThrow();
+  });
+});

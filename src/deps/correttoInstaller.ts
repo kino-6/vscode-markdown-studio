@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import type { PlatformInfo, InstallerResult } from "./types";
+import type { NetworkConfig } from "../infra/networkConfig";
 import { downloadFile } from "./download";
 import { extractTarGz, extractZip, findJavaBinary } from "./extract";
 import { runProcess } from "../infra/runProcess";
@@ -79,7 +80,8 @@ export const correttoInstaller = {
   async install(
     storageDir: string,
     platform: PlatformInfo,
-    progress: (message: string, increment: number) => void
+    progress: (message: string, increment: number) => void,
+    networkConfig?: NetworkConfig
   ): Promise<InstallerResult> {
     const targetDir = path.join(storageDir, "corretto");
     const url = buildCorrettoUrl(platform);
@@ -91,7 +93,7 @@ export const correttoInstaller = {
     try {
       // Step 1: Download
       progress("Downloading Amazon Corretto JDK...", 10);
-      await downloadFile(url, archivePath);
+      await downloadFile(url, archivePath, networkConfig);
 
       // Step 2: Extract
       progress("Extracting JDK...", 20);

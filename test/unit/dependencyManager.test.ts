@@ -67,6 +67,7 @@ function makeDeps(overrides: Partial<DependencyManagerDeps> = {}): Partial<Depen
     writeManifest: vi.fn().mockResolvedValue(undefined),
     detectPlatform: () => ({ os: "linux", arch: "x64", archiveExt: "tar.gz" }) as PlatformInfo,
     fileExists: vi.fn().mockResolvedValue(false),
+    resolveNetworkConfig: vi.fn().mockReturnValue({ caCertPaths: [], strictSSL: true }),
     ...overrides,
   };
 }
@@ -307,5 +308,64 @@ describe("DependencyManager unit tests", () => {
     expect(deps.chromiumInstaller!.install).toHaveBeenCalledOnce();
 
     expect(status.allReady).toBe(true);
+  });
+});
+
+describe("DependencyManager NetworkConfig integration", () => {
+  beforeEach(async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "dm-nc-"));
+    ctx = { globalStorageUri: { fsPath: tmpDir } } as any;
+  });
+
+  afterEach(async () => {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("resolves NetworkConfig and passes it to correttoInstaller", async () => {
+    const mockNetworkConfig = { proxyUrl: "http://proxy:8080", caCertPaths: [], strictSSL: true };
+    const deps = makeDeps({
+      resolveNetworkConfig: vi.fn().mockReturnValue(mockNetworkConfig),
+    });
+    const dm = new DependencyManager(deps);
+
+    await dm.ensureAll(ctx);
+
+    expect(deps.resolveNetworkConfig).toHaveBeenCalled();
+    expect(deps.correttoInstaller!.install).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Object),
+      expect.any(Function),
+      mockNetworkConfig
+    );
+  });
+
+  it("resolves NetworkConfig and passes it to chromiumInstaller", async () => {
+    const mockNetworkConfig = { proxyUrl: "http://proxy:8080", caCertPaths: ["/cert.pem"], strictSSL: false };
+    const deps = makeDeps({
+      resolveNetworkConfig: vi.fn().mockReturnValue(mockNetworkConfig),
+    });
+    const dm = new DependencyManager(deps);
+
+    await dm.ensureAll(ctx);
+
+    expect(deps.chromiumInstaller!.install).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Function),
+      mockNetworkConfig
+    );
+  });
+
+  it("calls resolveNetworkConfig only when installation is needed", async () => {
+    const deps = makeDeps({
+      readManifest: vi.fn().mockResolvedValue(fullManifest()),
+      fileExists: vi.fn().mockResolvedValue(true),
+      resolveNetworkConfig: vi.fn().mockReturnValue({ caCertPaths: [], strictSSL: true }),
+    });
+    const dm = new DependencyManager(deps);
+
+    await dm.ensureAll(ctx);
+
+    // resolveNetworkConfig should NOT be called when everything is already installed
+    expect(deps.resolveNetworkConfig).not.toHaveBeenCalled();
   });
 });

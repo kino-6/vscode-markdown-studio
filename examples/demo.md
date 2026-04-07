@@ -525,6 +525,20 @@ gitGraph
 </details>
 
 <details>
+<summary>Mermaid: XY Chart</summary>
+
+```mermaid
+xychart-beta
+    title "Monthly Sales Revenue"
+    x-axis [Jan, Feb, Mar, Apr, May, Jun]
+    y-axis "Revenue (in $)" 4000 --> 11000
+    bar [5000, 6000, 7500, 8200, 9500, 10500]
+    line [5000, 6000, 7500, 8200, 9500, 10500]
+```
+
+</details>
+
+<details>
 <summary>SVG: Basic Shapes</summary>
 
 ```svg
