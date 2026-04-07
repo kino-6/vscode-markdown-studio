@@ -63,7 +63,14 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
 - [x] Mermaid diagrams
 - [x] PlantUML diagrams
 - [ ] LaTeX math (planned)
-- [ ] Footnotes (planned)
+- [x] Footnotes
+
+### Footnotes
+
+This sentence has a footnote[^1] and another one[^2].
+
+[^1]: This is the first footnote content.
+[^2]: This is the second footnote with **bold** text.
 
 ---
 

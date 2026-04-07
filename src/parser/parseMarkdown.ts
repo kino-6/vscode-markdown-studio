@@ -1,5 +1,6 @@
 import MarkdownIt from 'markdown-it';
 import taskLists from 'markdown-it-task-lists';
+import footnote from 'markdown-it-footnote';
 import { highlightCode } from './highlightCode';
 import { wrapWithLineNumbers, countLines } from './lineNumbers';
 
@@ -35,6 +36,7 @@ export function createMarkdownParser(options?: { lineNumbers?: boolean }): Markd
     highlight: (code: string, lang: string) => highlightCode(code, lang)
   });
   md.use(taskLists, { label: true, labelAfter: true });
+  md.use(footnote);
   addSourceLineAttributes(md);
 
   if (options?.lineNumbers) {

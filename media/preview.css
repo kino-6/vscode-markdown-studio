@@ -457,3 +457,49 @@ body.vscode-high-contrast .ms-line-numbers pre {
     color: #333;
   }
 }
+
+/* ── Footnotes ───────────────────────────────────────── */
+
+.footnotes-sep {
+  margin-top: 2rem;
+}
+
+.footnotes {
+  font-size: 0.85em;
+  color: var(--vscode-descriptionForeground, #666);
+}
+
+body.vscode-dark .footnotes {
+  color: var(--vscode-descriptionForeground, #999);
+}
+
+.footnotes ol {
+  padding-left: 1.5em;
+}
+
+.footnotes li {
+  margin: 0.25em 0;
+}
+
+.footnote-ref a {
+  text-decoration: none;
+  font-size: 0.75em;
+  vertical-align: super;
+  line-height: 0;
+}
+
+.footnote-backref {
+  text-decoration: none;
+  font-size: 0.75em;
+}
+
+@media print {
+  .footnotes {
+    font-size: 0.8em;
+    color: #666;
+  }
+
+  .footnote-ref a {
+    color: #000;
+  }
+}
