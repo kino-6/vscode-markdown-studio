@@ -191,6 +191,11 @@ export async function buildHtml(
   for (const w of customCssWarnings) {
     console.warn(w);
   }
+  // Show popup for syntax errors (user's customCss was skipped)
+  const syntaxWarning = customCssWarnings.find(w => w.includes('skipped due to syntax errors'));
+  if (syntaxWarning) {
+    vscode.window.showWarningMessage(`Markdown Studio: Custom CSS has syntax errors — rendering with default styles. Fix your CSS to apply it.`);
+  }
   const customCssBlock = customCss
     ? `<style>/* md-studio-custom-css */\n${customCss}</style>`
     : '';

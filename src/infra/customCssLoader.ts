@@ -81,13 +81,19 @@ export async function loadCustomCss(
     }
   }
 
-  // 2. インラインカスタムCSS追記
+  // 2. インラインカスタムCSS追記（構文エラー時はスキップ）
   if (customCss.trim()) {
-    const sanitized = sanitizeCss(customCss);
-    if (sanitized !== customCss) {
-      warnings.push('Potentially unsafe content was removed from custom CSS');
+    const syntaxErrors = validateCssSyntax(customCss);
+    if (syntaxErrors.length > 0) {
+      warnings.push(...syntaxErrors);
+      warnings.push('Custom CSS was skipped due to syntax errors — rendering with default styles');
+    } else {
+      const sanitized = sanitizeCss(customCss);
+      if (sanitized !== customCss) {
+        warnings.push('Potentially unsafe content was removed from custom CSS');
+      }
+      parts.push(sanitized);
     }
-    parts.push(sanitized);
   }
 
   return { css: parts.join('\n'), warnings };
