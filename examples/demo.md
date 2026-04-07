@@ -99,6 +99,12 @@ PlantUML
 :   A tool for creating UML diagrams from plain text.
 :   Uses Smetana layout engine (no Graphviz needed).
 
+### Superscript / Subscript
+
+- Water: H~2~O
+- Einstein: E = mc^2^
+- 19^th^ century
+
 ---
 
 ## 2. Mermaid Diagrams
