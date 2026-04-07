@@ -1,4 +1,11 @@
 import MarkdownIt from 'markdown-it';
+import taskLists from 'markdown-it-task-lists';
+import footnote from 'markdown-it-footnote';
+import { full as emoji } from 'markdown-it-emoji';
+import katex from '@vscode/markdown-it-katex';
+import deflist from 'markdown-it-deflist';
+import sup from 'markdown-it-sup';
+import sub from 'markdown-it-sub';
 import { highlightCode } from './highlightCode';
 import { wrapWithLineNumbers, countLines } from './lineNumbers';
 
@@ -33,6 +40,13 @@ export function createMarkdownParser(options?: { lineNumbers?: boolean }): Markd
     typographer: true,
     highlight: (code: string, lang: string) => highlightCode(code, lang)
   });
+  md.use(taskLists, { label: true, labelAfter: true });
+  md.use(footnote);
+  md.use(emoji);
+  md.use(katex, { throwOnError: false });
+  md.use(deflist);
+  md.use(sup);
+  md.use(sub);
   addSourceLineAttributes(md);
 
   if (options?.lineNumbers) {

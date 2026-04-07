@@ -181,6 +181,7 @@ export async function buildHtml(
   const styleHref = assets?.styleUri.toString() ?? '';
   const scriptSrc = assets?.scriptUri.toString() ?? '';
   const hljsStyleHref = assets?.hljsStyleUri?.toString() ?? '';
+  const katexStyleHref = assets?.katexStyleUri?.toString() ?? '';
   const cspSource = webview?.cspSource ?? 'none';
   const nonce = crypto.randomUUID();
   const config = getConfig();
@@ -214,6 +215,7 @@ ${cspTag}
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="${styleHref}">
 <link rel="stylesheet" href="${hljsStyleHref}">
+<link rel="stylesheet" href="${katexStyleHref}">
 ${styleBlock}
 ${customCssBlock}
 </head>

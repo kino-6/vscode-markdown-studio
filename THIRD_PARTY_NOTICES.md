@@ -32,3 +32,14 @@
 - Notes:
   - PlantUML.jar must remain unmodified.
   - When updating the jar, replace with an unmodified official binary and update `LICENSE.txt` accordingly.
+
+## KaTeX (Bundled CSS + Fonts)
+- Project: KaTeX
+- Homepage: https://katex.org/
+- License: MIT
+- Copyright: (c) 2013-2020 Khan Academy and other contributors
+- Bundled Files: `media/katex.min.css`, `media/fonts/KaTeX_*.woff2`
+- Usage: LaTeX math rendering in preview and PDF export.
+- Notes:
+  - Only woff2 font files are bundled (296KB total).
+  - CSS and fonts are from the official KaTeX npm package.

@@ -417,3 +417,105 @@ body.vscode-high-contrast .ms-line-numbers pre {
     border-right: 1px solid #ccc;
   }
 }
+
+/* ── Task lists (checkboxes) ─────────────────────────── */
+
+.task-list-item {
+  list-style-type: none;
+  position: relative;
+  margin-left: -1.5em;
+}
+
+.task-list-item input[type="checkbox"] {
+  margin-right: 0.5em;
+  vertical-align: middle;
+  pointer-events: none;
+}
+
+.task-list-item-label {
+  vertical-align: middle;
+}
+
+@media print {
+  .task-list-item input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 13px;
+    height: 13px;
+    border: 1px solid #999;
+    border-radius: 2px;
+    vertical-align: middle;
+    position: relative;
+  }
+
+  .task-list-item input[type="checkbox"]:checked::after {
+    content: "✓";
+    position: absolute;
+    top: -2px;
+    left: 1px;
+    font-size: 12px;
+    color: #333;
+  }
+}
+
+/* ── Footnotes ───────────────────────────────────────── */
+
+.footnotes-sep {
+  margin-top: 2rem;
+}
+
+.footnotes {
+  font-size: 0.85em;
+  color: var(--vscode-descriptionForeground, #666);
+}
+
+body.vscode-dark .footnotes {
+  color: var(--vscode-descriptionForeground, #999);
+}
+
+.footnotes ol {
+  padding-left: 1.5em;
+}
+
+.footnotes li {
+  margin: 0.25em 0;
+}
+
+.footnote-ref a {
+  text-decoration: none;
+  font-size: 0.75em;
+  vertical-align: super;
+  line-height: 0;
+}
+
+.footnote-backref {
+  text-decoration: none;
+  font-size: 0.75em;
+}
+
+@media print {
+  .footnotes {
+    font-size: 0.8em;
+    color: #666;
+  }
+
+  .footnote-ref a {
+    color: #000;
+  }
+}
+
+/* ── Definition lists ────────────────────────────────── */
+
+dl {
+  margin: 1rem 0;
+}
+
+dt {
+  font-weight: 600;
+  margin-top: 0.75em;
+}
+
+dd {
+  margin-left: 1.5em;
+  margin-bottom: 0.5em;
+}

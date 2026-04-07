@@ -57,6 +57,54 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
 - 日本語
   - 2byte文字テスト
 
+### Task Lists
+
+- [x] Markdown rendering
+- [x] Mermaid diagrams
+- [x] PlantUML diagrams
+- [ ] LaTeX math (planned)
+- [x] Footnotes
+
+### Footnotes
+
+This sentence has a footnote[^1] and another one[^2].
+
+[^1]: This is the first footnote content.
+[^2]: This is the second footnote with **bold** text.
+
+### Emoji
+
+:smile: :rocket: :thumbsup: :warning: :heart: :star: :fire: :coffee:
+
+### Math (KaTeX)
+
+Inline math: $E = mc^2$ and $\sum_{i=1}^{n} i = \frac{n(n+1)}{2}$
+
+Display math:
+
+$$
+\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
+$$
+
+$$
+f(x) = \frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{(x-\mu)^2}{2\sigma^2}}
+$$
+
+### Definition Lists
+
+Markdown
+:   A lightweight markup language for creating formatted text.
+
+PlantUML
+:   A tool for creating UML diagrams from plain text.
+:   Uses Smetana layout engine (no Graphviz needed).
+
+### Superscript / Subscript
+
+- Water: H~2~O
+- Einstein: E = mc^2^
+- 19^th^ century
+
 ---
 
 ## 2. Mermaid Diagrams
