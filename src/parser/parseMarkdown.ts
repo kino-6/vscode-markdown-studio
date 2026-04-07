@@ -1,4 +1,5 @@
 import MarkdownIt from 'markdown-it';
+import taskLists from 'markdown-it-task-lists';
 import { highlightCode } from './highlightCode';
 import { wrapWithLineNumbers, countLines } from './lineNumbers';
 
@@ -33,6 +34,7 @@ export function createMarkdownParser(options?: { lineNumbers?: boolean }): Markd
     typographer: true,
     highlight: (code: string, lang: string) => highlightCode(code, lang)
   });
+  md.use(taskLists, { label: true, labelAfter: true });
   addSourceLineAttributes(md);
 
   if (options?.lineNumbers) {

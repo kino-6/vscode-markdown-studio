@@ -2,7 +2,7 @@
   "name": "markdown-studio",
   "displayName": "Markdown Studio",
   "description": "Local-first Markdown authoring studio with integrated diagram rendering (Mermaid, PlantUML), SVG support, and secure PDF export.",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "local",
   "license": "MIT",
   "repository": {
@@ -126,7 +126,10 @@
           "description": "Enable header in PDF export. When enabled, a header with the document title is added to each page."
         },
         "markdownStudio.export.header.template": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "default": null,
           "description": "Custom HTML template for the PDF export header. Use Playwright CSS classes (pageNumber, totalPages, title, date, url) for dynamic content. When null, the built-in default template is used."
         },
@@ -136,7 +139,10 @@
           "description": "Enable footer in PDF export. When enabled, a footer with page numbers is added to each page."
         },
         "markdownStudio.export.footer.template": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "default": null,
           "description": "Custom HTML template for the PDF export footer. Use Playwright CSS classes (pageNumber, totalPages, title, date, url) for dynamic content. When null, the built-in default template is used."
         },
@@ -180,7 +186,12 @@
         "markdownStudio.style.theme": {
           "type": "string",
           "default": "default",
-          "enum": ["default", "modern", "markdown-pdf", "minimal"],
+          "enum": [
+            "default",
+            "modern",
+            "markdown-pdf",
+            "minimal"
+          ],
           "enumDescriptions": [
             "Default — no extra theme, uses preset + individual overrides only",
             "Modern — `body { font-family: Inter, system-ui; }` indigo accents (#6366f1), soft shadows, rounded corners",
@@ -246,8 +257,9 @@
   },
   "dependencies": {
     "highlight.js": "^11.11.1",
-    "markdown-it": "^14.1.0",
     "https-proxy-agent": "^7.0.6",
+    "markdown-it": "^14.1.0",
+    "markdown-it-task-lists": "^2.1.1",
     "playwright": "^1.53.0",
     "sanitize-html": "^2.17.0",
     "tar-stream": "^3.1.7"

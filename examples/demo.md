@@ -57,6 +57,14 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
 - 日本語
   - 2byte文字テスト
 
+### Task Lists
+
+- [x] Markdown rendering
+- [x] Mermaid diagrams
+- [x] PlantUML diagrams
+- [ ] LaTeX math (planned)
+- [ ] Footnotes (planned)
+
 ---
 
 ## 2. Mermaid Diagrams
