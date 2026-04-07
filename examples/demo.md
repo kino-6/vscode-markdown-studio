@@ -72,6 +72,10 @@ This sentence has a footnote[^1] and another one[^2].
 [^1]: This is the first footnote content.
 [^2]: This is the second footnote with **bold** text.
 
+### Emoji
+
+:smile: :rocket: :thumbsup: :warning: :heart: :star: :fire: :coffee:
+
 ---
 
 ## 2. Mermaid Diagrams

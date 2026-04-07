@@ -259,6 +259,7 @@
     "highlight.js": "^11.11.1",
     "https-proxy-agent": "^7.0.6",
     "markdown-it": "^14.1.0",
+    "markdown-it-emoji": "^3.0.0",
     "markdown-it-footnote": "^4.0.0",
     "markdown-it-task-lists": "^2.1.1",
     "playwright": "^1.53.0",

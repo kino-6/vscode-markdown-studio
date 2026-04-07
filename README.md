@@ -191,6 +191,7 @@ Planned for future releases:
 - Pandoc-style / academic CSS templates (via custom CSS feature)
 - Auto-export on save (watch mode)
 - Multi-file merge export (combine multiple .md files into one PDF)
+- Side-by-side preview in same editor tab (Markdown All in One style split view)
 
 ### Style Strategy
 

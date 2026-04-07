@@ -1,6 +1,7 @@
 import MarkdownIt from 'markdown-it';
 import taskLists from 'markdown-it-task-lists';
 import footnote from 'markdown-it-footnote';
+import { full as emoji } from 'markdown-it-emoji';
 import { highlightCode } from './highlightCode';
 import { wrapWithLineNumbers, countLines } from './lineNumbers';
 
@@ -37,6 +38,7 @@ export function createMarkdownParser(options?: { lineNumbers?: boolean }): Markd
   });
   md.use(taskLists, { label: true, labelAfter: true });
   md.use(footnote);
+  md.use(emoji);
   addSourceLineAttributes(md);
 
   if (options?.lineNumbers) {
