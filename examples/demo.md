@@ -76,6 +76,20 @@ This sentence has a footnote[^1] and another one[^2].
 
 :smile: :rocket: :thumbsup: :warning: :heart: :star: :fire: :coffee:
 
+### Math (KaTeX)
+
+Inline math: $E = mc^2$ and $\sum_{i=1}^{n} i = \frac{n(n+1)}{2}$
+
+Display math:
+
+$$
+\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
+$$
+
+$$
+f(x) = \frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{(x-\mu)^2}{2\sigma^2}}
+$$
+
 ---
 
 ## 2. Mermaid Diagrams

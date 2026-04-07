@@ -256,6 +256,7 @@
     "reinstall": "bash dev_reinstall.sh"
   },
   "dependencies": {
+    "@vscode/markdown-it-katex": "^1.1.2",
     "highlight.js": "^11.11.1",
     "https-proxy-agent": "^7.0.6",
     "markdown-it": "^14.1.0",

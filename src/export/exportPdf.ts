@@ -81,6 +81,15 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
     // CSS file missing — degrade gracefully, code blocks render without color
   }
 
+  // Inject KaTeX CSS for math rendering in PDF
+  const katexCssPath = path.join(context.extensionPath, 'media', 'katex.min.css');
+  try {
+    const katexCss = await fs.readFile(katexCssPath, 'utf-8');
+    html = html.replace('</head>', `<style>${katexCss}</style>\n</head>`);
+  } catch {
+    // KaTeX CSS missing — math will render without proper styling
+  }
+
   // Inject custom CSS (theme + inline) if configured
   const { css: customCss, warnings: customCssWarnings } = await loadCustomCss(cfg.theme, cfg.customCss, context.extensionPath);
   for (const w of customCssWarnings) {
