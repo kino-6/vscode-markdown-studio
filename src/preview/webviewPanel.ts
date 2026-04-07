@@ -246,7 +246,14 @@ export async function openOrRefreshPreview(
         const cfg = getConfig();
         const cssErrors = validateCssSyntax(cfg.customCss);
         if (cssErrors.length > 0) {
-          vscode.window.showWarningMessage(`Markdown Studio: ${cssErrors[0]}`);
+          const action = await vscode.window.showWarningMessage(
+            `Markdown Studio: ${cssErrors[0]}`,
+            'Clear Custom CSS'
+          );
+          if (action === 'Clear Custom CSS') {
+            await vscode.workspace.getConfiguration('markdownStudio').update('style.customCss', '', vscode.ConfigurationTarget.Global);
+            return; // config change will re-trigger this listener
+          }
         }
         disposeCssWatcher();
         setupCssWatcher(context, document);
@@ -354,7 +361,14 @@ export async function openOrRefreshPreview(
       const cfg = getConfig();
       const cssErrors = validateCssSyntax(cfg.customCss);
       if (cssErrors.length > 0) {
-        vscode.window.showWarningMessage(`Markdown Studio: ${cssErrors[0]}`);
+        const action = await vscode.window.showWarningMessage(
+          `Markdown Studio: ${cssErrors[0]}`,
+          'Clear Custom CSS'
+        );
+        if (action === 'Clear Custom CSS') {
+          await vscode.workspace.getConfiguration('markdownStudio').update('style.customCss', '', vscode.ConfigurationTarget.Global);
+          return; // config change will re-trigger this listener
+        }
       }
       disposeCssWatcher();
       setupCssWatcher(context, document);

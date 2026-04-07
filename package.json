@@ -193,7 +193,7 @@
           "type": "string",
           "default": "",
           "editPresentation": "multilineText",
-          "markdownDescription": "Final CSS layer — overrides everything above (preset, individual settings, theme). Write CSS rules directly.\n\n**Examples:**\n\n`h1 { color: navy; border-bottom: 2px solid navy; }`\n\n`blockquote { border-left: 3px solid orange; background: #fff8f0; }`\n\n`table { border-collapse: collapse; } th, td { border: 1px solid #ddd; padding: 8px; }`\n\n`code { background: #f0f0f0; color: #d63384; }`\n\nFull theme samples are in `examples/custom-styles/` — copy and paste into this field to customize."
+          "markdownDescription": "Final CSS layer — overrides everything above (preset, individual settings, theme). Write CSS rules directly.\n\n**Examples:**\n\n`h1 { color: navy; border-bottom: 2px solid navy; }`\n\n`blockquote { border-left: 3px solid orange; background: #fff8f0; }`\n\n`table { border-collapse: collapse; } th, td { border: 1px solid #ddd; padding: 8px; }`\n\n`code { background: #f0f0f0; color: #d63384; }`\n\nFull theme samples: [modern.css](https://github.com/kino-6/vscode-markdown-studio/blob/main/examples/custom-styles/modern.css) · [markdown-pdf.css](https://github.com/kino-6/vscode-markdown-studio/blob/main/examples/custom-styles/markdown-pdf.css) · [minimal.css](https://github.com/kino-6/vscode-markdown-studio/blob/main/examples/custom-styles/minimal.css)"
         },
         "markdownStudio.export.margin": {
           "type": "string",
