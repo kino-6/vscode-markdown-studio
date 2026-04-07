@@ -183,9 +183,9 @@
           "enum": ["default", "modern", "markdown-pdf", "minimal"],
           "enumDescriptions": [
             "Default — no extra theme, uses preset + individual overrides only",
-            "Modern — indigo accents, soft shadows, refined typography",
-            "Markdown PDF — classic look matching the Markdown PDF extension",
-            "Minimal — bare-bones, clean starting point"
+            "Modern — `body { font-family: Inter, system-ui; }` indigo accents (#6366f1), soft shadows, rounded corners",
+            "Markdown PDF — `table { border: none; }` classic look matching the Markdown PDF extension, simple borders",
+            "Minimal — `body { max-width: 720px; }` bare-bones, clean starting point for customization"
           ],
           "markdownDescription": "Visual theme applied on top of the preset. Overrides preset and individual settings. Can be further overridden by Custom CSS."
         },
@@ -193,7 +193,7 @@
           "type": "string",
           "default": "",
           "editPresentation": "multilineText",
-          "markdownDescription": "Final CSS layer — overrides everything above (preset, individual settings, theme). Write CSS rules directly.\n\nExample: `h1 { color: navy; } blockquote { border-left: 3px solid orange; }`"
+          "markdownDescription": "Final CSS layer — overrides everything above (preset, individual settings, theme). Write CSS rules directly.\n\n**Examples:**\n\n`h1 { color: navy; border-bottom: 2px solid navy; }`\n\n`blockquote { border-left: 3px solid orange; background: #fff8f0; }`\n\n`table { border-collapse: collapse; } th, td { border: 1px solid #ddd; padding: 8px; }`\n\n`code { background: #f0f0f0; color: #d63384; }`\n\nFull theme samples are in `examples/custom-styles/` — copy and paste into this field to customize."
         },
         "markdownStudio.export.margin": {
           "type": "string",

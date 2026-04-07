@@ -4,7 +4,7 @@ import { getPreviewAssetUris } from './previewAssets';
 import { validateEnvironment } from '../commands/validateEnvironmentCore';
 import { dependencyStatus } from '../extension';
 import { getConfig } from '../infra/config';
-import { resolveThemePath } from '../infra/customCssLoader';
+import { resolveThemePath, validateCssSyntax } from '../infra/customCssLoader';
 import { createMarkdownParser } from '../parser/parseMarkdown';
 import { extractHeadings } from '../toc/extractHeadings';
 import { resolveAnchors } from '../toc/anchorResolver';
@@ -242,6 +242,12 @@ export async function openOrRefreshPreview(
     setupCssWatcher(context, document);
     configChangeSubscription = vscode.workspace.onDidChangeConfiguration(async (e) => {
       if (e.affectsConfiguration('markdownStudio.style.theme') || e.affectsConfiguration('markdownStudio.style.customCss')) {
+        // Validate customCss syntax
+        const cfg = getConfig();
+        const cssErrors = validateCssSyntax(cfg.customCss);
+        if (cssErrors.length > 0) {
+          vscode.window.showWarningMessage(`Markdown Studio: ${cssErrors[0]}`);
+        }
         disposeCssWatcher();
         setupCssWatcher(context, document);
         // Re-render preview with new theme/customCss
@@ -344,6 +350,12 @@ export async function openOrRefreshPreview(
   setupCssWatcher(context, document);
   configChangeSubscription = vscode.workspace.onDidChangeConfiguration(async (e) => {
     if (e.affectsConfiguration('markdownStudio.style.theme') || e.affectsConfiguration('markdownStudio.style.customCss')) {
+      // Validate customCss syntax
+      const cfg = getConfig();
+      const cssErrors = validateCssSyntax(cfg.customCss);
+      if (cssErrors.length > 0) {
+        vscode.window.showWarningMessage(`Markdown Studio: ${cssErrors[0]}`);
+      }
       disposeCssWatcher();
       setupCssWatcher(context, document);
       // Re-render preview with new theme/customCss

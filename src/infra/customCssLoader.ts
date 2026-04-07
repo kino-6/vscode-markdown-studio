@@ -92,3 +92,35 @@ export async function loadCustomCss(
 
   return { css: parts.join('\n'), warnings };
 }
+
+/**
+ * 簡易CSSバリデーション。
+ * 括弧の対応と基本的な構文エラーをチェックする。
+ * エラーがあればメッセージの配列を返し、問題なければ空配列を返す。
+ */
+export function validateCssSyntax(css: string): string[] {
+  const errors: string[] = [];
+  if (!css.trim()) return errors;
+
+  // Strip string literals and comments to avoid false positives
+  const stripped = css
+    .replace(/\/\*[\s\S]*?\*\//g, '')   // block comments
+    .replace(/"[^"]*"/g, '""')          // double-quoted strings
+    .replace(/'[^']*'/g, "''");         // single-quoted strings
+
+  // Check brace balance
+  let depth = 0;
+  for (let i = 0; i < stripped.length; i++) {
+    if (stripped[i] === '{') depth++;
+    if (stripped[i] === '}') depth--;
+    if (depth < 0) {
+      errors.push('CSS syntax error: unexpected "}" — closing brace without matching opening brace');
+      return errors;
+    }
+  }
+  if (depth > 0) {
+    errors.push(`CSS syntax error: ${depth} unclosed "{" — missing closing brace(s)`);
+  }
+
+  return errors;
+}

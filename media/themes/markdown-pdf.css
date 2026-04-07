@@ -104,24 +104,26 @@ code {
 
 table {
   border-collapse: collapse;
-  width: 100%;
+  width: auto;
   margin: 1rem 0;
+  display: table;
 }
 
 th,
 td {
-  border: 1px solid #dfe2e5;
+  border: none;
+  border-bottom: 1px solid #dfe2e5;
   padding: 6px 13px;
   text-align: left;
 }
 
 th {
-  background: #f6f8fa;
+  background: none;
   font-weight: 600;
 }
 
 tbody tr:nth-child(even) {
-  background: #f6f8fa;
+  background: none;
 }
 
 /* ── Blockquotes ─────────────────────────────────────── */
@@ -296,12 +298,13 @@ body.vscode-dark .ms-toc a {
 
   table {
     display: table;
-    width: 100%;
+    width: auto;
     page-break-inside: avoid;
   }
 
   th, td {
-    border: 1px solid #999;
+    border: none;
+    border-bottom: 1px solid #ccc;
   }
 
   img {
