@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 import * as vscode from 'vscode';
 import { renderMarkdownDocument } from '../renderers/renderMarkdown';
 import { getConfig } from '../infra/config';
+import { loadCustomCss } from '../infra/customCssLoader';
 import { ResolvedStyleConfig } from '../types/models';
 
 const DEFAULT_FONT_FAMILY = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
@@ -182,7 +183,17 @@ export async function buildHtml(
   const hljsStyleHref = assets?.hljsStyleUri?.toString() ?? '';
   const cspSource = webview?.cspSource ?? 'none';
   const nonce = crypto.randomUUID();
-  const styleBlock = buildStyleBlock(getConfig().style);
+  const config = getConfig();
+  const styleBlock = buildStyleBlock(config.style);
+
+  // Load custom CSS (theme + inline) if configured
+  const { css: customCss, warnings: customCssWarnings } = await loadCustomCss(config.theme, config.customCss, context.extensionPath);
+  for (const w of customCssWarnings) {
+    console.warn(w);
+  }
+  const customCssBlock = customCss
+    ? `<style>/* md-studio-custom-css */\n${customCss}</style>`
+    : '';
 
   // CSP: 'unsafe-eval' is required because Mermaid 11.x uses new Function() internally
   // PDF context (no webview): omit CSP entirely — Playwright runs a local trusted Chromium
@@ -199,6 +210,7 @@ ${cspTag}
 <link rel="stylesheet" href="${styleHref}">
 <link rel="stylesheet" href="${hljsStyleHref}">
 ${styleBlock}
+${customCssBlock}
 </head>
 <body>
 ${htmlBody}

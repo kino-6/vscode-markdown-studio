@@ -20,6 +20,8 @@ export interface MarkdownStudioConfig {
   style: ResolvedStyleConfig;
   toc: TocConfig;
   codeBlock: CodeBlockConfig;
+  theme: string;
+  customCss: string;
 }
 
 /**
@@ -122,5 +124,7 @@ export function getConfig(): MarkdownStudioConfig {
     codeBlock: {
       lineNumbers: cfg.get<boolean>('codeBlock.lineNumbers', true),
     },
+    theme: cfg.get<string>('style.theme', 'default'),
+    customCss: cfg.get<string>('style.customCss', ''),
   };
 }

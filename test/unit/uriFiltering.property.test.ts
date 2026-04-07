@@ -46,6 +46,13 @@ vi.mock('vscode', () => {
     workspace: {
       getConfiguration: () => configuration,
       onDidChangeTextDocument: vi.fn(() => ({ dispose: vi.fn() })),
+      onDidChangeConfiguration: vi.fn(() => ({ dispose: vi.fn() })),
+      createFileSystemWatcher: vi.fn(() => ({
+        onDidChange: vi.fn(() => ({ dispose: vi.fn() })),
+        onDidCreate: vi.fn(() => ({ dispose: vi.fn() })),
+        onDidDelete: vi.fn(() => ({ dispose: vi.fn() })),
+        dispose: vi.fn(),
+      })),
     },
     window: {
       createWebviewPanel: vi.fn(() => mockPanel),
@@ -96,7 +103,11 @@ vi.mock('../../src/extension', () => ({
 }));
 
 vi.mock('../../src/infra/config', () => ({
-  getConfig: vi.fn(() => ({ javaPath: 'java', style: {} })),
+  getConfig: vi.fn(() => ({ javaPath: 'java', style: {}, theme: 'default', customCss: '' })),
+}));
+
+vi.mock('../../src/infra/customCssLoader', () => ({
+  resolveThemePath: vi.fn(() => null),
 }));
 
 vi.mock('../../src/parser/parseMarkdown', () => ({

@@ -1,0 +1,476 @@
+/*
+ * Markdown Studio — Modern Theme
+ *
+ * Usage:
+ *   "markdownStudio.style.customCssPath": "./examples/custom-styles/modern.css"
+ *
+ * This sample demonstrates all customizable elements.
+ * Copy and modify to create your own theme.
+ */
+
+/* ── CSS Variables ───────────────────────────────────── */
+
+:root {
+  --modern-accent: #6366f1;
+  --modern-accent-light: #818cf8;
+  --modern-accent-bg: rgba(99, 102, 241, 0.08);
+  --modern-text: #1e293b;
+  --modern-text-secondary: #64748b;
+  --modern-bg: #ffffff;
+  --modern-surface: #f8fafc;
+  --modern-border: #e2e8f0;
+  --modern-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --modern-shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --modern-radius: 8px;
+  --modern-radius-sm: 4px;
+  --modern-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --modern-mono: "JetBrains Mono", "Fira Code", "SFMono-Regular", Consolas, monospace;
+  --modern-code-bg: #f1f5f9;
+  --modern-code-border: #e2e8f0;
+  --modern-blockquote-border: #6366f1;
+  --modern-blockquote-bg: rgba(99, 102, 241, 0.04);
+  --modern-table-header-bg: #f8fafc;
+  --modern-table-stripe-bg: #fafbfc;
+  --modern-link: #6366f1;
+  --modern-link-hover: #4f46e5;
+}
+
+/* ── Body / Base Typography ──────────────────────────── */
+
+body {
+  font-family: var(--modern-font);
+  color: var(--modern-text);
+  line-height: 1.75;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2rem 2.5rem;
+  background: var(--modern-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Headings ────────────────────────────────────────── */
+
+h1 {
+  font-family: var(--modern-font);
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  color: var(--modern-text);
+  border-bottom: 2px solid var(--modern-border);
+  padding-bottom: 0.5rem;
+}
+
+h2 {
+  font-family: var(--modern-font);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  color: var(--modern-text);
+}
+
+h3 {
+  font-family: var(--modern-font);
+  font-size: 1.375rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+  color: var(--modern-text);
+}
+
+h4 {
+  font-family: var(--modern-font);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--modern-text-secondary);
+}
+
+h5 {
+  font-family: var(--modern-font);
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--modern-text-secondary);
+}
+
+h6 {
+  font-family: var(--modern-font);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--modern-text-secondary);
+}
+
+/* ── Code Blocks ─────────────────────────────────────── */
+
+pre {
+  background: var(--modern-code-bg);
+  border: 1px solid var(--modern-code-border);
+  border-radius: var(--modern-radius);
+  padding: 1.25em;
+  margin: 1.25rem 0;
+  overflow-x: auto;
+  box-shadow: var(--modern-shadow);
+}
+
+pre code {
+  font-family: var(--modern-mono);
+  font-size: 0.85em;
+  line-height: 1.6;
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* ── Inline Code ─────────────────────────────────────── */
+
+code {
+  font-family: var(--modern-mono);
+  font-size: 0.85em;
+  padding: 0.15em 0.4em;
+  border-radius: var(--modern-radius-sm);
+  background: var(--modern-accent-bg);
+  color: var(--modern-accent);
+}
+
+/* ── Tables ──────────────────────────────────────────── */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.925em;
+}
+
+th {
+  background: var(--modern-table-header-bg);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid var(--modern-border);
+  color: var(--modern-text-secondary);
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--modern-border);
+}
+
+th,
+td {
+  border-left: none;
+  border-right: none;
+}
+
+tbody tr:nth-child(even) {
+  background: var(--modern-table-stripe-bg);
+}
+
+tbody tr:hover {
+  background: var(--modern-accent-bg);
+}
+
+/* ── Blockquotes ─────────────────────────────────────── */
+
+blockquote {
+  margin: 1.25rem 0;
+  padding: 0.75rem 1.25rem;
+  border-left: 4px solid var(--modern-blockquote-border);
+  background: var(--modern-blockquote-bg);
+  border-radius: 0 var(--modern-radius) var(--modern-radius) 0;
+  color: var(--modern-text-secondary);
+  font-style: italic;
+}
+
+blockquote p {
+  margin: 0.25em 0;
+}
+
+/* ── Lists (ordered & unordered) ─────────────────────── */
+
+ul,
+ol {
+  padding-left: 1.75em;
+  margin: 1rem 0;
+}
+
+li {
+  margin: 0.35em 0;
+  line-height: 1.7;
+}
+
+li > ul,
+li > ol {
+  margin: 0.25em 0;
+}
+
+ul li::marker {
+  color: var(--modern-accent);
+}
+
+ol li::marker {
+  color: var(--modern-accent);
+  font-weight: 600;
+}
+
+/* ── Links ───────────────────────────────────────────── */
+
+a {
+  color: var(--modern-link);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+a:hover {
+  color: var(--modern-link-hover);
+  border-bottom-color: var(--modern-link-hover);
+}
+
+/* ── Images ──────────────────────────────────────────── */
+
+img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--modern-radius);
+  box-shadow: var(--modern-shadow-lg);
+  margin: 1rem 0;
+}
+
+/* ── Horizontal Rule ─────────────────────────────────── */
+
+hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--modern-border), transparent);
+  margin: 2rem 0;
+}
+
+/* ── TOC (Table of Contents) — .ms-toc ───────────────── */
+
+.ms-toc {
+  margin: 1.5rem 0;
+  padding: 1.25rem 1.5rem;
+  background: var(--modern-surface);
+  border: 1px solid var(--modern-border);
+  border-radius: var(--modern-radius);
+  box-shadow: var(--modern-shadow);
+}
+
+.ms-toc ul,
+.ms-toc ol {
+  margin: 0;
+  padding-left: 1.5em;
+  list-style: none;
+}
+
+.ms-toc > ul,
+.ms-toc > ol {
+  padding-left: 0;
+}
+
+.ms-toc li {
+  margin: 0.3em 0;
+  line-height: 1.6;
+}
+
+.ms-toc a {
+  color: var(--modern-link);
+  text-decoration: none;
+  font-size: 0.925em;
+  transition: color 0.15s ease;
+}
+
+.ms-toc a:hover {
+  color: var(--modern-link-hover);
+  border-bottom: none;
+}
+
+/* ── Diagram Containers — .mermaid-host ──────────────── */
+
+.mermaid-host {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: var(--modern-surface);
+  border: 1px solid var(--modern-border);
+  border-radius: var(--modern-radius);
+  box-shadow: var(--modern-shadow);
+  text-align: center;
+  overflow-x: auto;
+}
+
+/* ── Dark Mode (.vscode-dark) ────────────────────────── */
+
+body.vscode-dark {
+  --modern-accent: #818cf8;
+  --modern-accent-light: #a5b4fc;
+  --modern-accent-bg: rgba(129, 140, 248, 0.1);
+  --modern-text: #e2e8f0;
+  --modern-text-secondary: #94a3b8;
+  --modern-bg: #0f172a;
+  --modern-surface: #1e293b;
+  --modern-border: #334155;
+  --modern-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
+  --modern-shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --modern-code-bg: #1e293b;
+  --modern-code-border: #334155;
+  --modern-blockquote-border: #818cf8;
+  --modern-blockquote-bg: rgba(129, 140, 248, 0.06);
+  --modern-table-header-bg: #1e293b;
+  --modern-table-stripe-bg: #1a2332;
+  --modern-link: #818cf8;
+  --modern-link-hover: #a5b4fc;
+}
+
+body.vscode-dark {
+  background: var(--modern-bg);
+  color: var(--modern-text);
+}
+
+body.vscode-dark h1 {
+  border-bottom-color: var(--modern-border);
+}
+
+body.vscode-dark code {
+  background: var(--modern-accent-bg);
+  color: var(--modern-accent-light);
+}
+
+body.vscode-dark img {
+  box-shadow: var(--modern-shadow-lg);
+  opacity: 0.92;
+}
+
+body.vscode-dark hr {
+  background: linear-gradient(to right, transparent, var(--modern-border), transparent);
+}
+
+/* ── Print Styles (@media print) ─────────────────────── */
+
+@media print {
+  :root {
+    --modern-accent: #4f46e5;
+    --modern-text: #000000;
+    --modern-text-secondary: #374151;
+    --modern-bg: #ffffff;
+    --modern-border: #d1d5db;
+    --modern-code-bg: #f3f4f6;
+    --modern-code-border: #d1d5db;
+  }
+
+  body {
+    max-width: none;
+    padding: 0;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #000;
+    background: #fff;
+  }
+
+  h1 {
+    font-size: 22pt;
+    page-break-after: avoid;
+  }
+
+  h2 {
+    font-size: 18pt;
+    page-break-after: avoid;
+  }
+
+  h3 {
+    font-size: 14pt;
+    page-break-after: avoid;
+  }
+
+  h4, h5, h6 {
+    page-break-after: avoid;
+  }
+
+  pre {
+    box-shadow: none;
+    border: 1px solid #d1d5db;
+    background: #f9fafb;
+    page-break-inside: avoid;
+  }
+
+  pre code {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  code {
+    background: #f3f4f6;
+    color: #4f46e5;
+  }
+
+  table {
+    display: table;
+    width: 100%;
+    page-break-inside: avoid;
+  }
+
+  th {
+    background: #f3f4f6;
+  }
+
+  th, td {
+    border-bottom: 1px solid #d1d5db;
+  }
+
+  blockquote {
+    border-left-color: #4f46e5;
+    background: #f9fafb;
+    color: #374151;
+  }
+
+  img {
+    box-shadow: none;
+    page-break-inside: avoid;
+  }
+
+  a {
+    color: #4f46e5;
+    text-decoration: underline;
+  }
+
+  a::after {
+    content: "";
+  }
+
+  .ms-toc {
+    box-shadow: none;
+    border: 1px solid #d1d5db;
+    background: #f9fafb;
+  }
+
+  .mermaid-host {
+    box-shadow: none;
+    border: 1px solid #d1d5db;
+    page-break-inside: avoid;
+  }
+
+  .ms-copy-btn {
+    display: none;
+  }
+}

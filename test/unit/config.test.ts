@@ -67,3 +67,17 @@ describe('getConfig().codeBlock', () => {
     });
   });
 });
+
+describe('getConfig().theme', () => {
+  it('returns default as default theme', () => {
+    const config = getConfig();
+    expect(config.theme).toBe('default');
+  });
+});
+
+describe('getConfig().customCss', () => {
+  it('returns empty string as default customCss', () => {
+    const config = getConfig();
+    expect(config.customCss).toBe('');
+  });
+});

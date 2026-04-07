@@ -76,6 +76,13 @@ vi.mock('vscode', () => {
         capturedChangeCallback = cb;
         return { dispose: vi.fn() };
       }),
+      onDidChangeConfiguration: vi.fn(() => ({ dispose: vi.fn() })),
+      createFileSystemWatcher: vi.fn(() => ({
+        onDidChange: vi.fn(() => ({ dispose: vi.fn() })),
+        onDidCreate: vi.fn(() => ({ dispose: vi.fn() })),
+        onDidDelete: vi.fn(() => ({ dispose: vi.fn() })),
+        dispose: vi.fn(),
+      })),
     },
     window: {
       createWebviewPanel: vi.fn(() => mockPanel),
