@@ -90,6 +90,15 @@ $$
 f(x) = \frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{(x-\mu)^2}{2\sigma^2}}
 $$
 
+### Definition Lists
+
+Markdown
+:   A lightweight markup language for creating formatted text.
+
+PlantUML
+:   A tool for creating UML diagrams from plain text.
+:   Uses Smetana layout engine (no Graphviz needed).
+
 ---
 
 ## 2. Mermaid Diagrams

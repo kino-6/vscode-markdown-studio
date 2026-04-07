@@ -503,3 +503,19 @@ body.vscode-dark .footnotes {
     color: #000;
   }
 }
+
+/* ── Definition lists ────────────────────────────────── */
+
+dl {
+  margin: 1rem 0;
+}
+
+dt {
+  font-weight: 600;
+  margin-top: 0.75em;
+}
+
+dd {
+  margin-left: 1.5em;
+  margin-bottom: 0.5em;
+}
