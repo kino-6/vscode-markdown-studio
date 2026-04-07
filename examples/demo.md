@@ -24,7 +24,8 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
     - [Security Summary](#security-summary)
   - [7. Theme Adaptability](#7-theme-adaptability)
   - [8. Diagram Type Catalog](#8-diagram-type-catalog)
-  - [9. PDF Export](#9-pdf-export)
+  - [9. Custom CSS](#9-custom-css)
+  - [10. PDF Export](#10-pdf-export)
 <!-- /TOC -->
 
 
@@ -623,7 +624,43 @@ xychart-beta
 
 ---
 
-## 9. PDF Export
+## 9. Custom CSS
+
+Markdown Studio supports built-in themes and inline CSS customization.
+
+### Bundled Themes
+
+Select a theme from the settings dropdown (`markdownStudio.style.theme`):
+
+| Theme | Description |
+|-------|-------------|
+| `default` | No extra styling — uses the selected preset only |
+| `modern` | Indigo accents, soft shadows, refined typography |
+| `markdown-pdf` | Classic look matching the popular Markdown PDF extension |
+| `minimal` | Bare-bones, clean starting point |
+
+All themes include dark mode support and print-optimized styles.
+
+### Setup
+
+```jsonc
+// Pick a theme from the dropdown
+"markdownStudio.style.theme": "modern"
+
+// Optionally add your own CSS on top
+"markdownStudio.style.customCss": "h1 { color: navy; } blockquote { border-left: 3px solid orange; }"
+```
+
+### How It Works
+
+- Theme CSS is injected **after** the preset styles, so theme rules take priority
+- `customCss` is applied **after** the theme, so your inline rules override everything
+- The same CSS applies to both preview and PDF export for consistent output
+- Copy any bundled theme and customize it to create your own
+
+---
+
+## 10. PDF Export
 
 This entire document can be exported to PDF:
 

@@ -81,6 +81,7 @@ Five built-in presets with per-setting overrides:
 | `Markdown Studio: Validate Local Environment` | Check Java, PlantUML JAR, temp directory |
 | `Markdown Studio: Setup Dependencies` | Install Amazon Corretto JDK and Chromium |
 | `Markdown Studio: Reload Preview (Clear Cache)` | Clear webview cache and reload |
+| `Markdown Studio: Insert TOC` | Insert or update Table of Contents at cursor |
 
 ## Configuration
 
@@ -100,6 +101,52 @@ Five built-in presets with per-setting overrides:
 | `markdownStudio.preview.sourceJump.enabled` | boolean | `false` | Double-click preview → source line |
 | `markdownStudio.security.externalResources.mode` | enum | `whitelist` | External resource control mode |
 | `markdownStudio.security.externalResources.allowedDomains` | array | GitHub domains | Whitelisted domains |
+| `markdownStudio.toc.levels` | string | `1-3` | TOC heading level range (e.g. `2-4`) |
+| `markdownStudio.toc.orderedList` | boolean | `false` | Use ordered list for TOC |
+| `markdownStudio.toc.pageBreak` | boolean | `true` | Page break around TOC in PDF |
+| `markdownStudio.codeBlock.lineNumbers` | boolean | `true` | Show line numbers in code blocks |
+| `markdownStudio.network.caCertificates` | array | `[]` | Extra CA certificate paths (PEM) for SSL inspection |
+| `markdownStudio.style.theme` | enum | `default` | Built-in CSS theme (default / modern / markdown-pdf / minimal) |
+| `markdownStudio.style.customCss` | string | `""` | Additional CSS rules written directly in settings |
+
+### Custom CSS
+
+Styling is applied in layers. Each layer overrides the one before it:
+
+```
+1. Base CSS        — layout, tables, code blocks, TOC structure
+2. Preset          — font, size, line-height, heading/code-block defaults (preset setting)
+3. Individual      — fontFamily, fontSize, lineHeight overrides (per-setting)
+4. Theme           — full visual theme: modern, markdown-pdf, minimal (theme setting)
+5. Custom CSS      — your own CSS rules (customCss setting)
+```
+
+Pick a preset for basic typography, then optionally layer a theme on top for a complete visual overhaul. Use customCss for final tweaks.
+
+```jsonc
+// 1. Choose a preset for base typography
+"markdownStudio.style.preset": "github"
+
+// 2. Optionally override individual values
+"markdownStudio.style.fontSize": 15
+
+// 3. Layer a visual theme on top
+"markdownStudio.style.theme": "modern"
+
+// 4. Fine-tune with inline CSS
+"markdownStudio.style.customCss": "h1 { color: navy; }"
+```
+
+Built-in themes:
+
+| Theme | Description |
+|-------|-------------|
+| `default` | No extra styling — preset only |
+| `modern` | Indigo accents, soft shadows, refined typography |
+| `markdown-pdf` | Classic Markdown PDF extension look |
+| `minimal` | Bare-bones, clean starting point |
+
+The same CSS stack applies to both preview and PDF export.
 
 ## PlantUML
 
@@ -107,15 +154,47 @@ PlantUML v1.2024.8 is bundled at `third_party/plantuml/plantuml.jar` (GPLv2).
 Uses Smetana layout engine — no external Graphviz installation needed.
 See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) for license details.
 
+### Table of Contents (TOC)
+
+- `Insert TOC` command generates a TOC from document headings
+- Auto-updates on save when TOC markers (`<!-- TOC -->...<!-- /TOC -->`) are present
+- Configurable heading level range, ordered/unordered list, page break in PDF
+
+### Code Block Line Numbers
+
+- Line numbers displayed alongside code blocks (configurable)
+- Copy-safe: line numbers are excluded when copying code text
+
+### Network / Proxy Support
+
+- Proxy auto-detection from VS Code settings and environment variables
+- Custom CA certificate paths for SSL inspection environments (e.g. Zscaler)
+
+## Known Issues
+
+- Code block line numbers may render extra lines in Preview (PDF export is unaffected). The webview's font/line-height rendering can cause a mismatch between the line-number column and the code column height. The `clipCodeToLineNumbers()` workaround in `preview.js` clips by `offsetHeight`, but VS Code webview rendering differences can still produce an extra trailing line number.
+
 ## Roadmap
 
 Planned for future releases:
 
-- Custom CSS file loading (`markdownStudio.style.customCssPath`)
-- Table of Contents (TOC) auto-generation from headings
-- Code block line numbers in PDF export
+- ~~Custom CSS file loading (`markdownStudio.style.customCssPath`)~~ → Implemented as `style.theme` + `style.customCss`
+- LaTeX math rendering (KaTeX) — inline `$...$` and display `$$...$$`
+- PDF Index with page numbers — TOC page with "Chapter ... p.N" style entries
+- Footnotes (`[^1]` syntax) via markdown-it plugin
+- Emoji (`:smile:` syntax) via markdown-it plugin
+- Task lists / checkboxes (`- [ ]` / `- [x]`) via markdown-it plugin
+- Definition lists (`term` / `: definition`) via markdown-it plugin
+- Superscript / subscript (`^sup^` / `~sub~`) via markdown-it plugin
+- PDF output filename customization
+- Dark / light theme auto-switching for preview
+- Pandoc-style / academic CSS templates (via custom CSS feature)
 - Auto-export on save (watch mode)
 - Multi-file merge export (combine multiple .md files into one PDF)
+
+### Style Strategy
+
+The default preset (`markdown-pdf`) follows the conventional Markdown Preview style familiar to most users. After custom CSS loading is implemented, additional output styles (Pandoc, LaTeX-like academic, etc.) will be provided as CSS templates that users can apply via `markdownStudio.style.customCssPath`.
 
 ## Build and Run
 

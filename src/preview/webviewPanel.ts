@@ -4,6 +4,7 @@ import { getPreviewAssetUris } from './previewAssets';
 import { validateEnvironment } from '../commands/validateEnvironmentCore';
 import { dependencyStatus } from '../extension';
 import { getConfig } from '../infra/config';
+import { resolveThemePath } from '../infra/customCssLoader';
 import { createMarkdownParser } from '../parser/parseMarkdown';
 import { extractHeadings } from '../toc/extractHeadings';
 import { resolveAnchors } from '../toc/anchorResolver';
@@ -30,6 +31,18 @@ let trackedUri: string | undefined;
 /** Generation counter – incremented on each text change to discard stale async renders. */
 let generation = 0;
 
+/** FileSystemWatcher for the custom CSS file. */
+let cssWatcher: vscode.FileSystemWatcher | undefined;
+
+/** Disposables for CSS watcher event subscriptions. */
+let cssWatcherDisposables: vscode.Disposable[] = [];
+
+/** Debounce timer for CSS file change events. */
+let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Subscription for configuration changes related to custom CSS. */
+let configChangeSubscription: vscode.Disposable | undefined;
+
 /**
  * Run TOC validation on the given markdown text and publish diagnostics.
  * Extracts headings, resolves anchors, validates them, and publishes results.
@@ -44,6 +57,78 @@ function runTocValidation(markdown: string, documentUri: vscode.Uri): void {
   const headingIds = new Set(anchors.map((a) => a.anchorId));
   const diagnostics = validateAnchors(anchors, headingIds);
   publishDiagnostics(diagnostics, documentUri, tocDiagnostics);
+}
+
+/**
+ * Dispose the current CSS file watcher and all related resources.
+ */
+function disposeCssWatcher(): void {
+  if (debounceTimer !== undefined) {
+    clearTimeout(debounceTimer);
+    debounceTimer = undefined;
+  }
+  for (const d of cssWatcherDisposables) {
+    d.dispose();
+  }
+  cssWatcherDisposables = [];
+  cssWatcher?.dispose();
+  cssWatcher = undefined;
+}
+
+/**
+ * Set up a FileSystemWatcher for the custom CSS file.
+ * Watches for changes and deletions, triggering preview re-renders.
+ */
+function setupCssWatcher(
+  context: vscode.ExtensionContext,
+  document: vscode.TextDocument
+): void {
+  const config = getConfig();
+  const resolvedPath = resolveThemePath(config.theme, context.extensionPath);
+
+  if (!resolvedPath) {
+    return;
+  }
+
+  cssWatcher = vscode.workspace.createFileSystemWatcher(resolvedPath);
+
+  // On CSS file change: debounced full re-render
+  const onChangeDisposable = cssWatcher.onDidChange(async () => {
+    if (debounceTimer !== undefined) {
+      clearTimeout(debounceTimer);
+    }
+    debounceTimer = setTimeout(async () => {
+      debounceTimer = undefined;
+      if (!currentPanel) return;
+      const assets = getPreviewAssetUris(currentPanel.webview, context);
+      currentPanel.webview.html = await buildHtml(
+        document.getText(),
+        context,
+        currentPanel.webview,
+        assets,
+        document.uri
+      );
+    }, 500);
+  });
+
+  // On CSS file delete: immediate re-render without custom CSS
+  const onDeleteDisposable = cssWatcher.onDidDelete(async () => {
+    if (debounceTimer !== undefined) {
+      clearTimeout(debounceTimer);
+      debounceTimer = undefined;
+    }
+    if (!currentPanel) return;
+    const assets = getPreviewAssetUris(currentPanel.webview, context);
+    currentPanel.webview.html = await buildHtml(
+      document.getText(),
+      context,
+      currentPanel.webview,
+      assets,
+      document.uri
+    );
+  });
+
+  cssWatcherDisposables.push(onChangeDisposable, onDeleteDisposable);
 }
 
 /**
@@ -90,6 +175,8 @@ export async function openOrRefreshPreview(
     // Dispose old listeners so we track the new document
     changeSubscription?.dispose();
     messageSubscription?.dispose();
+    disposeCssWatcher();
+    configChangeSubscription?.dispose();
 
     // Update tracked URI to the new document
     trackedUri = document.uri.toString();
@@ -149,6 +236,26 @@ export async function openOrRefreshPreview(
 
       // Run TOC validation on each text change
       runTocValidation(event.document.getText(), event.document.uri);
+    });
+
+    // Set up CSS file watcher and config change listener
+    setupCssWatcher(context, document);
+    configChangeSubscription = vscode.workspace.onDidChangeConfiguration(async (e) => {
+      if (e.affectsConfiguration('markdownStudio.style.theme') || e.affectsConfiguration('markdownStudio.style.customCss')) {
+        disposeCssWatcher();
+        setupCssWatcher(context, document);
+        // Re-render preview with new theme/customCss
+        if (currentPanel) {
+          const assets = getPreviewAssetUris(currentPanel.webview, context);
+          currentPanel.webview.html = await buildHtml(
+            document.getText(),
+            context,
+            currentPanel.webview,
+            assets,
+            document.uri
+          );
+        }
+      }
     });
 
     return currentPanel;
@@ -233,11 +340,34 @@ export async function openOrRefreshPreview(
     runTocValidation(event.document.getText(), event.document.uri);
   });
 
+  // Set up CSS file watcher and config change listener
+  setupCssWatcher(context, document);
+  configChangeSubscription = vscode.workspace.onDidChangeConfiguration(async (e) => {
+    if (e.affectsConfiguration('markdownStudio.style.theme') || e.affectsConfiguration('markdownStudio.style.customCss')) {
+      disposeCssWatcher();
+      setupCssWatcher(context, document);
+      // Re-render preview with new theme/customCss
+      if (currentPanel) {
+        const assets = getPreviewAssetUris(currentPanel.webview, context);
+        currentPanel.webview.html = await buildHtml(
+          document.getText(),
+          context,
+          currentPanel.webview,
+          assets,
+          document.uri
+        );
+      }
+    }
+  });
+
   panel.onDidDispose(() => {
     changeSubscription?.dispose();
     changeSubscription = undefined;
     messageSubscription?.dispose();
     messageSubscription = undefined;
+    disposeCssWatcher();
+    configChangeSubscription?.dispose();
+    configChangeSubscription = undefined;
     tocDiagnostics?.dispose();
     tocDiagnostics = undefined;
     currentPanel = undefined;
@@ -268,6 +398,9 @@ export function _resetPanelForTesting(): void {
   changeSubscription = undefined;
   messageSubscription?.dispose();
   messageSubscription = undefined;
+  disposeCssWatcher();
+  configChangeSubscription?.dispose();
+  configChangeSubscription = undefined;
   tocDiagnostics?.dispose();
   tocDiagnostics = undefined;
   currentPanel = undefined;

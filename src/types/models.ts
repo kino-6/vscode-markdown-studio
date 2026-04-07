@@ -147,3 +147,11 @@ export interface TocResult {
 export interface CodeBlockConfig {
   lineNumbers: boolean;
 }
+
+/** カスタムCSS読み込み結果 */
+export interface CustomCssResult {
+  /** 読み込み成功時のCSS文字列。失敗時は空文字列 */
+  css: string;
+  /** 警告・エラーメッセージ（ログ出力用） */
+  warnings: string[];
+}

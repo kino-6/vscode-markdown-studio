@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { dependencyStatus } from '../extension';
 import { buildPdfOptions, injectPageBreakCss, injectTocPageBreakCss } from './pdfHeaderFooter';
 import { getConfig } from '../infra/config';
+import { loadCustomCss } from '../infra/customCssLoader';
 import { buildHtml } from '../preview/buildHtml';
 
 /** Map file extensions to MIME types for data URI embedding. */
@@ -78,6 +79,15 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
     html = html.replace('</head>', `<style>${hljsCss}</style>\n</head>`);
   } catch {
     // CSS file missing — degrade gracefully, code blocks render without color
+  }
+
+  // Inject custom CSS (theme + inline) if configured
+  const { css: customCss, warnings: customCssWarnings } = await loadCustomCss(cfg.theme, cfg.customCss, context.extensionPath);
+  for (const w of customCssWarnings) {
+    console.warn(w);
+  }
+  if (customCss) {
+    html = html.replace('</head>', `<style>/* md-studio-custom-css */\n${customCss}</style>\n</head>`);
   }
 
   // Read the bundled preview script path for later injection via Playwright.
