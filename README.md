@@ -178,7 +178,7 @@ See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) for license details.
 
 Planned for future releases:
 
-- Custom CSS file loading (`markdownStudio.style.customCssPath`)
+- ~~Custom CSS file loading (`markdownStudio.style.customCssPath`)~~ → Implemented as `style.theme` + `style.customCss`
 - LaTeX math rendering (KaTeX) — inline `$...$` and display `$$...$$`
 - PDF Index with page numbers — TOC page with "Chapter ... p.N" style entries
 - Footnotes (`[^1]` syntax) via markdown-it plugin

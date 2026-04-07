@@ -2,6 +2,24 @@
 
 All notable changes to Markdown Studio will be documented in this file.
 
+## [0.4.0] - 2026-04-07
+
+### Added
+
+- Enterprise environment support (proxy, CA certs, network config)
+- Custom CSS theme system: built-in themes (modern, markdown-pdf, minimal) via `style.theme` dropdown
+- Inline custom CSS via `style.customCss` setting — write CSS directly, no file paths needed
+- CSS syntax validation with graceful fallback — invalid CSS is skipped, user notified via popup
+- CSS sanitization: `<script>` tags and `javascript:` URLs stripped from custom CSS
+- 5-layer CSS priority system: Base → Preset → Individual overrides → Theme → Custom CSS
+- Theme CSS samples in `examples/custom-styles/` with GitHub links in settings description
+- Dark mode and print-optimized styles for all bundled themes
+
+### Changed
+
+- Settings descriptions now include CSS priority explanation and examples
+- Theme enum descriptions show representative CSS rules for each theme
+
 ## [0.3.0] - 2026-04-06
 
 ### Added
