@@ -27,6 +27,9 @@
     "test/unit/themeObserver.test.ts",
     "test/unit/findSourceLine.property.test.ts",
     "test/unit/messageHandler.test.ts",
-    "test/unit/previewInitResilience.property.test.ts"
+    "test/unit/previewInitResilience.property.test.ts",
+    "test/unit/loadingOverlay.test.ts",
+    "test/unit/loadingOverlayMessageHandler.test.ts",
+    "test/unit/initialLoadSpinner.test.ts"
   ]
 }

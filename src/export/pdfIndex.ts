@@ -12,7 +12,8 @@ function escapeHtml(text: string): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 /**
@@ -41,7 +42,7 @@ export function buildPdfIndexHtml(
     return `<div class="ms-pdf-index-entry ms-pdf-index-level-${e.level}" style="padding-left: ${indent * 1.5}em;">` +
       `<a class="ms-pdf-index-text"${href}>${escapeHtml(e.text)}</a>` +
       `<span class="ms-pdf-index-dots"></span>` +
-      `<span class="ms-pdf-index-page">${page}</span>` +
+      `<span class="ms-pdf-index-page">p.${page}</span>` +
       `</div>`;
   });
 

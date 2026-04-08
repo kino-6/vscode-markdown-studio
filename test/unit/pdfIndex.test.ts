@@ -18,9 +18,9 @@ describe('buildPdfIndexHtml', () => {
     expect(html).toContain('Background');
     expect(html).toContain('href="#introduction"');
     expect(html).toContain('href="#background"');
-    // Page numbers should include offset
-    expect(html).toContain('>2<');  // 1 + 1
-    expect(html).toContain('>3<');  // 2 + 1
+    // Page numbers should include offset, displayed as "p.N"
+    expect(html).toContain('>p.2<');  // 1 + 1
+    expect(html).toContain('>p.3<');  // 2 + 1
   });
 
   it('applies level-based CSS classes', () => {

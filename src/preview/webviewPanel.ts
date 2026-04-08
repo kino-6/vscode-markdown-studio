@@ -256,6 +256,12 @@ export async function openOrRefreshPreview(
           );
         }
       }
+      if (e.affectsConfiguration('markdownStudio.preview.theme')) {
+        if (currentPanel) {
+          const cfg = getConfig();
+          currentPanel.webview.postMessage({ type: 'theme-override', value: cfg.previewTheme });
+        }
+      }
     });
 
     return currentPanel;
@@ -356,6 +362,12 @@ export async function openOrRefreshPreview(
           assets,
           document.uri
         );
+      }
+    }
+    if (e.affectsConfiguration('markdownStudio.preview.theme')) {
+      if (currentPanel) {
+        const cfg = getConfig();
+        currentPanel.webview.postMessage({ type: 'theme-override', value: cfg.previewTheme });
       }
     }
   });

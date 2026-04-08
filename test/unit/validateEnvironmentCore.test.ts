@@ -29,8 +29,11 @@ const baseConfig: MarkdownStudioConfig = {
   toc: { minLevel: 1, maxLevel: 3, orderedList: false, pageBreak: true },
   codeBlock: { lineNumbers: false },
     pdfIndex: { enabled: false, title: 'Table of Contents' },
+  pdfToc: { hidden: true },
   theme: 'default',
   customCss: '',
+  outputFilename: '${filename}',
+  previewTheme: 'auto',
 };
 
 describe('validateEnvironment', () => {

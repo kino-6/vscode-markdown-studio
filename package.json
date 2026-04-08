@@ -166,6 +166,21 @@
           "default": true,
           "markdownDescription": "Hide inline Table of Contents in PDF export. Recognized patterns: `[toc]` / `[[toc]]` markers and `<!-- TOC -->` / `<!-- /TOC -->` comment markers. Hand-written ToC lists without these markers are not detected — wrap them in `<!-- TOC -->` / `<!-- /TOC -->` to enable hiding."
         },
+        "markdownStudio.preview.theme": {
+          "type": "string",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "light",
+            "dark"
+          ],
+          "enumDescriptions": [
+            "VS Codeのカラーテーマに自動追従",
+            "常にライトモードで表示",
+            "常にダークモードで表示"
+          ],
+          "description": "プレビューのテーマモード。autoはVS Codeのカラーテーマに追従します。"
+        },
         "markdownStudio.preview.sourceJump.enabled": {
           "type": "boolean",
           "default": false,
@@ -245,6 +260,11 @@
           "type": "boolean",
           "default": true,
           "description": "コードブロックに行番号を表示する"
+        },
+        "markdownStudio.export.outputFilename": {
+          "type": "string",
+          "default": "${filename}",
+          "markdownDescription": "PDF出力ファイル名のテンプレート。テンプレート変数を使って動的なファイル名を生成できます。\n\n**使用可能な変数:**\n\n| 変数 | 説明 | 例 |\n|------|------|----|\n| `${filename}` | ソースファイル名（拡張子なし） | `document` |\n| `${date}` | エクスポート日（YYYY-MM-DD） | `2025-01-15` |\n| `${datetime}` | エクスポート日時（YYYY-MM-DD_HHmmss） | `2025-01-15_143022` |\n| `${title}` | 最初のH1見出しテキスト（なければファイル名） | `設計書` |\n| `${ext}` | ソースファイルの拡張子（ドットなし） | `md` |\n\n**使用例:**\n- `${filename}_${date}` → `document_2025-01-15.pdf`\n- `${title}` → `設計書.pdf`\n- `${filename}_${datetime}` → `document_2025-01-15_143022.pdf`\n- `${filename}.${ext}` → `document.md.pdf`\n- `${title}_${date}` → `設計書_2025-01-15.pdf`\n\n`.pdf` 拡張子は自動的に付与されます。ファイルシステムで禁止されている文字は自動的に除去されます。"
         },
         "markdownStudio.network.caCertificates": {
           "type": "array",

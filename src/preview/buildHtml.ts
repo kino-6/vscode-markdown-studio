@@ -4,6 +4,7 @@ import { renderMarkdownDocument } from '../renderers/renderMarkdown';
 import { getConfig } from '../infra/config';
 import { loadCustomCss } from '../infra/customCssLoader';
 import { ResolvedStyleConfig } from '../types/models';
+import { PreviewAssetUris } from './previewAssets';
 
 const DEFAULT_FONT_FAMILY = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
 
@@ -194,7 +195,7 @@ export async function buildHtml(
   markdown: string,
   context: vscode.ExtensionContext,
   webview?: vscode.Webview,
-  assets?: { styleUri: vscode.Uri; scriptUri: vscode.Uri; hljsStyleUri?: vscode.Uri },
+  assets?: PreviewAssetUris,
   documentUri?: vscode.Uri
 ): Promise<string> {
   const rendered = await renderMarkdownDocument(markdown, context);
@@ -243,7 +244,7 @@ ${cspTag}
 ${styleBlock}
 ${customCssBlock}
 </head>
-<body>
+<body data-theme-override="${webview ? config.previewTheme : 'light'}">
 ${htmlBody}
 <div id="ms-loading-overlay" class="ms-loading-overlay" style="display: flex"><div class="ms-spinner"></div></div>
 ${scriptSrc ? `<script src="${scriptSrc}" nonce="${nonce}"></script>` : ''}

@@ -1,5 +1,5 @@
 import MarkdownIt from 'markdown-it';
-import type Token from 'markdown-it/lib/token';
+import type { Token } from 'markdown-it';
 import { HeadingEntry } from '../types/models';
 import { scanFencedBlocks } from '../parser/scanFencedBlocks';
 

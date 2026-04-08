@@ -46,7 +46,7 @@ describe('Initial load spinner in buildHtml()', () => {
 
     const html = await buildHtml('Content', { extensionPath: '/tmp/ext' } as any);
 
-    const bodyStart = html.indexOf('<body>');
+    const bodyStart = html.indexOf('<body');
     const bodyEnd = html.indexOf('</body>');
     const overlayPos = html.indexOf('ms-loading-overlay');
 
@@ -93,6 +93,13 @@ describe('DOMContentLoaded hides overlay after Mermaid rendering', () => {
       },
       addEventListener: vi.fn(),
       querySelectorAll: () => [],
+      getAttribute: () => null,
+      classList: {
+        _classes: new Set<string>(),
+        add(...cls: string[]) { cls.forEach(c => this._classes.add(c)); },
+        remove(...cls: string[]) { cls.forEach(c => this._classes.delete(c)); },
+        contains(c: string) { return this._classes.has(c); },
+      },
     };
 
     (globalThis as any).document = {

@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { dependencyStatus } from '../extension';
 import { buildPdfOptions, injectPageBreakCss, injectTocPageBreakCss } from './pdfHeaderFooter';
 import { buildPdfIndexHtml, estimateIndexPageCount, HeadingPageEntry } from './pdfIndex';
+import { resolveOutputFilename, extractH1Title, FilenameContext } from './filenameResolver';
 import { getConfig } from '../infra/config';
 import { loadCustomCss } from '../infra/customCssLoader';
 import { buildHtml } from '../preview/buildHtml';
@@ -193,13 +194,25 @@ export async function exportToPdf(
     throw err;
   }
 
-  const outputPath = path.join(path.dirname(document.uri.fsPath), `${path.basename(document.uri.fsPath, '.md')}.pdf`);
+  const filenameCtx: FilenameContext = {
+    filename: path.basename(document.uri.fsPath, path.extname(document.uri.fsPath)),
+    ext: path.extname(document.uri.fsPath).replace(/^\./, ''),
+    title: extractH1Title(document.getText()),
+  };
+  const resolvedName = resolveOutputFilename(cfg.outputFilename, filenameCtx);
+  const outputPath = path.join(path.dirname(document.uri.fsPath), resolvedName);
 
   try {
     checkCancellation(cancellation);
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle' });
+
+    // Force light mode for PDF output — remove dark/high-contrast classes
+    await page.evaluate(`(() => {
+      document.body.classList.remove('vscode-dark', 'vscode-high-contrast');
+      document.body.classList.add('vscode-light');
+    })()`);
 
     // Step 4: Mermaid rendering
     progress?.report('Rendering diagrams...', 15);
@@ -216,11 +229,11 @@ export async function exportToPdf(
       // Wait for Mermaid diagrams to render.
       // The IIFE script fires DOMContentLoaded listeners synchronously when added
       // after DOM is ready, but mermaid.render is async — poll for SVG output.
-      await page.waitForFunction(() => {
+      await page.waitForFunction(`(() => {
         const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
         if (hosts.length === 0) return true;
         return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
-      }, { timeout: 30_000 }).catch(() => {
+      })()`, { timeout: 30_000 }).catch(() => {
         // Timeout — proceed with PDF generation; some diagrams may be missing
       });
     }
@@ -285,16 +298,23 @@ export async function exportToPdf(
         // Pass 2: Insert index at top and re-render
         const htmlWithIndex = html.replace(/<body[^>]*>/, (match) => `${match}\n${indexHtml}`);
         await page.setContent(htmlWithIndex, { waitUntil: 'networkidle' });
+
+        // Force light mode for PDF output — remove dark/high-contrast classes
+        await page.evaluate(`(() => {
+          document.body.classList.remove('vscode-dark', 'vscode-high-contrast');
+          document.body.classList.add('vscode-light');
+        })()`);
+
         if (previewJsContent) {
           await page.addScriptTag({
             content: 'if(typeof acquireVsCodeApi==="undefined"){window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){return undefined},setState:function(){}};};}',
           });
           await page.addScriptTag({ content: previewJsContent });
-          await page.waitForFunction(() => {
+          await page.waitForFunction(`(() => {
             const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
             if (hosts.length === 0) return true;
             return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
-          }, { timeout: 30_000 }).catch(() => {});
+          })()`, { timeout: 30_000 }).catch(() => {});
         }
         await page.setViewportSize({ width: 980, height: 1400 });
       }
