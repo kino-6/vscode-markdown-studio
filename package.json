@@ -151,6 +151,16 @@
           "default": true,
           "description": "Enable CSS page-break support in PDF export. When enabled, page-break-before and page-break-after CSS properties are honored."
         },
+        "markdownStudio.export.pdfIndex.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Generate a Table of Contents page with page numbers at the beginning of the PDF."
+        },
+        "markdownStudio.export.pdfIndex.title": {
+          "type": "string",
+          "default": "Table of Contents",
+          "markdownDescription": "Title displayed at the top of the PDF index page."
+        },
         "markdownStudio.preview.sourceJump.enabled": {
           "type": "boolean",
           "default": false,

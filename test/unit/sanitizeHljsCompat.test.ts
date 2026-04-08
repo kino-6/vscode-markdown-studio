@@ -19,6 +19,7 @@ vi.mock('../../src/infra/config', () => ({
     },
     toc: { minLevel: 1, maxLevel: 3, orderedList: false, pageBreak: true },
     codeBlock: { lineNumbers: false },
+    pdfIndex: { enabled: false, title: 'Table of Contents' },
     theme: 'default',
     customCss: '',
   })
