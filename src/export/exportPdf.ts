@@ -186,54 +186,67 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
 
     // --- PDF Index: 2-pass rendering ---
     if (cfg.pdfIndex.enabled) {
-      // Page dimensions from config — no guessing
-      const PAGE_SIZES_MM: Record<string, { w: number; h: number }> = {
-        'A3': { w: 297, h: 420 }, 'A4': { w: 210, h: 297 }, 'A5': { w: 148, h: 210 },
-        'Letter': { w: 215.9, h: 279.4 }, 'Legal': { w: 215.9, h: 355.6 }, 'Tabloid': { w: 279.4, h: 431.8 },
-      };
-      const pageSize = PAGE_SIZES_MM[cfg.pageFormat] || PAGE_SIZES_MM['A4'];
-      const topMm = parseFloat(pdfOptions.margin.top);
-      const bottomMm = parseFloat(pdfOptions.margin.bottom);
-      const leftMm = parseFloat(pdfOptions.margin.left);
-      const rightMm = parseFloat(pdfOptions.margin.right);
-      const printableW = pageSize.w - leftMm - rightMm;
-      const printableH = pageSize.h - topMm - bottomMm;
-      const MM_TO_PX = 3.7795;
-
-      await page.setViewportSize({
-        width: Math.round(printableW * MM_TO_PX),
-        height: Math.round(printableH * MM_TO_PX),
+      // Pass 1: Generate PDF without index to get actual page numbers
+      const tempPdfPath = outputPath + '.tmp';
+      await page.pdf({
+        path: tempPdfPath,
+        format: cfg.pageFormat,
+        printBackground: true,
+        preferCSSPageSize: true,
+        displayHeaderFooter: pdfOptions.displayHeaderFooter,
+        headerTemplate: pdfOptions.headerTemplate,
+        footerTemplate: pdfOptions.footerTemplate,
+        margin: pdfOptions.margin,
       });
-      await page.emulateMedia({ media: 'print' });
-      await page.waitForTimeout(200);
 
-      const printableHeightPx = printableH * MM_TO_PX;
-      const headingEntries: HeadingPageEntry[] = await page.evaluate(
+      // Extract heading texts from the DOM (before PDF generation changes anything)
+      const headingTexts: { level: number; text: string; anchorId: string }[] = await page.evaluate(
         `(function() {
           var entries = [];
           var headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
-          var ph = ${printableHeightPx};
           for (var i = 0; i < headings.length; i++) {
             var el = headings[i];
             var level = parseInt(el.tagName[1], 10);
             if (level < ${cfg.toc.minLevel} || level > ${cfg.toc.maxLevel}) continue;
             if (el.classList.contains('ms-pdf-index-title')) continue;
-            var rect = el.getBoundingClientRect();
-            var absoluteY = rect.top + window.scrollY;
-            var pageNumber = Math.floor(absoluteY / ph) + 1;
-            entries.push({ level: level, text: el.textContent || '', pageNumber: pageNumber, anchorId: el.id || '' });
+            entries.push({ level: level, text: (el.textContent || '').trim(), anchorId: el.id || '' });
           }
           return entries;
         })()`
       );
 
-      // Restore viewport for PDF generation
-      await page.emulateMedia({ media: 'screen' });
-      await page.setViewportSize({ width: 980, height: 1400 });
+      if (headingTexts.length > 0) {
+        // Parse the temp PDF to find which page each heading appears on
+        const pdfParse = (await import('pdf-parse')).default;
+        const pdfBuffer = await fs.readFile(tempPdfPath);
+        const pageTexts: string[] = [];
+        await pdfParse(pdfBuffer, {
+          pagerender: async (pageData) => {
+            const textContent = await pageData.getTextContent();
+            const text = textContent.items.map((item) => item.str).join(' ');
+            pageTexts.push(text);
+            return text;
+          },
+        });
 
-      if (headingEntries.length > 0) {
+        // Match each heading to a page by searching page texts
+        const headingEntries: HeadingPageEntry[] = [];
+        for (const h of headingTexts) {
+          let foundPage = 1;
+          for (let p = 0; p < pageTexts.length; p++) {
+            if (pageTexts[p].includes(h.text)) {
+              foundPage = p + 1; // 1-based
+              break;
+            }
+          }
+          headingEntries.push({ level: h.level, text: h.text, pageNumber: foundPage, anchorId: h.anchorId });
+        }
+
+        // Build index HTML and calculate offset
         const indexPageCount = estimateIndexPageCount(headingEntries.length);
         const indexHtml = buildPdfIndexHtml(headingEntries, cfg.pdfIndex.title, indexPageCount);
+
+        // Pass 2: Insert index at top and re-render
         const htmlWithIndex = html.replace(/<body[^>]*>/, (match) => `${match}\n${indexHtml}`);
         await page.setContent(htmlWithIndex, { waitUntil: 'networkidle' });
         if (previewJsContent) {
@@ -249,6 +262,9 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
         }
         await page.setViewportSize({ width: 980, height: 1400 });
       }
+
+      // Clean up temp PDF
+      try { await fs.unlink(tempPdfPath); } catch { /* ignore */ }
     }
 
     await page.pdf({
@@ -256,7 +272,6 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
       format: cfg.pageFormat,
       printBackground: true,
       preferCSSPageSize: true,
-      tagged: true,
       displayHeaderFooter: pdfOptions.displayHeaderFooter,
       headerTemplate: pdfOptions.headerTemplate,
       footerTemplate: pdfOptions.footerTemplate,
