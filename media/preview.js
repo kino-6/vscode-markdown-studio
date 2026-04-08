@@ -124,24 +124,6 @@ function addCopyButtons() {
   }
 }
 
-/**
- * Clip code-content height to match the line-numbers <pre> height.
- * This prevents extra blank lines at the bottom of code blocks caused by
- * trailing newlines that markdown-it injects into <code> elements.
- */
-function clipCodeToLineNumbers() {
-  const grids = document.querySelectorAll('.ms-code-table');
-  for (const grid of grids) {
-    const lineNumsPre = grid.querySelector('.ms-line-numbers pre');
-    const codeDiv = grid.querySelector('.ms-code-content');
-    if (lineNumsPre && codeDiv) {
-      const targetHeight = lineNumsPre.offsetHeight;
-      codeDiv.style.maxHeight = targetHeight + 'px';
-      codeDiv.style.overflow = 'hidden';
-    }
-  }
-}
-
 function registerTocLinkHandlers() {
   const links = document.querySelectorAll('.ms-toc a');
   for (const link of links) {
@@ -203,7 +185,6 @@ window.addEventListener('message', (event) => {
   document.body.innerHTML = message.html;
   renderMermaidBlocks();
   addCopyButtons();
-  clipCodeToLineNumbers();
   registerTocLinkHandlers();
   // innerHTML destroyed the overlay element — showLoadingOverlay() would
   // re-create it, but the render is already done so just ensure it's gone.
@@ -221,7 +202,6 @@ function initPreview() {
   });
 
   addCopyButtons();
-  clipCodeToLineNumbers();
   registerTocLinkHandlers();
 
   observeThemeChanges((newThemeKind) => {

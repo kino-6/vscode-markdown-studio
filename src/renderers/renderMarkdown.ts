@@ -6,6 +6,7 @@ import { scanFencedBlocks } from '../parser/scanFencedBlocks';
 import { extractHeadings } from '../toc/extractHeadings';
 import { resolveAnchors } from '../toc/anchorResolver';
 import { buildTocHtml } from '../toc/buildToc';
+import { findTocCommentMarkers } from '../toc/tocCommentMarker';
 import { replaceTocMarker } from '../toc/tocMarker';
 import { AnchorMapping, RenderedMarkdown } from '../types/models';
 import { renderMermaidBlock } from './renderMermaid';
@@ -144,6 +145,18 @@ export async function renderMarkdownDocument(
   htmlBody = replaceTocMarker(htmlBody, tocHtml);
 
   htmlBody = filterExternalResources(htmlBody, config.externalResources);
+
+  // --- Wrap comment marker ToC in rendered HTML ---
+  // `<!-- TOC -->` / `<!-- /TOC -->` markers are preserved as HTML comments by markdown-it.
+  // We wrap the content between them in a `<div class="ms-toc-comment">` so PDF export
+  // can hide it via CSS when pdfToc.hidden is true.
+  const fencedRanges = fencedBlocks.map((b) => ({ startLine: b.startLine, endLine: b.endLine }));
+  const commentMarkers = findTocCommentMarkers(markdown, fencedRanges);
+  if (commentMarkers) {
+    htmlBody = htmlBody
+      .replace(/<!--\s*TOC\s*-->/, '<div class="ms-toc-comment">')
+      .replace(/<!--\s*\/TOC\s*-->/, '</div>');
+  }
 
   return { htmlBody, errors };
 }

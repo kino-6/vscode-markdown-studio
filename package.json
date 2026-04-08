@@ -2,7 +2,7 @@
   "name": "markdown-studio",
   "displayName": "Markdown Studio",
   "description": "Local-first Markdown authoring studio with integrated diagram rendering (Mermaid, PlantUML), SVG support, and secure PDF export.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publisher": "local",
   "license": "MIT",
   "repository": {
@@ -160,6 +160,11 @@
           "type": "string",
           "default": "Table of Contents",
           "markdownDescription": "Title displayed at the top of the PDF index page."
+        },
+        "markdownStudio.export.pdfToc.hidden": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Hide inline Table of Contents in PDF export. Recognized patterns: `[toc]` / `[[toc]]` markers and `<!-- TOC -->` / `<!-- /TOC -->` comment markers. Hand-written ToC lists without these markers are not detected — wrap them in `<!-- TOC -->` / `<!-- /TOC -->` to enable hiding."
         },
         "markdownStudio.preview.sourceJump.enabled": {
           "type": "boolean",

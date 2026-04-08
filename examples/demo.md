@@ -2,8 +2,6 @@
 
 Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
 
----
-
 <!-- TOC -->
 - [Markdown Studio — Feature Demo](#markdown-studio-feature-demo)
   - [1. Markdown Rendering](#1-markdown-rendering)
@@ -27,7 +25,6 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
   - [9. Custom CSS](#9-custom-css)
   - [10. PDF Export](#10-pdf-export)
 <!-- /TOC -->
-
 
 ---
 
@@ -310,6 +307,34 @@ class DiagramConfig:
     mode: str = "bundled-jar"
     java_path: str = "java"
     timeout_ms: int = 15000
+```
+
+```go
+fmt.Println("Hello, World!")
+```
+
+```
+```
+
+```
+plain text without language
+```
+
+```rust
+fn main() {
+    println!("Hello from Rust");
+}
+```
+
+```sql
+SELECT id, name FROM users WHERE active = true;
+```
+
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY . .
+RUN npm install
 ```
 
 ---

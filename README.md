@@ -181,7 +181,7 @@ See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) for license details.
 
 ## Known Issues
 
-- Code block line numbers may render extra lines in Preview (PDF export is unaffected). The webview's font/line-height rendering can cause a mismatch between the line-number column and the code column height. The `clipCodeToLineNumbers()` workaround in `preview.js` clips by `offsetHeight`, but VS Code webview rendering differences can still produce an extra trailing line number.
+- None currently tracked.
 
 ## Roadmap
 
@@ -201,6 +201,7 @@ Planned for future releases:
 - Auto-export on save (watch mode)
 - Multi-file merge export (combine multiple .md files into one PDF)
 - Side-by-side preview in same editor tab (Markdown All in One style split view)
+- ~~Preview extra blank lines in code blocks~~ ✅ v0.6.0
 
 ### Style Strategy
 

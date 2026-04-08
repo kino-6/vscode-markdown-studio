@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { exportToPdf } from '../export/exportPdf';
+import { exportToPdf, ProgressReporter, CancellationChecker, CancellationError } from '../export/exportPdf';
 
 export async function exportPdfCommand(context: vscode.ExtensionContext): Promise<void> {
   const editor = vscode.window.activeTextEditor;
@@ -9,9 +9,30 @@ export async function exportPdfCommand(context: vscode.ExtensionContext): Promis
   }
 
   try {
-    const path = await exportToPdf(editor.document, context);
-    void vscode.window.showInformationMessage(`Markdown Studio: Exported PDF to ${path}`);
+    const outputPath = await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: 'Markdown Studio: Exporting PDF',
+        cancellable: true,
+      },
+      async (progress, token) => {
+        const reporter: ProgressReporter = {
+          report(message: string, increment?: number) {
+            progress.report({ message, increment });
+          },
+        };
+        const cancellation: CancellationChecker = {
+          isCancelled() { return token.isCancellationRequested; },
+        };
+        return exportToPdf(editor.document, context, reporter, cancellation);
+      }
+    );
+    void vscode.window.showInformationMessage(`Markdown Studio: Exported PDF to ${outputPath}`);
   } catch (error) {
+    if (error instanceof CancellationError) {
+      void vscode.window.showInformationMessage('Markdown Studio: Export cancelled.');
+      return;
+    }
     const msg = String(error);
     if (msg.includes('Executable doesn\'t exist') || msg.includes('browserType.launch')) {
       void vscode.window.showErrorMessage(

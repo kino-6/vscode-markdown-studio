@@ -161,3 +161,8 @@ export interface PdfIndexConfig {
   enabled: boolean;
   title: string;
 }
+
+/** PDF ToC表示設定 */
+export interface PdfTocConfig {
+  hidden: boolean;
+}

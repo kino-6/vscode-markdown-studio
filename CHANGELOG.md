@@ -2,6 +2,27 @@
 
 All notable changes to Markdown Studio will be documented in this file.
 
+## [0.6.0] - 2026-04-08
+
+### Added
+
+- PDF export progress notification with step-by-step status (Building HTML → Processing images → Launching browser → Rendering diagrams → Generating PDF)
+- PDF export cancellation support — cancel via notification button, partial files cleaned up automatically
+- `export.pdfToc.hidden` setting — hide inline TOC in PDF export to avoid duplication with PDF Index (default: `true`)
+- `<!-- TOC -->` / `<!-- /TOC -->` comment markers wrapped in `ms-toc-comment` div for CSS-based hiding in PDF
+- Code block edge case samples in `examples/demo.md`: single-line, empty, language-unspecified, Go, Rust, SQL, Dockerfile
+
+### Fixed
+
+- Preview extra blank lines in code blocks — markdown-it trailing `\n` now stripped at fence renderer level for both line-numbers enabled and disabled paths
+- Line number column and code column height mismatch in preview — unified `font-size`, `line-height`, and `padding` between `.ms-line-numbers pre` and `.ms-code-content pre`
+- Removed unstable `clipCodeToLineNumbers()` JavaScript workaround in favor of CSS-level fix
+
+### Changed
+
+- PDF TOC hiding now uses `pdfToc.hidden` setting instead of being tied to `pdfIndex.enabled`
+- `ProgressReporter` and `CancellationChecker` interfaces added to `exportToPdf()` for testability
+
 ## [0.5.0] - 2026-04-07
 
 ### Added

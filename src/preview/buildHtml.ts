@@ -23,6 +23,18 @@ pre code {
 code {
   font-family: ${style.codeFontFamily};
 }
+.ms-line-numbers pre {
+  font-family: ${style.codeFontFamily};
+  font-size: 0.875em;
+  line-height: 1.45;
+}
+.ms-code-content pre {
+  font-size: 0.875em;
+  line-height: 1.45;
+}
+.ms-code-content pre code {
+  font-size: inherit;
+}
 pre {
   background: ${cb.background};
   border: ${cb.border};
@@ -46,6 +58,18 @@ h2 {
   }
   pre, code {
     font-family: ${style.codeFontFamily};
+  }
+  .ms-line-numbers pre {
+    font-family: ${style.codeFontFamily};
+    font-size: 0.875em;
+    line-height: 1.45;
+  }
+  .ms-code-content pre {
+    font-size: 0.875em;
+    line-height: 1.45;
+  }
+  .ms-code-content pre code {
+    font-size: inherit;
   }
   pre {
     background: ${cb.background};

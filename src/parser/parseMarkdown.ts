@@ -49,26 +49,36 @@ export function createMarkdownParser(options?: { lineNumbers?: boolean }): Markd
   md.use(sub);
   addSourceLineAttributes(md);
 
-  if (options?.lineNumbers) {
-    const originalFence = md.renderer.rules.fence!;
-    md.renderer.rules.fence = (tokens, idx, opts, env, self) => {
-      const token = tokens[idx];
-      const code = token.content;
-      // markdown-it appends a trailing \n to token.content which the browser
-      // renders as an extra blank line inside <code>.  When the content ends
-      // with \n, subtract 1 so the line-number column matches the visible
-      // code lines exactly.  For single-line blocks (countLines == 1) keep 1.
-      let lineCount = countLines(code);
-      if (lineCount > 1 && code.endsWith('\n')) {
-        lineCount--;
-      }
-      const rendered = originalFence(tokens, idx, opts, env, self);
+  const originalFence = md.renderer.rules.fence!;
+  md.renderer.rules.fence = (tokens, idx, opts, env, self) => {
+    const token = tokens[idx];
+
+    // markdown-it always appends a trailing \n to token.content.
+    // The browser renders this as an extra blank line inside <code>.
+    // Strip trailing newlines from the content BEFORE rendering so
+    // highlight and line-number logic both see the clean version.
+    const originalContent = token.content;
+    token.content = token.content.replace(/\n+$/, '');
+    const code = token.content;
+
+    let rendered = originalFence(tokens, idx, opts, env, self);
+
+    // Restore original content so we don't mutate the token permanently
+    token.content = originalContent;
+
+    // Also strip any trailing \n that the fence renderer itself may add
+    // before the closing </code></pre> tags.
+    rendered = rendered.replace(/\n+<\/code><\/pre>/, '</code></pre>');
+
+    if (options?.lineNumbers) {
+      const lineCount = countLines(code);
       if (lineCount > 0) {
         return wrapWithLineNumbers(rendered, lineCount);
       }
-      return rendered;
-    };
-  }
+    }
+
+    return rendered;
+  };
 
   return md;
 }

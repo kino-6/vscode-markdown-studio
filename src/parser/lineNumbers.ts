@@ -26,7 +26,7 @@ export function wrapWithLineNumbers(codeHtml: string, lineCount: number): string
   // and appends \n after </pre>.  Both cause extra whitespace in the browser.
   // Strip them so the code column height matches the line-number column exactly.
   const trimmed = codeHtml
-    .replace(/\n<\/code><\/pre>/, '</code></pre>')
+    .replace(/\n+<\/code><\/pre>/, '</code></pre>')
     .trimEnd();
 
   const nums = Array.from({ length: lineCount }, (_, i) => i + 1).join('\n');

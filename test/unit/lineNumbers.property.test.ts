@@ -87,10 +87,10 @@ describe('lineNumbers property tests – Property 3: round-trip preservation', (
           const wrapped = wrapWithLineNumbers(html, lineCount);
           const extracted = extractCodeContent(wrapped);
 
-          // wrapWithLineNumbers strips a trailing \n before </code></pre>
-          // to prevent an extra blank line in the browser, so the round-trip
+          // wrapWithLineNumbers strips all trailing \n before </code></pre>
+          // to prevent extra blank lines in the browser, so the round-trip
           // result matches the trimmed version of the original HTML.
-          const expected = html.replace(/\n<\/code><\/pre>/, '</code></pre>');
+          const expected = html.replace(/\n+<\/code><\/pre>/, '</code></pre>');
           expect(extracted).toBe(expected);
         },
       ),

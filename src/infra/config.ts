@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CodeBlockConfig, DEFAULT_ALLOWED_DOMAINS, ExternalResourceConfig, ExternalResourceMode, PdfHeaderFooterConfig, PdfIndexConfig, ResolvedStyleConfig, StyleConfigOverrides, TocConfig } from '../types/models';
+import { CodeBlockConfig, DEFAULT_ALLOWED_DOMAINS, ExternalResourceConfig, ExternalResourceMode, PdfHeaderFooterConfig, PdfIndexConfig, PdfTocConfig, ResolvedStyleConfig, StyleConfigOverrides, TocConfig } from '../types/models';
 import { resolvePreset } from './presets';
 
 export function clampFontSize(n: number): number {
@@ -21,6 +21,7 @@ export interface MarkdownStudioConfig {
   toc: TocConfig;
   codeBlock: CodeBlockConfig;
   pdfIndex: PdfIndexConfig;
+  pdfToc: PdfTocConfig;
   theme: string;
   customCss: string;
 }
@@ -128,6 +129,9 @@ export function getConfig(): MarkdownStudioConfig {
     pdfIndex: {
       enabled: cfg.get<boolean>('export.pdfIndex.enabled', true),
       title: cfg.get<string>('export.pdfIndex.title', 'Table of Contents'),
+    },
+    pdfToc: {
+      hidden: cfg.get<boolean>('export.pdfToc.hidden', true),
     },
     theme: cfg.get<string>('style.theme', 'default'),
     customCss: cfg.get<string>('style.customCss', ''),

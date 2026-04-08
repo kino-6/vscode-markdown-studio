@@ -59,6 +59,9 @@ pre code {
   display: block;
   white-space: pre;
   word-wrap: normal;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
 }
 
 code {
@@ -392,6 +395,8 @@ body.vscode-high-contrast .ms-toc a {
   border-right: 1px solid #ddd;
   background: transparent;
   overflow: hidden;
+  font-size: 0.875em;
+  line-height: 1.45;
 }
 
 .ms-code-content {
@@ -403,6 +408,12 @@ body.vscode-high-contrast .ms-toc a {
   padding: 1em;
   overflow-x: auto;
   background: transparent;
+  font-size: 0.875em;
+  line-height: 1.45;
+}
+
+.ms-code-content pre code {
+  font-size: inherit;
 }
 
 body.vscode-dark .ms-line-numbers pre,

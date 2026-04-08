@@ -8,6 +8,31 @@ import { getConfig } from '../infra/config';
 import { loadCustomCss } from '../infra/customCssLoader';
 import { buildHtml } from '../preview/buildHtml';
 
+/** プログレス報告用の抽象インターフェース（VS Code APIへの直接依存を避ける） */
+export interface ProgressReporter {
+  report(message: string, increment?: number): void;
+}
+
+/** キャンセルチェック用の抽象インターフェース */
+export interface CancellationChecker {
+  isCancelled(): boolean;
+}
+
+/** エクスポートキャンセルを示すカスタムエラー */
+export class CancellationError extends Error {
+  constructor() {
+    super('Export cancelled by user');
+    this.name = 'CancellationError';
+  }
+}
+
+/** キャンセル状態をチェックし、キャンセルされていれば CancellationError をスローする */
+export function checkCancellation(cancellation?: CancellationChecker): void {
+  if (cancellation?.isCancelled()) {
+    throw new CancellationError();
+  }
+}
+
 /** Map file extensions to MIME types for data URI embedding. */
 const MIME_TYPES: Record<string, string> = {
   '.png': 'image/png',
@@ -57,11 +82,22 @@ export async function inlineLocalImages(html: string): Promise<string> {
   return result;
 }
 
-export async function exportToPdf(document: vscode.TextDocument, context: vscode.ExtensionContext): Promise<string> {
+export async function exportToPdf(
+  document: vscode.TextDocument,
+  context: vscode.ExtensionContext,
+  progress?: ProgressReporter,
+  cancellation?: CancellationChecker,
+): Promise<string> {
   const cfg = getConfig();
+
+  // Step 1: Build HTML
+  progress?.report('Building HTML...', 15);
   let html = await buildHtml(document.getText(), context, undefined, undefined, document.uri);
 
-  // Inline local images as Base64 data URIs for Playwright rendering
+  checkCancellation(cancellation);
+
+  // Step 2: Inline local images as Base64 data URIs for Playwright rendering
+  progress?.report('Processing images...', 15);
   html = await inlineLocalImages(html);
 
   // Inline the preview CSS so tables, code blocks, and other elements are styled in the PDF.
@@ -116,9 +152,9 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
   // Force all <details> elements open for PDF — collapsed content would be invisible
   html = html.replace(/<details(?![^>]*\bopen\b)/g, '<details open');
 
-  // When PDF Index is enabled, hide the inline TOC to avoid duplication
-  if (cfg.pdfIndex.enabled) {
-    html = html.replace('</head>', '<style>.ms-toc { display: none !important; }</style>\n</head>');
+  // When pdfToc.hidden is true, hide inline TOC (both [toc] marker and <!-- TOC --> comment marker)
+  if (cfg.pdfToc.hidden) {
+    html = html.replace('</head>', '<style>.ms-toc, .ms-toc-comment { display: none !important; }</style>\n</head>');
   }
 
   // Inject page-break CSS if enabled
@@ -130,6 +166,11 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
   if (cfg.toc.pageBreak) {
     html = injectTocPageBreakCss(html);
   }
+
+  checkCancellation(cancellation);
+
+  // Step 3: Launch Chromium
+  progress?.report('Launching browser...', 20);
 
   // Point Playwright at the managed Chromium directory when available
   if (dependencyStatus?.browserPath) {
@@ -152,9 +193,16 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
     throw err;
   }
 
+  const outputPath = path.join(path.dirname(document.uri.fsPath), `${path.basename(document.uri.fsPath, '.md')}.pdf`);
+
   try {
+    checkCancellation(cancellation);
+
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle' });
+
+    // Step 4: Mermaid rendering
+    progress?.report('Rendering diagrams...', 15);
 
     // Inject the bundled preview script (contains Mermaid) into the Playwright page.
     // We use addScriptTag after setContent so the DOM is ready.
@@ -179,13 +227,16 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
 
     await page.setViewportSize({ width: 980, height: 1400 });
 
+    checkCancellation(cancellation);
+
     // Compute PDF options early so margin values can be reused by PDF Index
-    const outputPath = path.join(path.dirname(document.uri.fsPath), `${path.basename(document.uri.fsPath, '.md')}.pdf`);
     const documentTitle = path.basename(document.uri.fsPath, '.md');
     const pdfOptions = buildPdfOptions(cfg.pdfHeaderFooter, documentTitle, cfg.style.margin);
 
     // --- PDF Index: 2-pass rendering ---
     if (cfg.pdfIndex.enabled) {
+      // Step 6: Generate TOC
+      progress?.report('Generating table of contents...', 15);
       // Pass 1: Generate PDF to buffer (no file) to get total page count
       const tempPdfBuffer = await page.pdf({
         format: cfg.pageFormat,
@@ -249,6 +300,10 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
       }
     }
 
+    // Step 5: Generate PDF
+    checkCancellation(cancellation);
+    progress?.report('Generating PDF...', 20);
+
     await page.pdf({
       path: outputPath,
       format: cfg.pageFormat,
@@ -262,6 +317,18 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
 
     await fs.access(outputPath);
     return outputPath;
+  } catch (err) {
+    if (err instanceof CancellationError) {
+      // Clean up partial PDF file if it exists
+      try {
+        await fs.access(outputPath);
+        await fs.unlink(outputPath);
+      } catch {
+        // File doesn't exist or can't be deleted — ignore
+      }
+      throw err;
+    }
+    throw err;
   } finally {
     await browser.close();
   }
