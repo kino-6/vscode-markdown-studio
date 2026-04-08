@@ -178,21 +178,21 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
     if (cfg.pdfIndex.enabled) {
       const pageHeight = 1400;
       const headingEntries: HeadingPageEntry[] = await page.evaluate(
-        ({ minLevel, maxLevel, ph }) => {
-          const entries: { level: number; text: string; pageNumber: number }[] = [];
-          const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
-          for (const el of headings) {
-            const level = parseInt(el.tagName[1], 10);
-            if (level < minLevel || level > maxLevel) continue;
+        `(function() {
+          var entries = [];
+          var headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+          for (var i = 0; i < headings.length; i++) {
+            var el = headings[i];
+            var level = parseInt(el.tagName[1], 10);
+            if (level < ${cfg.toc.minLevel} || level > ${cfg.toc.maxLevel}) continue;
             if (el.classList.contains('ms-pdf-index-title')) continue;
-            const rect = el.getBoundingClientRect();
-            const absoluteY = rect.top + window.scrollY;
-            const pageNumber = Math.floor(absoluteY / ph) + 1;
-            entries.push({ level, text: el.textContent || '', pageNumber });
+            var rect = el.getBoundingClientRect();
+            var absoluteY = rect.top + window.scrollY;
+            var pageNumber = Math.floor(absoluteY / ${pageHeight}) + 1;
+            entries.push({ level: level, text: el.textContent || '', pageNumber: pageNumber });
           }
           return entries;
-        },
-        { minLevel: cfg.toc.minLevel, maxLevel: cfg.toc.maxLevel, ph: pageHeight }
+        })()`
       );
 
       if (headingEntries.length > 0) {
