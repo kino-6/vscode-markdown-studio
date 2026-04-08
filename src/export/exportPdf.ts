@@ -181,26 +181,34 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
 
     // --- PDF Index: 2-pass rendering ---
     if (cfg.pdfIndex.enabled) {
-      // Use print media to get accurate page positions
-      await page.emulateMedia({ media: 'print' });
-
-      // Calculate actual print page height based on format and margins
-      // A4 = 297mm, Letter = 279.4mm, etc. Convert to CSS px (1mm ≈ 3.7795px)
+      // Inject @page CSS to match actual PDF dimensions for accurate page calculation
       const formatHeightMm: Record<string, number> = {
         'A3': 420, 'A4': 297, 'A5': 210, 'Letter': 279.4, 'Legal': 355.6, 'Tabloid': 431.8,
       };
-      const pageHeightMm = formatHeightMm[cfg.pageFormat] || 297;
+      const formatWidthMm: Record<string, number> = {
+        'A3': 297, 'A4': 210, 'A5': 148, 'Letter': 215.9, 'Legal': 215.9, 'Tabloid': 279.4,
+      };
+      const pageW = formatWidthMm[cfg.pageFormat] || 210;
+      const pageH = formatHeightMm[cfg.pageFormat] || 297;
       const marginMm = parseFloat(cfg.style.margin) || 20;
-      // top + bottom margin for header/footer
-      const topMarginMm = cfg.pdfHeaderFooter.headerEnabled ? 20 : marginMm;
-      const bottomMarginMm = cfg.pdfHeaderFooter.footerEnabled ? 20 : marginMm;
-      const printableHeightMm = pageHeightMm - topMarginMm - bottomMarginMm;
-      const printableHeightPx = printableHeightMm * 3.7795;
+      const topMm = cfg.pdfHeaderFooter.headerEnabled ? 20 : marginMm;
+      const bottomMm = cfg.pdfHeaderFooter.footerEnabled ? 20 : marginMm;
+      const printableH = pageH - topMm - bottomMm;
 
+      // Set viewport to match print width for accurate layout
+      const printWidthPx = Math.round((pageW - marginMm * 2) * 3.7795);
+      await page.setViewportSize({ width: printWidthPx, height: Math.round(printableH * 3.7795) });
+      await page.emulateMedia({ media: 'print' });
+
+      // Wait for layout to settle
+      await page.waitForTimeout(200);
+
+      const printableHeightPx = printableH * 3.7795;
       const headingEntries: HeadingPageEntry[] = await page.evaluate(
         `(function() {
           var entries = [];
           var headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+          var ph = ${printableHeightPx};
           for (var i = 0; i < headings.length; i++) {
             var el = headings[i];
             var level = parseInt(el.tagName[1], 10);
@@ -208,15 +216,16 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
             if (el.classList.contains('ms-pdf-index-title')) continue;
             var rect = el.getBoundingClientRect();
             var absoluteY = rect.top + window.scrollY;
-            var pageNumber = Math.floor(absoluteY / ${printableHeightPx}) + 1;
+            var pageNumber = Math.floor(absoluteY / ph) + 1;
             entries.push({ level: level, text: el.textContent || '', pageNumber: pageNumber, anchorId: el.id || '' });
           }
           return entries;
         })()`
       );
 
-      // Restore screen media for final rendering
+      // Restore viewport for PDF generation
       await page.emulateMedia({ media: 'screen' });
+      await page.setViewportSize({ width: 980, height: 1400 });
 
       if (headingEntries.length > 0) {
         const indexPageCount = estimateIndexPageCount(headingEntries.length);
