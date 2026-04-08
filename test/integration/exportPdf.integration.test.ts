@@ -17,15 +17,27 @@ vi.mock('playwright', () => {
   const closeMock = vi.fn();
   const newPageMock = vi.fn();
   const launchMock = vi.fn();
+  const setViewportSizeMock = vi.fn();
+  const addScriptTagMock = vi.fn();
+  const waitForFunctionMock = vi.fn().mockResolvedValue(undefined);
+  const evaluateMock = vi.fn().mockResolvedValue(undefined);
   return {
     chromium: { launch: launchMock },
     __setContentMock: setContentMock,
     __pdfMock: pdfMock,
     __closeMock: closeMock,
     __newPageMock: newPageMock,
-    __launchMock: launchMock
+    __launchMock: launchMock,
+    __setViewportSizeMock: setViewportSizeMock,
+    __addScriptTagMock: addScriptTagMock,
+    __waitForFunctionMock: waitForFunctionMock,
+    __evaluateMock: evaluateMock,
   };
 });
+
+vi.mock('../../src/infra/customCssLoader', () => ({
+  loadCustomCss: vi.fn().mockResolvedValue({ css: '', warnings: [] }),
+}));
 
 vi.mock('../../src/infra/config', () => ({
   getConfig: () => ({
@@ -56,6 +68,8 @@ vi.mock('../../src/infra/config', () => ({
     pdfToc: { hidden: true },
     theme: 'default',
     customCss: '',
+    outputFilename: '${filename}',
+    previewTheme: 'auto',
   })
 }));
 
@@ -72,6 +86,22 @@ const pdfMock = (playwrightModule as any).__pdfMock as ReturnType<typeof vi.fn>;
 const closeMock = (playwrightModule as any).__closeMock as ReturnType<typeof vi.fn>;
 const newPageMock = (playwrightModule as any).__newPageMock as ReturnType<typeof vi.fn>;
 const launchMock = (playwrightModule as any).__launchMock as ReturnType<typeof vi.fn>;
+const setViewportSizeMock = (playwrightModule as any).__setViewportSizeMock as ReturnType<typeof vi.fn>;
+const addScriptTagMock = (playwrightModule as any).__addScriptTagMock as ReturnType<typeof vi.fn>;
+const waitForFunctionMock = (playwrightModule as any).__waitForFunctionMock as ReturnType<typeof vi.fn>;
+const evaluateMock = (playwrightModule as any).__evaluateMock as ReturnType<typeof vi.fn>;
+
+/** Helper to build a full page mock with all required Playwright methods */
+function buildPageMock() {
+  return {
+    setContent: setContentMock,
+    pdf: pdfMock,
+    setViewportSize: setViewportSizeMock,
+    addScriptTag: addScriptTagMock,
+    waitForFunction: waitForFunctionMock,
+    evaluate: evaluateMock,
+  };
+}
 
 describe('exportToPdf smoke/integration', () => {
   beforeEach(() => {
@@ -85,7 +115,7 @@ describe('exportToPdf smoke/integration', () => {
     setContentMock.mockResolvedValue(undefined);
     pdfMock.mockResolvedValue(undefined);
     closeMock.mockResolvedValue(undefined);
-    newPageMock.mockResolvedValue({ setContent: setContentMock, pdf: pdfMock });
+    newPageMock.mockResolvedValue(buildPageMock());
     launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
 
     const document = {
@@ -111,7 +141,7 @@ describe('exportToPdf smoke/integration', () => {
     setContentMock.mockResolvedValue(undefined);
     pdfMock.mockResolvedValue(undefined);
     closeMock.mockResolvedValue(undefined);
-    newPageMock.mockResolvedValue({ setContent: setContentMock, pdf: pdfMock });
+    newPageMock.mockResolvedValue(buildPageMock());
     launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
 
     const document = {
@@ -137,7 +167,7 @@ describe('exportToPdf smoke/integration', () => {
     setContentMock.mockResolvedValue(undefined);
     pdfMock.mockResolvedValue(undefined);
     closeMock.mockResolvedValue(undefined);
-    newPageMock.mockResolvedValue({ setContent: setContentMock, pdf: pdfMock });
+    newPageMock.mockResolvedValue(buildPageMock());
     launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
 
     const document = {
@@ -161,7 +191,7 @@ describe('exportToPdf smoke/integration', () => {
     setContentMock.mockResolvedValue(undefined);
     pdfMock.mockResolvedValue(undefined);
     closeMock.mockResolvedValue(undefined);
-    newPageMock.mockResolvedValue({ setContent: setContentMock, pdf: pdfMock });
+    newPageMock.mockResolvedValue(buildPageMock());
     launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
 
     const document = {
@@ -188,7 +218,7 @@ describe('exportToPdf smoke/integration', () => {
     setContentMock.mockResolvedValue(undefined);
     pdfMock.mockResolvedValue(undefined);
     closeMock.mockResolvedValue(undefined);
-    newPageMock.mockResolvedValue({ setContent: setContentMock, pdf: pdfMock });
+    newPageMock.mockResolvedValue(buildPageMock());
     launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
 
     const document = {

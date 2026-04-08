@@ -28,11 +28,11 @@ describe('Line numbers pipeline integration', () => {
   it('line numbers column contains correct numbers', () => {
     const parser = createMarkdownParser({ lineNumbers: true });
 
-    // 2-line block: countLines = 2, minus 1 (trailing \n) = 1
+    // 2-line block: countLines = 2
     const html = parser.render(markdownWithCode);
-    expect(html).toContain('<pre>1</pre>');
+    expect(html).toContain('<pre>1\n2</pre>');
 
-    // 3-line block: countLines = 3, minus 1 = 2
+    // 3-line block: countLines = 3
     const md3 = [
       '```typescript',
       'const a = 1;',
@@ -41,7 +41,7 @@ describe('Line numbers pipeline integration', () => {
       '```',
     ].join('\n');
     const html3 = parser.render(md3);
-    expect(html3).toContain('<pre>1\n2</pre>');
+    expect(html3).toContain('<pre>1\n2\n3</pre>');
   });
 
   /**
@@ -166,11 +166,9 @@ describe('Line numbers pipeline integration', () => {
     const codeInner = codeColumn.match(/<code[^>]*>([\s\S]*?)<\/code>/);
     const codeLines = codeInner![1].split('\n');
 
-    // Line numbers should be 1 less than code lines (trailing \n produces
-    // an extra visual blank line that we intentionally clip via line-number count)
-    expect(numLines.length).toBe(14);
-    // Code still has 15 text lines (including the trailing-\n blank),
-    // but the line-number column height clips the visible area.
+    // Line numbers should match the actual code line count
+    expect(numLines.length).toBe(15);
+    // Code also has 15 text lines
     expect(codeLines.length).toBe(15);
   });
 });
