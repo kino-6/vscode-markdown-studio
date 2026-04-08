@@ -8,14 +8,16 @@ describe('buildPdfIndexHtml', () => {
 
   it('generates HTML with title and entries', () => {
     const entries: HeadingPageEntry[] = [
-      { level: 1, text: 'Introduction', pageNumber: 1 },
-      { level: 2, text: 'Background', pageNumber: 2 },
+      { level: 1, text: 'Introduction', pageNumber: 1, anchorId: 'introduction' },
+      { level: 2, text: 'Background', pageNumber: 2, anchorId: 'background' },
     ];
     const html = buildPdfIndexHtml(entries, 'Table of Contents', 1);
     expect(html).toContain('ms-pdf-index');
     expect(html).toContain('Table of Contents');
     expect(html).toContain('Introduction');
     expect(html).toContain('Background');
+    expect(html).toContain('href="#introduction"');
+    expect(html).toContain('href="#background"');
     // Page numbers should include offset
     expect(html).toContain('>2<');  // 1 + 1
     expect(html).toContain('>3<');  // 2 + 1
@@ -23,8 +25,8 @@ describe('buildPdfIndexHtml', () => {
 
   it('applies level-based CSS classes', () => {
     const entries: HeadingPageEntry[] = [
-      { level: 1, text: 'H1', pageNumber: 1 },
-      { level: 3, text: 'H3', pageNumber: 2 },
+      { level: 1, text: 'H1', pageNumber: 1, anchorId: 'h1' },
+      { level: 3, text: 'H3', pageNumber: 2, anchorId: 'h3' },
     ];
     const html = buildPdfIndexHtml(entries, 'TOC', 0);
     expect(html).toContain('ms-pdf-index-level-1');
@@ -33,7 +35,7 @@ describe('buildPdfIndexHtml', () => {
 
   it('escapes HTML in heading text', () => {
     const entries: HeadingPageEntry[] = [
-      { level: 1, text: '<script>alert(1)</script>', pageNumber: 1 },
+      { level: 1, text: '<script>alert(1)</script>', pageNumber: 1, anchorId: 'test' },
     ];
     const html = buildPdfIndexHtml(entries, 'TOC', 0);
     expect(html).not.toContain('<script>');
@@ -42,7 +44,7 @@ describe('buildPdfIndexHtml', () => {
 
   it('includes page-break-after style', () => {
     const entries: HeadingPageEntry[] = [
-      { level: 1, text: 'Test', pageNumber: 1 },
+      { level: 1, text: 'Test', pageNumber: 1, anchorId: 'test' },
     ];
     const html = buildPdfIndexHtml(entries, 'TOC', 0);
     expect(html).toContain('page-break-after: always');

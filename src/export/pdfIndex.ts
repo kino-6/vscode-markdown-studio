@@ -3,6 +3,7 @@ export interface HeadingPageEntry {
   level: number;
   text: string;
   pageNumber: number;
+  anchorId: string;
 }
 
 /** HTML特殊文字のエスケープ */
@@ -36,8 +37,9 @@ export function buildPdfIndexHtml(
   const lines = entries.map((e) => {
     const indent = e.level - 1;
     const page = e.pageNumber + pageOffset;
+    const href = e.anchorId ? ` href="#${e.anchorId}"` : '';
     return `<div class="ms-pdf-index-entry ms-pdf-index-level-${e.level}" style="padding-left: ${indent * 1.5}em;">` +
-      `<span class="ms-pdf-index-text">${escapeHtml(e.text)}</span>` +
+      `<a class="ms-pdf-index-text"${href}>${escapeHtml(e.text)}</a>` +
       `<span class="ms-pdf-index-dots"></span>` +
       `<span class="ms-pdf-index-page">${page}</span>` +
       `</div>`;

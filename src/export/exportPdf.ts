@@ -116,6 +116,11 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
   // Force all <details> elements open for PDF — collapsed content would be invisible
   html = html.replace(/<details(?![^>]*\bopen\b)/g, '<details open');
 
+  // When PDF Index is enabled, hide the inline TOC to avoid duplication
+  if (cfg.pdfIndex.enabled) {
+    html = html.replace('</head>', '<style>.ms-toc { display: none !important; }</style>\n</head>');
+  }
+
   // Inject page-break CSS if enabled
   if (cfg.pdfHeaderFooter.pageBreakEnabled) {
     html = injectPageBreakCss(html);
@@ -189,7 +194,7 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
             var rect = el.getBoundingClientRect();
             var absoluteY = rect.top + window.scrollY;
             var pageNumber = Math.floor(absoluteY / ${pageHeight}) + 1;
-            entries.push({ level: level, text: el.textContent || '', pageNumber: pageNumber });
+            entries.push({ level: level, text: el.textContent || '', pageNumber: pageNumber, anchorId: el.id || '' });
           }
           return entries;
         })()`
@@ -223,6 +228,7 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
       format: cfg.pageFormat,
       printBackground: true,
       preferCSSPageSize: true,
+      tagged: true,
       displayHeaderFooter: pdfOptions.displayHeaderFooter,
       headerTemplate: pdfOptions.headerTemplate,
       footerTemplate: pdfOptions.footerTemplate,
