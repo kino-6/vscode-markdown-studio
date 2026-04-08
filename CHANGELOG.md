@@ -2,6 +2,21 @@
 
 All notable changes to Markdown Studio will be documented in this file.
 
+## [0.7.0] - 2026-04-08
+
+### Added
+
+- PDF output filename customization via template variables (`${filename}`, `${date}`, `${datetime}`, `${title}`, `${ext}`) with `export.outputFilename` setting
+- Dark / light theme auto-switching for preview — follows VS Code color theme (light, dark, high-contrast)
+- Manual theme override setting `preview.theme` (auto / light / dark)
+- PDF Index page numbers displayed in "p.N" format with dot leaders and anchor links
+- CI workflow for pull requests (`npm run test:ci`)
+
+### Fixed
+
+- `escapeHtml` in `pdfIndex.ts` now escapes single quotes (`'` → `&#39;`) matching `pdfHeaderFooter.ts`
+- PDF export forced to light mode via `page.evaluate()` body class reset for consistent output
+
 ## [0.6.0] - 2026-04-08
 
 ### Added

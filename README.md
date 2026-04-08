@@ -15,6 +15,7 @@ Markdown Studio is a **local-first** VS Code extension for Markdown preview and 
 - Side-by-side panel synced to your editor
 - Source jump — double-click in preview to jump to the corresponding source line
 - Loading overlay with progress indicator for initial render
+- Dark / light theme auto-switching — follows VS Code color theme with manual override (auto / light / dark)
 
 ### Diagram Rendering
 
@@ -29,6 +30,8 @@ Markdown Studio is a **local-first** VS Code extension for Markdown preview and 
 - Custom header/footer with HTML templates (page numbers, title, date)
 - CSS `page-break-before` / `page-break-after` support
 - Configurable page margins (CSS units)
+- PDF Index with page numbers — "Chapter ... p.N" style TOC page with dot leaders and anchor links
+- Customizable output filename via template variables (`${filename}`, `${date}`, `${title}`, etc.)
 
 ### Syntax Highlighting
 
@@ -117,6 +120,8 @@ Five built-in presets with per-setting overrides:
 | `markdownStudio.network.caCertificates` | array | `[]` | Extra CA certificate paths (PEM) for SSL inspection |
 | `markdownStudio.style.theme` | enum | `default` | Built-in CSS theme (default / modern / markdown-pdf / minimal) |
 | `markdownStudio.style.customCss` | string | `""` | Additional CSS rules written directly in settings |
+| `markdownStudio.export.outputFilename` | string | `${filename}` | PDF output filename template (variables: `${filename}`, `${date}`, `${datetime}`, `${title}`, `${ext}`) |
+| `markdownStudio.preview.theme` | enum | `auto` | Preview theme mode (auto / light / dark) |
 
 ### Custom CSS
 
@@ -189,14 +194,14 @@ Planned for future releases:
 
 - ~~Custom CSS file loading (`markdownStudio.style.customCssPath`)~~ → Implemented as `style.theme` + `style.customCss`
 - ~~LaTeX math rendering (KaTeX) — inline `$...$` and display `$$...$$`~~ ✅ v0.5.0
-- PDF Index with page numbers — TOC page with "Chapter ... p.N" style entries
+- ~~PDF Index with page numbers — TOC page with "Chapter ... p.N" style entries~~ ✅ v0.7.0
 - ~~Footnotes (`[^1]` syntax) via markdown-it plugin~~ ✅ v0.5.0
 - ~~Emoji (`:smile:` syntax) via markdown-it plugin~~ ✅ v0.5.0
 - ~~Task lists / checkboxes (`- [ ]` / `- [x]`) via markdown-it plugin~~ ✅ v0.5.0
 - ~~Definition lists (`term` / `: definition`) via markdown-it plugin~~ ✅ v0.5.0
 - ~~Superscript / subscript (`^sup^` / `~sub~`) via markdown-it plugin~~ ✅ v0.5.0
-- PDF output filename customization
-- Dark / light theme auto-switching for preview
+- ~~PDF output filename customization~~ ✅ v0.7.0
+- ~~Dark / light theme auto-switching for preview~~ ✅ v0.7.0
 - Pandoc-style / academic CSS templates (via custom CSS feature)
 - Auto-export on save (watch mode)
 - Multi-file merge export (combine multiple .md files into one PDF)
