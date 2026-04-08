@@ -179,31 +179,35 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
 
     await page.setViewportSize({ width: 980, height: 1400 });
 
+    // Compute PDF options early so margin values can be reused by PDF Index
+    const outputPath = path.join(path.dirname(document.uri.fsPath), `${path.basename(document.uri.fsPath, '.md')}.pdf`);
+    const documentTitle = path.basename(document.uri.fsPath, '.md');
+    const pdfOptions = buildPdfOptions(cfg.pdfHeaderFooter, documentTitle, cfg.style.margin);
+
     // --- PDF Index: 2-pass rendering ---
     if (cfg.pdfIndex.enabled) {
-      // Inject @page CSS to match actual PDF dimensions for accurate page calculation
-      const formatHeightMm: Record<string, number> = {
-        'A3': 420, 'A4': 297, 'A5': 210, 'Letter': 279.4, 'Legal': 355.6, 'Tabloid': 431.8,
+      // Page dimensions from config — no guessing
+      const PAGE_SIZES_MM: Record<string, { w: number; h: number }> = {
+        'A3': { w: 297, h: 420 }, 'A4': { w: 210, h: 297 }, 'A5': { w: 148, h: 210 },
+        'Letter': { w: 215.9, h: 279.4 }, 'Legal': { w: 215.9, h: 355.6 }, 'Tabloid': { w: 279.4, h: 431.8 },
       };
-      const formatWidthMm: Record<string, number> = {
-        'A3': 297, 'A4': 210, 'A5': 148, 'Letter': 215.9, 'Legal': 215.9, 'Tabloid': 279.4,
-      };
-      const pageW = formatWidthMm[cfg.pageFormat] || 210;
-      const pageH = formatHeightMm[cfg.pageFormat] || 297;
-      const marginMm = parseFloat(cfg.style.margin) || 20;
-      const topMm = cfg.pdfHeaderFooter.headerEnabled ? 20 : marginMm;
-      const bottomMm = cfg.pdfHeaderFooter.footerEnabled ? 20 : marginMm;
-      const printableH = pageH - topMm - bottomMm;
+      const pageSize = PAGE_SIZES_MM[cfg.pageFormat] || PAGE_SIZES_MM['A4'];
+      const topMm = parseFloat(pdfOptions.margin.top);
+      const bottomMm = parseFloat(pdfOptions.margin.bottom);
+      const leftMm = parseFloat(pdfOptions.margin.left);
+      const rightMm = parseFloat(pdfOptions.margin.right);
+      const printableW = pageSize.w - leftMm - rightMm;
+      const printableH = pageSize.h - topMm - bottomMm;
+      const MM_TO_PX = 3.7795;
 
-      // Set viewport to match print width for accurate layout
-      const printWidthPx = Math.round((pageW - marginMm * 2) * 3.7795);
-      await page.setViewportSize({ width: printWidthPx, height: Math.round(printableH * 3.7795) });
+      await page.setViewportSize({
+        width: Math.round(printableW * MM_TO_PX),
+        height: Math.round(printableH * MM_TO_PX),
+      });
       await page.emulateMedia({ media: 'print' });
-
-      // Wait for layout to settle
       await page.waitForTimeout(200);
 
-      const printableHeightPx = printableH * 3.7795;
+      const printableHeightPx = printableH * MM_TO_PX;
       const headingEntries: HeadingPageEntry[] = await page.evaluate(
         `(function() {
           var entries = [];
@@ -247,9 +251,6 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
       }
     }
 
-    const outputPath = path.join(path.dirname(document.uri.fsPath), `${path.basename(document.uri.fsPath, '.md')}.pdf`);
-    const documentTitle = path.basename(document.uri.fsPath, '.md');
-    const pdfOptions = buildPdfOptions(cfg.pdfHeaderFooter, documentTitle, cfg.style.margin);
     await page.pdf({
       path: outputPath,
       format: cfg.pageFormat,
