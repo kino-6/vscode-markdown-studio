@@ -181,7 +181,22 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
 
     // --- PDF Index: 2-pass rendering ---
     if (cfg.pdfIndex.enabled) {
-      const pageHeight = 1400;
+      // Use print media to get accurate page positions
+      await page.emulateMedia({ media: 'print' });
+
+      // Calculate actual print page height based on format and margins
+      // A4 = 297mm, Letter = 279.4mm, etc. Convert to CSS px (1mm ≈ 3.7795px)
+      const formatHeightMm: Record<string, number> = {
+        'A3': 420, 'A4': 297, 'A5': 210, 'Letter': 279.4, 'Legal': 355.6, 'Tabloid': 431.8,
+      };
+      const pageHeightMm = formatHeightMm[cfg.pageFormat] || 297;
+      const marginMm = parseFloat(cfg.style.margin) || 20;
+      // top + bottom margin for header/footer
+      const topMarginMm = cfg.pdfHeaderFooter.headerEnabled ? 20 : marginMm;
+      const bottomMarginMm = cfg.pdfHeaderFooter.footerEnabled ? 20 : marginMm;
+      const printableHeightMm = pageHeightMm - topMarginMm - bottomMarginMm;
+      const printableHeightPx = printableHeightMm * 3.7795;
+
       const headingEntries: HeadingPageEntry[] = await page.evaluate(
         `(function() {
           var entries = [];
@@ -193,12 +208,15 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
             if (el.classList.contains('ms-pdf-index-title')) continue;
             var rect = el.getBoundingClientRect();
             var absoluteY = rect.top + window.scrollY;
-            var pageNumber = Math.floor(absoluteY / ${pageHeight}) + 1;
+            var pageNumber = Math.floor(absoluteY / ${printableHeightPx}) + 1;
             entries.push({ level: level, text: el.textContent || '', pageNumber: pageNumber, anchorId: el.id || '' });
           }
           return entries;
         })()`
       );
+
+      // Restore screen media for final rendering
+      await page.emulateMedia({ media: 'screen' });
 
       if (headingEntries.length > 0) {
         const indexPageCount = estimateIndexPageCount(headingEntries.length);
