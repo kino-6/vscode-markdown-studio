@@ -186,10 +186,8 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
 
     // --- PDF Index: 2-pass rendering ---
     if (cfg.pdfIndex.enabled) {
-      // Pass 1: Generate PDF without index to get actual page numbers
-      const tempPdfPath = outputPath + '.tmp';
-      await page.pdf({
-        path: tempPdfPath,
+      // Pass 1: Generate PDF to buffer (no file) to get total page count
+      const tempPdfBuffer = await page.pdf({
         format: cfg.pageFormat,
         printBackground: true,
         preferCSSPageSize: true,
@@ -199,50 +197,37 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
         margin: pdfOptions.margin,
       });
 
-      // Extract heading texts from the DOM (before PDF generation changes anything)
-      const headingTexts: { level: number; text: string; anchorId: string }[] = await page.evaluate(
+      // Count pages from PDF binary: each page object contains "/Type /Page"
+      // but we need to exclude "/Type /Pages" (the page tree root)
+      const pdfStr = tempPdfBuffer.toString('latin1');
+      const pageMatches = pdfStr.match(/\/Type\s*\/Page(?!s)/g);
+      const totalPages = pageMatches ? pageMatches.length : 1;
+
+      // Get heading positions and total document height from the DOM
+      const domData: { headings: { level: number; text: string; anchorId: string; offsetTop: number }[]; scrollHeight: number } = await page.evaluate(
         `(function() {
-          var entries = [];
-          var headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
-          for (var i = 0; i < headings.length; i++) {
-            var el = headings[i];
+          var headings = [];
+          var els = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+          for (var i = 0; i < els.length; i++) {
+            var el = els[i];
             var level = parseInt(el.tagName[1], 10);
             if (level < ${cfg.toc.minLevel} || level > ${cfg.toc.maxLevel}) continue;
             if (el.classList.contains('ms-pdf-index-title')) continue;
-            entries.push({ level: level, text: (el.textContent || '').trim(), anchorId: el.id || '' });
+            headings.push({ level: level, text: (el.textContent || '').trim(), anchorId: el.id || '', offsetTop: el.offsetTop });
           }
-          return entries;
+          return { headings: headings, scrollHeight: document.documentElement.scrollHeight };
         })()`
       );
 
-      if (headingTexts.length > 0) {
-        // Parse the temp PDF to find which page each heading appears on
-        const pdfParse = (await import('pdf-parse')).default;
-        const pdfBuffer = await fs.readFile(tempPdfPath);
-        const pageTexts: string[] = [];
-        await pdfParse(pdfBuffer, {
-          pagerender: async (pageData) => {
-            const textContent = await pageData.getTextContent();
-            const text = textContent.items.map((item) => item.str).join(' ');
-            pageTexts.push(text);
-            return text;
-          },
+      if (domData.headings.length > 0) {
+        // Calculate page number for each heading using proportion:
+        // pageNumber = floor(offsetTop / scrollHeight * totalPages) + 1
+        const headingEntries: HeadingPageEntry[] = domData.headings.map((h) => {
+          const ratio = domData.scrollHeight > 0 ? h.offsetTop / domData.scrollHeight : 0;
+          const pageNumber = Math.min(Math.floor(ratio * totalPages) + 1, totalPages);
+          return { level: h.level, text: h.text, pageNumber, anchorId: h.anchorId };
         });
 
-        // Match each heading to a page by searching page texts
-        const headingEntries: HeadingPageEntry[] = [];
-        for (const h of headingTexts) {
-          let foundPage = 1;
-          for (let p = 0; p < pageTexts.length; p++) {
-            if (pageTexts[p].includes(h.text)) {
-              foundPage = p + 1; // 1-based
-              break;
-            }
-          }
-          headingEntries.push({ level: h.level, text: h.text, pageNumber: foundPage, anchorId: h.anchorId });
-        }
-
-        // Build index HTML and calculate offset
         const indexPageCount = estimateIndexPageCount(headingEntries.length);
         const indexHtml = buildPdfIndexHtml(headingEntries, cfg.pdfIndex.title, indexPageCount);
 
@@ -262,9 +247,6 @@ export async function exportToPdf(document: vscode.TextDocument, context: vscode
         }
         await page.setViewportSize({ width: 980, height: 1400 });
       }
-
-      // Clean up temp PDF
-      try { await fs.unlink(tempPdfPath); } catch { /* ignore */ }
     }
 
     await page.pdf({
