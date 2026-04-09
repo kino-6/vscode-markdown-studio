@@ -22,6 +22,7 @@ Markdown Studio is a **local-first** VS Code extension for Markdown preview and 
 - **Mermaid** — client-side rendering, theme-aware (dark/light), no external dependencies
 - **PlantUML** — bundled JAR with Smetana layout engine, no Graphviz or remote server needed
 - **Inline SVG** — rendered directly, sanitized for security
+- Interactive zoom & pan — scroll-wheel zoom (cursor-centered, 0.25×–4×), mouse-drag pan, double-click reset
 
 ### PDF Export
 
@@ -31,6 +32,7 @@ Markdown Studio is a **local-first** VS Code extension for Markdown preview and 
 - CSS `page-break-before` / `page-break-after` support
 - Configurable page margins (CSS units)
 - PDF Index with page numbers — "Chapter ... p.N" style TOC page with dot leaders and anchor links
+- PDF Bookmarks (outlines) — heading-based bookmark tree for PDF viewer sidebar navigation
 - Customizable output filename via template variables (`${filename}`, `${date}`, `${title}`, etc.)
 
 ### Syntax Highlighting
@@ -121,6 +123,7 @@ Five built-in presets with per-setting overrides:
 | `markdownStudio.style.theme` | enum | `default` | Built-in CSS theme (default / modern / markdown-pdf / minimal) |
 | `markdownStudio.style.customCss` | string | `""` | Additional CSS rules written directly in settings |
 | `markdownStudio.export.outputFilename` | string | `${filename}` | PDF output filename template (variables: `${filename}`, `${date}`, `${datetime}`, `${title}`, `${ext}`) |
+| `markdownStudio.export.pdfBookmarks.enabled` | boolean | `true` | Generate PDF bookmarks (outlines) from headings |
 | `markdownStudio.preview.theme` | enum | `auto` | Preview theme mode (auto / light / dark) |
 
 ### Custom CSS
@@ -202,6 +205,8 @@ Planned for future releases:
 - ~~Superscript / subscript (`^sup^` / `~sub~`) via markdown-it plugin~~ ✅ v0.5.0
 - ~~PDF output filename customization~~ ✅ v0.7.0
 - ~~Dark / light theme auto-switching for preview~~ ✅ v0.7.0
+- ~~PDF Bookmarks (outlines) for PDF viewer sidebar navigation~~ ✅ v0.7.0
+- ~~Diagram zoom & pan (scroll-wheel, drag, double-click reset)~~ ✅ v0.7.0
 - Pandoc-style / academic CSS templates (via custom CSS feature)
 - Auto-export on save (watch mode)
 - Multi-file merge export (combine multiple .md files into one PDF)

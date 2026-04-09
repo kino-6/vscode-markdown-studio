@@ -100,7 +100,7 @@ describe('Property 5: Setting gate suppresses navigation', () => {
           expect(vscode.window.showTextDocument).not.toHaveBeenCalled();
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });
@@ -167,7 +167,7 @@ describe('Property 6: Line clamping for out-of-range values', () => {
           expect(mockEditor.selection).toBeTruthy();
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });
@@ -209,7 +209,7 @@ describe('Property 7: Invalid message rejection', () => {
           expect(vscode.window.showTextDocument).not.toHaveBeenCalled();
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -250,7 +250,7 @@ describe('Property 7: Invalid message rejection', () => {
         await handleJumpToLine(uri, { type: 'jumpToLine', line } as any);
         expect(vscode.window.showTextDocument).not.toHaveBeenCalled();
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });

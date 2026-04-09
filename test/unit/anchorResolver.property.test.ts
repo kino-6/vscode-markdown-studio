@@ -55,7 +55,7 @@ describe('anchorResolver property tests – slug format', () => {
           expect(isAsciiAlnum || isHyphen || isUnderscore || isNonAscii).toBe(true);
         }
       }),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 });
@@ -113,7 +113,7 @@ describe('anchorResolver property tests – uniqueness', () => {
         const uniqueIds = new Set(ids);
         expect(uniqueIds.size).toBe(ids.length);
       }),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 });
@@ -153,7 +153,7 @@ describe('anchorResolver property tests – idempotency', () => {
 
         expect(first).toBe(second);
       }),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 });

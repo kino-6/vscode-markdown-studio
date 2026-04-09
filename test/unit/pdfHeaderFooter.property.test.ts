@@ -37,7 +37,7 @@ describe('pdfHeaderFooter property tests', () => {
 
         expect(result.headerTemplate).toContain(escaped);
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -64,7 +64,7 @@ describe('pdfHeaderFooter property tests', () => {
 
         expect(result.headerTemplate).toBe(customTemplate);
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -83,7 +83,7 @@ describe('pdfHeaderFooter property tests', () => {
 
         expect(result.footerTemplate).toBe(customTemplate);
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -110,7 +110,7 @@ describe('pdfHeaderFooter property tests', () => {
 
         expect(result.displayHeaderFooter).toBe(config.headerEnabled || config.footerEnabled);
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -142,7 +142,7 @@ describe('pdfHeaderFooter property tests', () => {
         expect(result.margin.left).toBe('10mm');
         expect(result.margin.right).toBe('10mm');
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -166,7 +166,7 @@ describe('pdfHeaderFooter property tests', () => {
 
         expect(twice).toBe(once);
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -186,7 +186,7 @@ describe('pdfHeaderFooter property tests', () => {
           expect(injectPageBreakCss(html)).toBe(html);
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });

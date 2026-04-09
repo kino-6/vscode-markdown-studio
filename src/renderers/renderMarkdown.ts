@@ -91,7 +91,7 @@ export async function renderMarkdownDocument(
     if (block.kind === 'mermaid') {
       const result = await renderMermaidBlock(block.content);
       if (result.ok && result.placeholder) {
-        replacement = result.placeholder;
+        replacement = `<div class="diagram-container">${result.placeholder}</div>`;
       } else {
         errors.push({
           title: 'Mermaid render error',
@@ -103,13 +103,13 @@ export async function renderMarkdownDocument(
 
     if (block.kind === 'svg') {
       // SVG is user-authored local content — pass through directly
-      replacement = block.content;
+      replacement = `<div class="diagram-container">${block.content}</div>`;
     }
 
     if (block.kind === 'plantuml' || block.kind === 'puml') {
       const result = await renderPlantUml(block.content, context);
       if (result.ok && result.svg) {
-        replacement = result.svg;
+        replacement = `<div class="diagram-container">${result.svg}</div>`;
       } else {
         errors.push({
           title: 'PlantUML render error',

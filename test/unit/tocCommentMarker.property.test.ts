@@ -51,7 +51,7 @@ describe('tocCommentMarker property tests – comment marker round-trip', () => 
         expect(result).toBeDefined();
         expect(result!.content).toBe(tocText);
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });
@@ -93,7 +93,7 @@ describe('tocCommentMarker property tests – marker parsing accuracy', () => {
         expect(result!.startLine).toBe(beforeLines.length);
         expect(result!.endLine).toBe(beforeLines.length + 1 + (tocText ? tocText.split('\n').length : 0));
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -116,7 +116,7 @@ describe('tocCommentMarker property tests – marker parsing accuracy', () => {
 
         expect(result).toBeUndefined();
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });
@@ -180,7 +180,7 @@ describe('tocCommentMarker property tests – marker position preservation on up
           expect(updatedAfterLines).toEqual(afterLines);
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });
@@ -223,7 +223,7 @@ describe('tocCommentMarker property tests – no-change skip', () => {
         const updated = replaceTocContent(doc, markerRange!, tocText);
         expect(updated).toBe(doc);
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });

@@ -17,10 +17,10 @@ vi.mock('playwright', () => {
   const closeMock = vi.fn();
   const newPageMock = vi.fn();
   const launchMock = vi.fn();
-  const setViewportSizeMock = vi.fn();
+  const evaluateMock = vi.fn();
   const addScriptTagMock = vi.fn();
-  const waitForFunctionMock = vi.fn().mockResolvedValue(undefined);
-  const evaluateMock = vi.fn().mockResolvedValue(undefined);
+  const waitForFunctionMock = vi.fn();
+  const setViewportSizeMock = vi.fn();
   return {
     chromium: { launch: launchMock },
     __setContentMock: setContentMock,
@@ -28,19 +28,52 @@ vi.mock('playwright', () => {
     __closeMock: closeMock,
     __newPageMock: newPageMock,
     __launchMock: launchMock,
-    __setViewportSizeMock: setViewportSizeMock,
+    __evaluateMock: evaluateMock,
     __addScriptTagMock: addScriptTagMock,
     __waitForFunctionMock: waitForFunctionMock,
-    __evaluateMock: evaluateMock,
+    __setViewportSizeMock: setViewportSizeMock,
   };
+});
+
+vi.mock('../../src/infra/config', () => {
+  const getConfigMock = vi.fn();
+  return { getConfig: getConfigMock, __getConfigMock: getConfigMock };
+});
+
+vi.mock('../../src/export/pdfBookmarks', () => {
+  const addBookmarksMock = vi.fn();
+  return { addBookmarks: addBookmarksMock, buildBookmarkTree: vi.fn(), __addBookmarksMock: addBookmarksMock };
 });
 
 vi.mock('../../src/infra/customCssLoader', () => ({
   loadCustomCss: vi.fn().mockResolvedValue({ css: '', warnings: [] }),
 }));
 
-vi.mock('../../src/infra/config', () => ({
-  getConfig: () => ({
+import * as fsModule from 'node:fs/promises';
+import * as buildHtmlModule from '../../src/preview/buildHtml';
+import * as playwrightModule from 'playwright';
+import * as configModule from '../../src/infra/config';
+import * as pdfBookmarksModule from '../../src/export/pdfBookmarks';
+import { exportToPdf } from '../../src/export/exportPdf';
+
+const accessMock = (fsModule as any).__accessMock as ReturnType<typeof vi.fn>;
+const readFileMock = (fsModule as any).__readFileMock as ReturnType<typeof vi.fn>;
+const buildHtmlMock = (buildHtmlModule as any).__buildHtmlMock as ReturnType<typeof vi.fn>;
+const setContentMock = (playwrightModule as any).__setContentMock as ReturnType<typeof vi.fn>;
+const pdfMock = (playwrightModule as any).__pdfMock as ReturnType<typeof vi.fn>;
+const closeMock = (playwrightModule as any).__closeMock as ReturnType<typeof vi.fn>;
+const newPageMock = (playwrightModule as any).__newPageMock as ReturnType<typeof vi.fn>;
+const launchMock = (playwrightModule as any).__launchMock as ReturnType<typeof vi.fn>;
+const evaluateMock = (playwrightModule as any).__evaluateMock as ReturnType<typeof vi.fn>;
+const addScriptTagMock = (playwrightModule as any).__addScriptTagMock as ReturnType<typeof vi.fn>;
+const waitForFunctionMock = (playwrightModule as any).__waitForFunctionMock as ReturnType<typeof vi.fn>;
+const setViewportSizeMock = (playwrightModule as any).__setViewportSizeMock as ReturnType<typeof vi.fn>;
+const getConfigMock = (configModule as any).__getConfigMock as ReturnType<typeof vi.fn>;
+const addBookmarksMock = (pdfBookmarksModule as any).__addBookmarksMock as ReturnType<typeof vi.fn>;
+
+/** Default config used by existing tests (pdfBookmarks disabled) */
+function makeDefaultConfig(overrides: Record<string, any> = {}) {
+  return {
     pageFormat: 'A4',
     externalResources: { mode: 'block-all', allowedDomains: [] },
     javaPath: 'java',
@@ -52,6 +85,7 @@ vi.mock('../../src/infra/config', () => ({
       footerTemplate: null,
       pageBreakEnabled: true,
     },
+    sourceJumpEnabled: false,
     style: {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
       fontSize: 14,
@@ -66,46 +100,19 @@ vi.mock('../../src/infra/config', () => ({
     codeBlock: { lineNumbers: false },
     pdfIndex: { enabled: false, title: 'Table of Contents' },
     pdfToc: { hidden: true },
+    pdfBookmarks: { enabled: false },
     theme: 'default',
     customCss: '',
     outputFilename: '${filename}',
-    previewTheme: 'auto',
-  })
-}));
-
-import * as fsModule from 'node:fs/promises';
-import * as buildHtmlModule from '../../src/preview/buildHtml';
-import * as playwrightModule from 'playwright';
-import { exportToPdf } from '../../src/export/exportPdf';
-
-const accessMock = (fsModule as any).__accessMock as ReturnType<typeof vi.fn>;
-const readFileMock = (fsModule as any).__readFileMock as ReturnType<typeof vi.fn>;
-const buildHtmlMock = (buildHtmlModule as any).__buildHtmlMock as ReturnType<typeof vi.fn>;
-const setContentMock = (playwrightModule as any).__setContentMock as ReturnType<typeof vi.fn>;
-const pdfMock = (playwrightModule as any).__pdfMock as ReturnType<typeof vi.fn>;
-const closeMock = (playwrightModule as any).__closeMock as ReturnType<typeof vi.fn>;
-const newPageMock = (playwrightModule as any).__newPageMock as ReturnType<typeof vi.fn>;
-const launchMock = (playwrightModule as any).__launchMock as ReturnType<typeof vi.fn>;
-const setViewportSizeMock = (playwrightModule as any).__setViewportSizeMock as ReturnType<typeof vi.fn>;
-const addScriptTagMock = (playwrightModule as any).__addScriptTagMock as ReturnType<typeof vi.fn>;
-const waitForFunctionMock = (playwrightModule as any).__waitForFunctionMock as ReturnType<typeof vi.fn>;
-const evaluateMock = (playwrightModule as any).__evaluateMock as ReturnType<typeof vi.fn>;
-
-/** Helper to build a full page mock with all required Playwright methods */
-function buildPageMock() {
-  return {
-    setContent: setContentMock,
-    pdf: pdfMock,
-    setViewportSize: setViewportSizeMock,
-    addScriptTag: addScriptTagMock,
-    waitForFunction: waitForFunctionMock,
-    evaluate: evaluateMock,
+    previewTheme: 'auto' as const,
+    ...overrides,
   };
 }
 
 describe('exportToPdf smoke/integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getConfigMock.mockReturnValue(makeDefaultConfig());
   });
 
   it('uses preview composition pipeline and writes a PDF', async () => {
@@ -115,7 +122,15 @@ describe('exportToPdf smoke/integration', () => {
     setContentMock.mockResolvedValue(undefined);
     pdfMock.mockResolvedValue(undefined);
     closeMock.mockResolvedValue(undefined);
-    newPageMock.mockResolvedValue(buildPageMock());
+    evaluateMock.mockResolvedValue(undefined);
+    addScriptTagMock.mockResolvedValue(undefined);
+    waitForFunctionMock.mockResolvedValue(undefined);
+    setViewportSizeMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({
+      setContent: setContentMock, pdf: pdfMock,
+      evaluate: evaluateMock, addScriptTag: addScriptTagMock,
+      waitForFunction: waitForFunctionMock, setViewportSize: setViewportSizeMock,
+    });
     launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
 
     const document = {
@@ -141,7 +156,15 @@ describe('exportToPdf smoke/integration', () => {
     setContentMock.mockResolvedValue(undefined);
     pdfMock.mockResolvedValue(undefined);
     closeMock.mockResolvedValue(undefined);
-    newPageMock.mockResolvedValue(buildPageMock());
+    evaluateMock.mockResolvedValue(undefined);
+    addScriptTagMock.mockResolvedValue(undefined);
+    waitForFunctionMock.mockResolvedValue(undefined);
+    setViewportSizeMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({
+      setContent: setContentMock, pdf: pdfMock,
+      evaluate: evaluateMock, addScriptTag: addScriptTagMock,
+      waitForFunction: waitForFunctionMock, setViewportSize: setViewportSizeMock,
+    });
     launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
 
     const document = {
@@ -167,7 +190,15 @@ describe('exportToPdf smoke/integration', () => {
     setContentMock.mockResolvedValue(undefined);
     pdfMock.mockResolvedValue(undefined);
     closeMock.mockResolvedValue(undefined);
-    newPageMock.mockResolvedValue(buildPageMock());
+    evaluateMock.mockResolvedValue(undefined);
+    addScriptTagMock.mockResolvedValue(undefined);
+    waitForFunctionMock.mockResolvedValue(undefined);
+    setViewportSizeMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({
+      setContent: setContentMock, pdf: pdfMock,
+      evaluate: evaluateMock, addScriptTag: addScriptTagMock,
+      waitForFunction: waitForFunctionMock, setViewportSize: setViewportSizeMock,
+    });
     launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
 
     const document = {
@@ -191,7 +222,15 @@ describe('exportToPdf smoke/integration', () => {
     setContentMock.mockResolvedValue(undefined);
     pdfMock.mockResolvedValue(undefined);
     closeMock.mockResolvedValue(undefined);
-    newPageMock.mockResolvedValue(buildPageMock());
+    evaluateMock.mockResolvedValue(undefined);
+    addScriptTagMock.mockResolvedValue(undefined);
+    waitForFunctionMock.mockResolvedValue(undefined);
+    setViewportSizeMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({
+      setContent: setContentMock, pdf: pdfMock,
+      evaluate: evaluateMock, addScriptTag: addScriptTagMock,
+      waitForFunction: waitForFunctionMock, setViewportSize: setViewportSizeMock,
+    });
     launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
 
     const document = {
@@ -218,7 +257,15 @@ describe('exportToPdf smoke/integration', () => {
     setContentMock.mockResolvedValue(undefined);
     pdfMock.mockResolvedValue(undefined);
     closeMock.mockResolvedValue(undefined);
-    newPageMock.mockResolvedValue(buildPageMock());
+    evaluateMock.mockResolvedValue(undefined);
+    addScriptTagMock.mockResolvedValue(undefined);
+    waitForFunctionMock.mockResolvedValue(undefined);
+    setViewportSizeMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({
+      setContent: setContentMock, pdf: pdfMock,
+      evaluate: evaluateMock, addScriptTag: addScriptTagMock,
+      waitForFunction: waitForFunctionMock, setViewportSize: setViewportSizeMock,
+    });
     launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
 
     const document = {
@@ -230,5 +277,100 @@ describe('exportToPdf smoke/integration', () => {
 
     const htmlArg = setContentMock.mock.calls[0][0] as string;
     expect(htmlArg).toContain('page-break-before');
+  });
+});
+
+describe('exportToPdf bookmark integration', () => {
+  /** Helper to set up common mocks for bookmark tests */
+  function setupPageMocks() {
+    buildHtmlMock.mockResolvedValue('<html><head></head><body><h1>Title</h1><h2>Section</h2></body></html>');
+    readFileMock.mockResolvedValue('.hljs { background: #f6f8fa; }');
+    accessMock.mockResolvedValue(undefined);
+    setContentMock.mockResolvedValue(undefined);
+    // Return a fake PDF buffer with 2 "/Type /Page" markers so page counting works
+    const fakePdf = Buffer.from('/Type /Page\n/Type /Page\n');
+    pdfMock.mockResolvedValue(fakePdf);
+    closeMock.mockResolvedValue(undefined);
+    evaluateMock.mockResolvedValue({
+      headings: [
+        { level: 1, text: 'Title', offsetTop: 0 },
+        { level: 2, text: 'Section', offsetTop: 500 },
+      ],
+      scrollHeight: 1000,
+    });
+    addScriptTagMock.mockResolvedValue(undefined);
+    waitForFunctionMock.mockResolvedValue(undefined);
+    setViewportSizeMock.mockResolvedValue(undefined);
+    addBookmarksMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({
+      setContent: setContentMock, pdf: pdfMock,
+      evaluate: evaluateMock, addScriptTag: addScriptTagMock,
+      waitForFunction: waitForFunctionMock, setViewportSize: setViewportSizeMock,
+    });
+    launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('calls addBookmarks when pdfBookmarks.enabled=true (Validates: Requirements 1.1, 4.2)', async () => {
+    getConfigMock.mockReturnValue(makeDefaultConfig({
+      pdfBookmarks: { enabled: true },
+      pdfIndex: { enabled: false, title: 'Table of Contents' },
+    }));
+    setupPageMocks();
+
+    const document = { getText: () => '# Title\n## Section', uri: { fsPath: '/tmp/sample.md' } } as any;
+    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+
+    expect(addBookmarksMock).toHaveBeenCalledWith(
+      '/tmp/sample.pdf',
+      expect.arrayContaining([
+        expect.objectContaining({ level: 1, text: 'Title' }),
+        expect.objectContaining({ level: 2, text: 'Section' }),
+      ]),
+      1,
+      3,
+    );
+  });
+
+  it('does NOT call addBookmarks when pdfBookmarks.enabled=false (Validates: Requirements 1.2)', async () => {
+    getConfigMock.mockReturnValue(makeDefaultConfig({
+      pdfBookmarks: { enabled: false },
+      pdfIndex: { enabled: false, title: 'Table of Contents' },
+    }));
+    setupPageMocks();
+
+    const document = { getText: () => '# Title\n## Section', uri: { fsPath: '/tmp/sample.md' } } as any;
+    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+
+    expect(addBookmarksMock).not.toHaveBeenCalled();
+  });
+
+  it('generates bookmarks when pdfIndex.enabled=false + pdfBookmarks.enabled=true (Validates: Requirements 4.1, 4.2)', async () => {
+    getConfigMock.mockReturnValue(makeDefaultConfig({
+      pdfBookmarks: { enabled: true },
+      pdfIndex: { enabled: false, title: 'Table of Contents' },
+    }));
+    setupPageMocks();
+
+    const document = { getText: () => '# Title\n## Section', uri: { fsPath: '/tmp/sample.md' } } as any;
+    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+
+    // addBookmarks should be called even without pdfIndex
+    expect(addBookmarksMock).toHaveBeenCalledTimes(1);
+    expect(addBookmarksMock).toHaveBeenCalledWith(
+      '/tmp/sample.pdf',
+      expect.any(Array),
+      1,
+      3,
+    );
+    // Verify bookmark entries have valid page numbers
+    const entries = addBookmarksMock.mock.calls[0][1];
+    expect(entries.length).toBe(2);
+    for (const entry of entries) {
+      expect(entry.pageNumber).toBeGreaterThanOrEqual(1);
+    }
   });
 });

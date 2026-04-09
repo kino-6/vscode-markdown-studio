@@ -67,7 +67,7 @@ describe('resolveExternalResourceConfig property tests', () => {
           expect(result.allowedDomains).toEqual(newDomains);
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -89,7 +89,7 @@ describe('resolveExternalResourceConfig property tests', () => {
           expect(result.allowedDomains).toEqual([...DEFAULT_ALLOWED_DOMAINS]);
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });

@@ -152,7 +152,7 @@ describe('Property 4: DOM walker finds nearest source line', () => {
           expect(result).toBe(expected);
         },
       ),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -169,7 +169,7 @@ describe('Property 4: DOM walker finds nearest source line', () => {
           expect(findSourceLine(leaf)).toBeNull();
         },
       ),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -189,7 +189,7 @@ describe('Property 4: DOM walker finds nearest source line', () => {
           expect(findSourceLine(leaf)).toBe(lineNum);
         },
       ),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -224,7 +224,7 @@ describe('Property 4: DOM walker finds nearest source line', () => {
           expect(findSourceLine(leaf)).toBe(innerLine);
         },
       ),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 });

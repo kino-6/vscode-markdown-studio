@@ -26,7 +26,7 @@ describe('Property 4: case-insensitive domain matching', () => {
 
         expect(resultLower).toBe(resultUpper);
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -44,7 +44,7 @@ describe('Property 4: case-insensitive domain matching', () => {
 
         expect(resultLower).toBe(resultUpper);
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -59,7 +59,7 @@ describe('Property 4: case-insensitive domain matching', () => {
         expect(result).not.toBeNull();
         expect(result).toBe(result!.toLowerCase());
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 });
@@ -85,7 +85,7 @@ describe('Property 5: domain matching accuracy', () => {
 
         expect(isDomainAllowed(url, allowedDomains)).toBe(true);
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -110,7 +110,7 @@ describe('Property 5: domain matching accuracy', () => {
           expect(isDomainAllowed(url, allowedDomains)).toBe(false);
         },
       ),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -122,7 +122,7 @@ describe('Property 5: domain matching accuracy', () => {
         const url = `https://${domain}/path`;
         expect(isDomainAllowed(url, [])).toBe(false);
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -138,7 +138,7 @@ describe('Property 5: domain matching accuracy', () => {
 
         expect(result).toBe(domain.toLowerCase());
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 });
@@ -167,7 +167,7 @@ describe('Property 6: safe fallback for invalid URLs', () => {
       fc.property(arbInvalidUrl, (invalidUrl) => {
         expect(extractDomain(invalidUrl)).toBeNull();
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -186,7 +186,7 @@ describe('Property 6: safe fallback for invalid URLs', () => {
       fc.property(arbInvalidUrl, arbDomains, (invalidUrl, domains) => {
         expect(isDomainAllowed(invalidUrl, domains)).toBe(false);
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -196,7 +196,7 @@ describe('Property 6: safe fallback for invalid URLs', () => {
         const result = extractDomain(input);
         expect(result === null || typeof result === 'string').toBe(true);
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 });
@@ -269,7 +269,7 @@ describe('Property 1: allow-all identity', () => {
       fc.property(arbHtmlBody, (html) => {
         expect(filterExternalResources(html, config)).toBe(html);
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -284,7 +284,7 @@ describe('Property 1: allow-all identity', () => {
         };
         expect(filterExternalResources(html, config)).toBe(html);
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 });
@@ -316,7 +316,7 @@ describe('Property 2: block-all completeness', () => {
         const externalLinkPattern = /<a\s+[^>]*href="https?:\/\/[^"]*"[^>]*>/i;
         expect(externalLinkPattern.test(output)).toBe(false);
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -333,7 +333,7 @@ describe('Property 2: block-all completeness', () => {
         const externalImgPattern = /<img\s+[^>]*src="https?:\/\/[^"]*"[^>]*>/i;
         expect(externalImgPattern.test(output)).toBe(false);
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 });
@@ -365,7 +365,7 @@ describe('Property 3: whitelist accuracy', () => {
         // The original <a> tag should be preserved
         expect(output).toBe(html);
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -380,7 +380,7 @@ describe('Property 3: whitelist accuracy', () => {
         const output = filterExternalResources(html, config);
         expect(output).toBe(html);
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -406,7 +406,7 @@ describe('Property 3: whitelist accuracy', () => {
           expect(output).not.toContain(`href="https://${linkDomain}`);
         },
       ),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -429,7 +429,7 @@ describe('Property 3: whitelist accuracy', () => {
           expect(output).not.toContain(`src="https://${imgDomain}`);
         },
       ),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 });
@@ -462,7 +462,7 @@ describe('Property 7: local resource protection', () => {
         const config: ExternalResourceConfig = { mode, allowedDomains: domains };
         expect(filterExternalResources(html, config)).toBe(html);
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -475,7 +475,7 @@ describe('Property 7: local resource protection', () => {
         // The local resource tag should still be present unchanged
         expect(output).toContain(localTag);
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -487,7 +487,7 @@ describe('Property 7: local resource protection', () => {
         const output = filterExternalResources(html, config);
         expect(output).toContain(localTag);
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 });

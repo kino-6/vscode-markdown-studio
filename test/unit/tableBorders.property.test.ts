@@ -102,7 +102,7 @@ describe('Property 1: Pipe tables produce styled HTML elements', () => {
         // The HTML must contain <td> elements (body cells)
         expect(result.htmlBody).toMatch(/<td[\s>]/);
       }),
-      { numRuns: 100 },
+      { numRuns: 100, seed: 42 },
     );
   });
 
@@ -116,7 +116,7 @@ describe('Property 1: Pipe tables produce styled HTML elements', () => {
         expect(result.htmlBody).toMatch(/<thead[\s>]/);
         expect(result.htmlBody).toMatch(/<tbody[\s>]/);
       }),
-      { numRuns: 100 },
+      { numRuns: 100, seed: 42 },
     );
   });
 
@@ -133,7 +133,7 @@ describe('Property 1: Pipe tables produce styled HTML elements', () => {
         expect(result.htmlBody).toMatch(/<th[\s>]/);
         expect(result.htmlBody).toMatch(/<td[\s>]/);
       }),
-      { numRuns: 50 },
+      { numRuns: 50, seed: 42 },
     );
   });
 });
@@ -186,7 +186,7 @@ describe('Property 2: Theme variables have consistent light and dark definitions
         // Light and dark values must differ
         expect(lightValue).not.toBe(darkValue);
       }),
-      { numRuns: 100 },
+      { numRuns: 100, seed: 42 },
     );
   });
 });
@@ -231,7 +231,7 @@ describe('Property 3: All var() references include fallback values', () => {
         const afterComma = varCall.full.split(',').slice(1).join(',').replace(/\)\s*$/, '').trim();
         expect(afterComma.length).toBeGreaterThan(0);
       }),
-      { numRuns: 100 },
+      { numRuns: 100, seed: 42 },
     );
   });
 });

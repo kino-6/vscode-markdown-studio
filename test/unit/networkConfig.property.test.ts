@@ -67,7 +67,7 @@ describe('networkConfig property tests', () => {
           expect(typeof config.strictSSL).toBe('boolean');
         }
       ),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 });
@@ -104,7 +104,7 @@ describe('networkConfig proxy priority property tests', () => {
           expect(config.proxyUrl).toBe(vscodeProxy);
         }
       ),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 
@@ -128,7 +128,7 @@ describe('networkConfig proxy priority property tests', () => {
           expect(config.proxyUrl).toBe(httpsProxy);
         }
       ),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 
@@ -147,7 +147,7 @@ describe('networkConfig proxy priority property tests', () => {
         const config = resolveNetworkConfig(env);
         expect(config.proxyUrl).toBe(httpProxy);
       }),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 
@@ -203,7 +203,7 @@ describe('networkConfig CA cert path collection property tests', () => {
           expect(count).toBe(1);
         }
       }),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 

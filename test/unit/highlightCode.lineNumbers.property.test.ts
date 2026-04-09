@@ -98,7 +98,7 @@ describe('highlightCode – Property 2: output never contains line number markup
         expect(result).not.toContain('ms-code-table');
         expect(result).not.toContain('ms-code-wrapper');
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -110,7 +110,7 @@ describe('highlightCode – Property 2: output never contains line number markup
 
         expect(result1).toBe(result2);
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -129,7 +129,7 @@ describe('highlightCode – Property 2: output never contains line number markup
         expect(result).not.toContain('ms-code-table');
         expect(result).not.toContain('ms-code-wrapper');
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });

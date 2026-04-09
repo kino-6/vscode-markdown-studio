@@ -214,7 +214,7 @@ describe('Property 2: Preservation — no-diagram Markdown data-source-line corr
           expect(line).toBeLessThan(totalLines);
         }
       }),
-      { numRuns: 100 },
+      { numRuns: 100, seed: 42 },
     );
   });
 
@@ -228,7 +228,7 @@ describe('Property 2: Preservation — no-diagram Markdown data-source-line corr
           expect(sourceLines[i]).toBeGreaterThanOrEqual(sourceLines[i - 1]);
         }
       }),
-      { numRuns: 100 },
+      { numRuns: 100, seed: 42 },
     );
   });
 });

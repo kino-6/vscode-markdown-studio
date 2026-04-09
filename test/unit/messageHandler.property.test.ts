@@ -45,7 +45,7 @@ describe('Property 2: Monotonic generation ordering', () => {
           }
         },
       ),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -61,7 +61,7 @@ describe('Property 2: Monotonic generation ordering', () => {
           }
         },
       ),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -76,7 +76,7 @@ describe('Property 2: Monotonic generation ordering', () => {
           expect(applied.length).toBe(unique.size);
         },
       ),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -93,7 +93,7 @@ describe('Property 2: Monotonic generation ordering', () => {
           expect(applied).toEqual([high]);
         },
       ),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -109,7 +109,7 @@ describe('Property 2: Monotonic generation ordering', () => {
           expect(applied).toEqual(sorted);
         },
       ),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 });

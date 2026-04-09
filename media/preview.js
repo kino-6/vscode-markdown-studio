@@ -41,7 +41,12 @@ function onThemeChanged(newThemeKind) {
     mermaidReady = false;
     console.error('[Markdown Studio] Mermaid re-init on theme change failed:', err);
   }
-  renderMermaidBlocks().catch((error) => {
+  renderMermaidBlocks().then(() => {
+    document.querySelectorAll('.diagram-container').forEach((c) => {
+      c.removeAttribute('data-zoom-init');
+    });
+    initZoomPan();
+  }).catch((error) => {
     console.error('Mermaid re-rendering failed after theme change', error);
   });
 }
@@ -221,6 +226,7 @@ window.addEventListener('message', (event) => {
   lastAppliedGeneration = message.generation;
   document.body.innerHTML = message.html;
   renderMermaidBlocks();
+  initZoomPan();
   addCopyButtons();
   registerTocLinkHandlers();
   // innerHTML destroyed the overlay element — showLoadingOverlay() would
@@ -236,6 +242,7 @@ function initPreview() {
   applyThemeClass(resolveEffectiveThemeKind(currentOverride));
 
   renderMermaidBlocks().then(() => {
+    initZoomPan();
     hideLoadingOverlay();
   }).catch((error) => {
     console.error('Mermaid rendering failed', error);
@@ -252,6 +259,7 @@ function initPreview() {
   });
 
   document.body.addEventListener('dblclick', (event) => {
+    if (event.target.closest('.diagram-container')) return;
     const line = findSourceLine(event.target);
     if (line !== null) {
       vscode.postMessage({ type: 'jumpToLine', line });
@@ -271,4 +279,101 @@ if (typeof document !== 'undefined' && (document.readyState === 'interactive' ||
 window.showLoadingOverlay = showLoadingOverlay;
 window.hideLoadingOverlay = hideLoadingOverlay;
 
-export { THEME_MAP, detectThemeKind, getMermaidTheme, resolveEffectiveThemeKind, applyThemeClass, onThemeChanged, observeThemeChanges, findSourceLine, lastAppliedGeneration, showLoadingOverlay, hideLoadingOverlay, registerTocLinkHandlers };
+// ── ZoomPanController ────────────────────────────────────────────────
+
+const MIN_SCALE = 0.25;
+const MAX_SCALE = 4.0;
+const ZOOM_SENSITIVITY = 0.001;
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function applyTransform(container, state) {
+  const inner = container.querySelector('svg, .mermaid-host');
+  if (!inner) return;
+  inner.style.transform = `translate(${state.translateX}px, ${state.translateY}px) scale(${state.scale})`;
+  inner.style.transformOrigin = '0 0';
+
+  let indicator = container.querySelector('.zoom-indicator');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.className = 'zoom-indicator';
+    container.appendChild(indicator);
+  }
+  indicator.textContent = `${Math.round(state.scale * 100)}%`;
+}
+
+function handleWheel(event, container, state) {
+  event.preventDefault();
+  const rect = container.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return;
+  const cursorX = event.clientX - rect.left;
+  const cursorY = event.clientY - rect.top;
+
+  const prevScale = state.scale;
+  const delta = -event.deltaY * ZOOM_SENSITIVITY;
+  state.scale = clamp(state.scale * (1 + delta), MIN_SCALE, MAX_SCALE);
+
+  const ratio = state.scale / prevScale;
+  state.translateX = cursorX - ratio * (cursorX - state.translateX);
+  state.translateY = cursorY - ratio * (cursorY - state.translateY);
+
+  applyTransform(container, state);
+}
+
+function handleMouseDown(event, container, state) {
+  if (event.button !== 0) return;
+  state.dragging = true;
+  state.dragStartX = event.clientX - state.translateX;
+  state.dragStartY = event.clientY - state.translateY;
+  container.style.cursor = 'grabbing';
+}
+
+function handleMouseMove(event, container, state) {
+  if (!state.dragging) return;
+  state.translateX = event.clientX - state.dragStartX;
+  state.translateY = event.clientY - state.dragStartY;
+  applyTransform(container, state);
+}
+
+function handleMouseUp(container, state) {
+  state.dragging = false;
+  container.style.cursor = 'grab';
+}
+
+function handleDblClick(container, state) {
+  state.scale = 1.0;
+  state.translateX = 0;
+  state.translateY = 0;
+  applyTransform(container, state);
+}
+
+function attachZoomPan(container) {
+  const state = {
+    scale: 1.0,
+    translateX: 0,
+    translateY: 0,
+    dragging: false,
+    dragStartX: 0,
+    dragStartY: 0
+  };
+  container._zoomState = state;
+  container.setAttribute('data-zoom-init', 'true');
+
+  container.addEventListener('wheel', (e) => handleWheel(e, container, state), { passive: false });
+  container.addEventListener('mousedown', (e) => handleMouseDown(e, container, state));
+  container.addEventListener('mousemove', (e) => handleMouseMove(e, container, state));
+  container.addEventListener('mouseup', () => handleMouseUp(container, state));
+  container.addEventListener('mouseleave', () => handleMouseUp(container, state));
+  container.addEventListener('dblclick', () => handleDblClick(container, state));
+}
+
+function initZoomPan() {
+  document.querySelectorAll('.diagram-container').forEach((container) => {
+    if (container.hasAttribute('data-zoom-init')) return;
+    attachZoomPan(container);
+  });
+}
+
+export { THEME_MAP, detectThemeKind, getMermaidTheme, resolveEffectiveThemeKind, applyThemeClass, onThemeChanged, observeThemeChanges, findSourceLine, lastAppliedGeneration, showLoadingOverlay, hideLoadingOverlay, registerTocLinkHandlers, initZoomPan, clamp, handleWheel, handleDblClick, handleMouseDown, handleMouseMove, handleMouseUp, applyTransform, attachZoomPan, MIN_SCALE, MAX_SCALE, ZOOM_SENSITIVITY };

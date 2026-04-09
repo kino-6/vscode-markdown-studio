@@ -5,6 +5,12 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
 <!-- TOC -->
 - [Markdown Studio — Feature Demo](#markdown-studio-feature-demo)
   - [1. Markdown Rendering](#1-markdown-rendering)
+    - [Task Lists](#task-lists)
+    - [Footnotes](#footnotes)
+    - [Emoji](#emoji)
+    - [Math (KaTeX)](#math-katex)
+    - [Definition Lists](#definition-lists)
+    - [Superscript / Subscript](#superscript-subscript)
   - [2. Mermaid Diagrams](#2-mermaid-diagrams)
     - [Markdown Studio Architecture](#markdown-studio-architecture)
     - [Extension Activation Flow](#extension-activation-flow)
@@ -23,11 +29,15 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
   - [7. Theme Adaptability](#7-theme-adaptability)
   - [8. Diagram Type Catalog](#8-diagram-type-catalog)
   - [9. Custom CSS](#9-custom-css)
+    - [Bundled Themes](#bundled-themes)
+    - [Setup](#setup)
+    - [How It Works](#how-it-works)
   - [10. PDF Export](#10-pdf-export)
 <!-- /TOC -->
 
 ---
 
+<!-- DEMO:RENDERING -->
 ## 1. Markdown Rendering
 
 **Bold**, *italic*, ~~strikethrough~~, `inline code`
@@ -104,6 +114,7 @@ PlantUML
 
 ---
 
+<!-- DEMO:MERMAID -->
 ## 2. Mermaid Diagrams
 
 ### Markdown Studio Architecture
@@ -148,6 +159,7 @@ sequenceDiagram
 
 ---
 
+<!-- DEMO:PLANTUML -->
 ## 3. PlantUML Diagrams
 
 Rendered locally via bundled JAR. No remote server.
@@ -339,6 +351,7 @@ RUN npm install
 
 ---
 
+<!-- DEMO:SECURITY -->
 ## 6. Images and Security
 
 Markdown Studio is local-first. The default security policy (`blockExternalLinks = true`) blocks external resources while allowing local files.
@@ -733,6 +746,7 @@ All themes include dark mode support and print-optimized styles.
 
 ---
 
+<!-- DEMO:EXPORT -->
 ## 10. PDF Export
 
 This entire document can be exported to PDF:
@@ -745,4 +759,4 @@ The PDF uses the same HTML pipeline as the preview.
 
 ---
 
-*Markdown Studio v0.2.0*
+*Markdown Studio v0.7.0*

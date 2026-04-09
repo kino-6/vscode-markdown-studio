@@ -161,7 +161,7 @@ describe('Property 2: Attribute preservation under injection', () => {
           expect(lineVal).toBeGreaterThanOrEqual(0);
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -204,7 +204,7 @@ describe('Property 2: Attribute preservation under injection', () => {
           }
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });

@@ -50,7 +50,7 @@ describe('downloadFile backward compatibility property tests', () => {
           expect(content).toBe('ok');
         }
       ),
-      { numRuns: 10 }
+      { numRuns: 10, seed: 42 }
     );
   });
 

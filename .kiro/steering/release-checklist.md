@@ -60,9 +60,14 @@ npm run lint
 # 上記が通ったら単体テスト
 npm run test:unit
 
-# 統合テスト
+# 統合テスト（モック不整合はここで検出される）
 npm run test:integration
 ```
+
+### Integrationテストのモック管理
+- `exportToPdf` のような複雑な関数は Playwright page, fs, config 等多数のモックが必要
+- 実装に新しいメソッド呼び出しや config プロパティを追加したら、対応する integration テストのモックも必ず更新する
+- 対策: `npm run test:integration` をローカルで実行してからコミットする
 
 ## よくあるミス
 
@@ -72,3 +77,5 @@ npm run test:integration
 - **型定義を変更したのにテストフィクスチャを更新し忘れる**（v0.6.0 で発生）
 - **インライン型を使っている箇所に新プロパティが反映されない**（v0.6.0 で発生）
 - **外部パッケージのメジャーバージョンアップ後に型の import パスが壊れる**（v0.6.0 で発生）
+- **integrationテストのモックが実装の変更に追従していない**（v0.7.0 で発生）— `exportToPdf` に Playwright の `setViewportSize`/`addScriptTag`/`evaluate` 等を追加したのに、テストの page mock が古いまま。configモックも `outputFilename`/`previewTheme` 等の新プロパティが不足していた
+- **行番号カウントのロジック変更がテストの期待値に反映されていない**（v0.7.0 で発生）— `countLines` の trailing newline 処理が変わったのに integration テストの期待値が旧ロジックのまま

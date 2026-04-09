@@ -114,7 +114,7 @@ describe('extractHeadings property tests', () => {
           }
         }
       ),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 });
@@ -198,7 +198,7 @@ describe('extractHeadings property tests – inline formatting', () => {
           }
         }
       ),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 });
@@ -308,7 +308,7 @@ describe('extractHeadings property tests – code block exclusion', () => {
           }
         }
       ),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 });

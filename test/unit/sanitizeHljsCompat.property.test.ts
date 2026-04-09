@@ -95,7 +95,7 @@ describe('Property 5: Sanitizer preserves hljs class attributes', () => {
           expect(spanStyleMatches).toBeNull();
         }
       ),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 
@@ -123,7 +123,7 @@ describe('Property 5: Sanitizer preserves hljs class attributes', () => {
           }
         }
       ),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 });

@@ -166,6 +166,11 @@
           "default": true,
           "markdownDescription": "Hide inline Table of Contents in PDF export. Recognized patterns: `[toc]` / `[[toc]]` markers and `<!-- TOC -->` / `<!-- /TOC -->` comment markers. Hand-written ToC lists without these markers are not detected — wrap them in `<!-- TOC -->` / `<!-- /TOC -->` to enable hiding."
         },
+        "markdownStudio.export.pdfBookmarks.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "PDFエクスポート時にブックマーク（しおり/アウトライン）を生成する。PDFビューアのサイドバーナビゲーションに表示される。"
+        },
         "markdownStudio.preview.theme": {
           "type": "string",
           "default": "auto",
@@ -288,13 +293,15 @@
     "test:e2e": "vscode-test",
     "test:ci": "npm run lint && npm run test:unit && npm run test:integration",
     "package": "npm run build && rm -f dist/*.vsix && vsce package -o dist/",
-    "reinstall": "bash dev_reinstall.sh"
+    "reinstall": "bash dev_reinstall.sh",
+    "demo": "npx tsx scripts/demo/index.ts"
   },
   "dependencies": {
     "@vscode/markdown-it-katex": "^1.1.2",
     "highlight.js": "^11.11.1",
     "https-proxy-agent": "^7.0.6",
     "markdown-it": "^14.1.0",
+    "pdf-lib": "^1.17.1",
     "markdown-it-deflist": "^3.0.0",
     "markdown-it-emoji": "^3.0.0",
     "markdown-it-footnote": "^4.0.0",

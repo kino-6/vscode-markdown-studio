@@ -30,6 +30,8 @@
     "test/unit/previewInitResilience.property.test.ts",
     "test/unit/loadingOverlay.test.ts",
     "test/unit/loadingOverlayMessageHandler.test.ts",
-    "test/unit/initialLoadSpinner.test.ts"
+    "test/unit/initialLoadSpinner.test.ts",
+    "test/unit/demoVscodeLauncher.test.ts",
+    "test/unit/zoomPanController.property.test.ts"
   ]
 }

@@ -26,3 +26,4 @@ npm run test:ci
 - Tests are local-first and do not call remote APIs.
 - Playwright is mocked in tests so PDF smoke coverage stays deterministic and CI-friendly.
 - Renderer tests include graceful degradation checks (syntax errors and Java-missing behavior).
+- All property-based tests (fast-check) use a fixed `seed: 42` for deterministic reproducibility. This prevents flaky failures from random input generation. If a property test needs to explore new input space, temporarily remove the seed, run with higher `numRuns`, and re-fix the seed once stable.

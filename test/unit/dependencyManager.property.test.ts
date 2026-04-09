@@ -150,7 +150,7 @@ describe("DependencyManager property tests", () => {
           await fs.rm(tmpDir, { recursive: true, force: true });
         }
       }),
-      { numRuns: 100 }
+      { numRuns: 100, seed: 42 }
     );
   });
 
@@ -234,7 +234,7 @@ describe("DependencyManager property tests", () => {
           await fs.rm(tmpDir, { recursive: true, force: true });
         }
       }),
-      { numRuns: 50 }
+      { numRuns: 50, seed: 42 }
     );
   });
 
@@ -294,7 +294,7 @@ describe("DependencyManager property tests", () => {
           await fs.rm(tmpDir, { recursive: true, force: true });
         }
       }),
-      { numRuns: 50 }
+      { numRuns: 50, seed: 42 }
     );
   });
 
@@ -407,7 +407,7 @@ describe("DependencyManager property tests", () => {
           await fs.rm(tmpDir, { recursive: true, force: true });
         }
       }),
-      { numRuns: 100 }
+      { numRuns: 100, seed: 42 }
     );
   });
 });

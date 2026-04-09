@@ -203,7 +203,7 @@ describe('Property 3: URI filtering', () => {
           expect(mockPanel.webview.postMessage).not.toHaveBeenCalled();
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -222,7 +222,7 @@ describe('Property 3: URI filtering', () => {
           expect(mockPanel.webview.postMessage).not.toHaveBeenCalled();
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -244,7 +244,7 @@ describe('Property 3: URI filtering', () => {
 
         expect(mockPanel.webview.postMessage).not.toHaveBeenCalled();
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });

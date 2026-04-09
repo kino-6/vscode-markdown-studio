@@ -30,6 +30,7 @@ const baseConfig: MarkdownStudioConfig = {
   codeBlock: { lineNumbers: false },
     pdfIndex: { enabled: false, title: 'Table of Contents' },
   pdfToc: { hidden: true },
+  pdfBookmarks: { enabled: true },
   theme: 'default',
   customCss: '',
   outputFilename: '${filename}',

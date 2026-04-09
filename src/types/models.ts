@@ -168,3 +168,15 @@ export interface PdfIndexConfig {
 export interface PdfTocConfig {
   hidden: boolean;
 }
+
+/** PDFブックマーク設定 */
+export interface PdfBookmarksConfig {
+  enabled: boolean;
+}
+
+/** ブックマーク生成用の見出しエントリ（HeadingPageEntryからanchorIdを除いた軽量版） */
+export interface BookmarkEntry {
+  level: number;
+  text: string;
+  pageNumber: number;  // 1-based ページ番号
+}

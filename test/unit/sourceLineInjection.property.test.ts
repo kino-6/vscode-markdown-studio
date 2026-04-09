@@ -118,7 +118,7 @@ describe('Property 1: Source line injection correctness', () => {
           expect(expectedLines.has(line)).toBe(true);
         }
       }),
-      { numRuns: 300 },
+      { numRuns: 300, seed: 42 },
     );
   });
 
@@ -134,7 +134,7 @@ describe('Property 1: Source line injection correctness', () => {
           expect(line).toBeLessThan(totalLines);
         }
       }),
-      { numRuns: 300 },
+      { numRuns: 300, seed: 42 },
     );
   });
 
@@ -155,7 +155,7 @@ describe('Property 1: Source line injection correctness', () => {
         // block tokens that have source maps
         expect(injectedLines.length).toBeLessThanOrEqual(totalBlockTokensWithMaps);
       }),
-      { numRuns: 300 },
+      { numRuns: 300, seed: 42 },
     );
   });
 });

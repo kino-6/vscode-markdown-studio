@@ -10,6 +10,8 @@ All notable changes to Markdown Studio will be documented in this file.
 - Dark / light theme auto-switching for preview — follows VS Code color theme (light, dark, high-contrast)
 - Manual theme override setting `preview.theme` (auto / light / dark)
 - PDF Index page numbers displayed in "p.N" format with dot leaders and anchor links
+- PDF Bookmarks (outlines) — heading-based bookmark tree embedded via `pdf-lib`, visible in PDF viewer sidebar navigation. Configurable via `export.pdfBookmarks.enabled`
+- Diagram zoom & pan — scroll-wheel zoom (cursor-centered, 0.25×–4×), mouse-drag pan, double-click reset for Mermaid, PlantUML, and inline SVG diagrams
 - CI workflow for pull requests (`npm run test:ci`)
 
 ### Fixed

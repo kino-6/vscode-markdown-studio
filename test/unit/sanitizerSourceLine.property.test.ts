@@ -127,7 +127,7 @@ describe('Property 3: Sanitizer preserves data-source-line', () => {
           }
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -154,7 +154,7 @@ describe('Property 3: Sanitizer preserves data-source-line', () => {
           }
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });

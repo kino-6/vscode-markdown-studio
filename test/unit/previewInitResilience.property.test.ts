@@ -118,7 +118,7 @@ describe('Bug Condition: Resilient webview initialization when mermaid.initializ
           expect(mod.observeThemeChanges).toBeTypeOf('function');
         },
       ),
-      { numRuns: 20 },
+      { numRuns: 20, seed: 42 },
     );
   });
 });

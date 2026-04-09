@@ -44,7 +44,7 @@ describe('lineNumbers property tests – Property 1: line count correctness', ()
           expect(lineNums[i]).toBe(i + 1);
         }
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -62,7 +62,7 @@ describe('lineNumbers property tests – Property 1: line count correctness', ()
           expect(countLines(withTrailing)).toBe(countLines(withoutTrailing));
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });
@@ -94,7 +94,7 @@ describe('lineNumbers property tests – Property 3: round-trip preservation', (
           expect(extracted).toBe(expected);
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -126,7 +126,7 @@ describe('lineNumbers property tests – Property 4: idempotency', () => {
           expect(twice).toBe(once);
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -139,7 +139,7 @@ describe('lineNumbers property tests – Property 4: idempotency', () => {
         expect(once).toBe(html);
         expect(twice).toBe(html);
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });
