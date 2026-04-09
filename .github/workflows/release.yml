@@ -20,6 +20,8 @@ jobs:
 
       - run: npm ci
 
+      - run: npm install -g @vscode/vsce
+
       - run: npm run lint
 
       - run: npm run test:unit
