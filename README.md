@@ -193,29 +193,56 @@ See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) for license details.
 
 ## Roadmap
 
-Planned for future releases:
+### Completed
 
-- ~~Custom CSS file loading (`markdownStudio.style.customCssPath`)~~ → Implemented as `style.theme` + `style.customCss`
-- ~~LaTeX math rendering (KaTeX) — inline `$...$` and display `$$...$$`~~ ✅ v0.5.0
-- ~~PDF Index with page numbers — TOC page with "Chapter ... p.N" style entries~~ ✅ v0.7.0
-- ~~Footnotes (`[^1]` syntax) via markdown-it plugin~~ ✅ v0.5.0
-- ~~Emoji (`:smile:` syntax) via markdown-it plugin~~ ✅ v0.5.0
-- ~~Task lists / checkboxes (`- [ ]` / `- [x]`) via markdown-it plugin~~ ✅ v0.5.0
-- ~~Definition lists (`term` / `: definition`) via markdown-it plugin~~ ✅ v0.5.0
-- ~~Superscript / subscript (`^sup^` / `~sub~`) via markdown-it plugin~~ ✅ v0.5.0
-- ~~PDF output filename customization~~ ✅ v0.7.0
-- ~~Dark / light theme auto-switching for preview~~ ✅ v0.7.0
-- ~~PDF Bookmarks (outlines) for PDF viewer sidebar navigation~~ ✅ v0.7.0
-- ~~Diagram zoom & pan (scroll-wheel, drag, double-click reset)~~ ✅ v0.7.0
-- Pandoc-style / academic CSS templates (via custom CSS feature)
+| Feature | Version |
+|---------|---------|
+| Custom CSS (theme + inline) | v0.4.0 |
+| KaTeX math, Footnotes, Emoji, Task lists, Definition lists, Sup/Sub | v0.5.0 |
+| PDF export progress + cancellation, code block blank line fix | v0.6.0 |
+| PDF Index, filename customization, theme auto-switch, bookmarks, diagram zoom/pan | v0.7.0 |
+
+### v0.8.0 — Stability and Polish
+
+- PDF bookmark reliability fix (Insert TOC + bookmark interaction)
+- Demo GIF automation for Marketplace listing
 - Auto-export on save (watch mode)
-- Multi-file merge export (combine multiple .md files into one PDF)
-- Side-by-side preview in same editor tab (Markdown All in One style split view)
-- ~~Preview extra blank lines in code blocks~~ ✅ v0.6.0
+- DOCX export via Pandoc integration (optional dependency)
 
-### Style Strategy
+### v0.9.0 — Productivity
 
-The default preset (`markdown-pdf`) follows the conventional Markdown Preview style familiar to most users. Additional output styles (Pandoc, LaTeX-like academic, etc.) are available as built-in themes via `markdownStudio.style.theme` or as CSS templates in `examples/custom-styles/`.
+- Multi-file merge export (combine multiple .md into one PDF)
+- Presentation mode (slide deck from Markdown)
+- Bidirectional scroll sync between editor and preview
+- Copy as formatted HTML (clipboard)
+
+### v1.0.0 — Marketplace Release
+
+- Marketplace listing with demo GIF and screenshots
+- Stable API: all settings finalized, no breaking changes
+- Pandoc-style / academic CSS templates
+- i18n: Japanese localization for commands and messages
+- Performance: large file handling (10k+ lines)
+- Accessibility: keyboard navigation in preview
+
+### Future (post-1.0)
+
+- Side-by-side preview in same editor tab
+- Agent-aware file watching (auto-refresh on external edits)
+- Export presets (save/recall named configurations)
+- Markdown validation diagnostics
+- PlantUML C4 model / Mermaid Timeline support
+
+### Competitive Landscape
+
+| Extension | Installs | Key Strength | Markdown Studio Advantage |
+|-----------|----------|-------------|--------------------------|
+| Markdown PDF (yzane) | 3M+ | Established | Diagrams, TOC, bookmarks, active development |
+| RenderMark | New | DOCX, slides, agent-aware | Local-first, no cloud dependency |
+| vscode-pandoc | 200K+ | Pandoc ecosystem | No external tool install needed |
+| SnapMD / xmarkdown2pdf | Small | Simple Mermaid PDF | Full PlantUML + SVG + security |
+
+Differentiators: local-first architecture, integrated Mermaid + PlantUML + SVG, PDF bookmarks/TOC/index, enterprise security (CSP, proxy, CA certs).
 
 ## Build and Run
 
