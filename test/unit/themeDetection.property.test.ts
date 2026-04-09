@@ -83,7 +83,7 @@ describe('Theme detection property tests', () => {
           expect(result).toBe(input);
         }
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -149,7 +149,7 @@ describe('Mermaid theme mapping property tests', () => {
           expect(['dark', 'default']).toContain(result);
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -162,7 +162,7 @@ describe('Mermaid theme mapping property tests', () => {
           expect(result).toBe('dark');
         },
       ),
-      { numRuns: 100 },
+      { numRuns: 100, seed: 42 },
     );
   });
 
@@ -175,7 +175,7 @@ describe('Mermaid theme mapping property tests', () => {
           expect(result).toBe('default');
         },
       ),
-      { numRuns: 100 },
+      { numRuns: 100, seed: 42 },
     );
   });
 });

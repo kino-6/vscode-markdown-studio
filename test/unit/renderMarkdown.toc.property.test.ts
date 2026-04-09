@@ -95,7 +95,7 @@ describe('renderMarkdown TOC property tests – preview/PDF identical TOC', () =
 
         expect(result1).toBe(result2);
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });

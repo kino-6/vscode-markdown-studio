@@ -64,7 +64,7 @@ describe('Property 1: Body-only content', () => {
           expect(result).not.toMatch(regex);
         }
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -86,7 +86,7 @@ describe('Property 1: Body-only content', () => {
         // renderBody always returns a string (no sanitization — local content is trusted)
         expect(typeof result).toBe('string');
       }),
-      { numRuns: 50 },
+      { numRuns: 50, seed: 42 },
     );
   });
 });

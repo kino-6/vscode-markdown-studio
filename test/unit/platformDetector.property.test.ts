@@ -40,7 +40,7 @@ describe("PlatformDetector property tests", () => {
           }
         }
       }),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 });

@@ -112,7 +112,7 @@ describe('tocValidator property tests – anchor validation accuracy', () => {
           expect(d.line).toBe(matchingAnchor!.heading.line);
         }
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });

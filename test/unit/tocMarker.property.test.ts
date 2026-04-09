@@ -86,7 +86,7 @@ describe('tocMarker property tests – case-insensitive replacement', () => {
           expect(result).toContain(tocHtml);
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });
@@ -131,7 +131,7 @@ describe('tocMarker property tests – only first marker replaced', () => {
           expect(result).not.toMatch(/<p>\s*(\[\[?[tT][oO][cC]\]\]?)\s*<\/p>/);
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });
@@ -167,7 +167,7 @@ describe('tocMarker property tests – no marker or code-block-only marker', () 
           expect(result).toBe(html);
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -200,7 +200,7 @@ describe('tocMarker property tests – no marker or code-block-only marker', () 
           expect(result).toBe(-1);
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -215,7 +215,7 @@ describe('tocMarker property tests – no marker or code-block-only marker', () 
         // No nav should be inserted because the marker is not in a <p> tag
         expect(result).not.toContain('<nav class="ms-toc">');
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });

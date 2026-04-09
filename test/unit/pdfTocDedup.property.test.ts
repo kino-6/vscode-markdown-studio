@@ -105,7 +105,7 @@ describe('PDF ToC Dedup – Bug Condition Exploration', () => {
         const result = await renderMarkdownDocument(markdown, fakeContext);
         expect(result.htmlBody).toContain('<div class="ms-toc-comment">');
       }),
-      { numRuns: 50 },
+      { numRuns: 50, seed: 42 },
     );
   });
 });
@@ -208,7 +208,7 @@ describe('PDF ToC Dedup – Preservation Properties', () => {
         const result = await renderMarkdownDocument(markdown, fakeContext);
         expect(result.htmlBody).not.toContain('ms-toc-comment');
       }),
-      { numRuns: 50 },
+      { numRuns: 50, seed: 42 },
     );
   });
 
@@ -228,7 +228,7 @@ describe('PDF ToC Dedup – Preservation Properties', () => {
         const result = await renderMarkdownDocument(markdown, fakeContext);
         expect(result.htmlBody).toContain('<nav class="ms-toc"');
       }),
-      { numRuns: 50 },
+      { numRuns: 50, seed: 42 },
     );
   });
 
@@ -248,7 +248,7 @@ describe('PDF ToC Dedup – Preservation Properties', () => {
         expect(html).not.toContain('.ms-toc { display: none');
         expect(html).not.toContain('.ms-toc{display:none');
       }),
-      { numRuns: 50 },
+      { numRuns: 50, seed: 42 },
     );
   });
 });

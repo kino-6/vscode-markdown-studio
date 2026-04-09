@@ -88,7 +88,7 @@ describe('Property 6: Unknown language renders as plain escaped text end-to-end'
         // Must NOT contain any hljs-* class spans
         expect(result.htmlBody).not.toContain('hljs-');
       }),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 
@@ -105,7 +105,7 @@ describe('Property 6: Unknown language renders as plain escaped text end-to-end'
         // Must NOT contain any hljs-* class spans
         expect(result.htmlBody).not.toContain('hljs-');
       }),
-      { numRuns: 100 }
+      { numRuns: 100, seed: 42 }
     );
   });
 });

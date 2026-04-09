@@ -105,7 +105,7 @@ describe('extractTarGz path traversal prevention property tests', () => {
           expect(exists).toBe(true);
         }
       ),
-      { numRuns: 50 }
+      { numRuns: 50, seed: 42 }
     );
   });
 });
@@ -162,7 +162,7 @@ describe('extractTarGz permission restriction property tests', () => {
           expect((perms & ~0o755)).toBe(0);
         }
       ),
-      { numRuns: 50 }
+      { numRuns: 50, seed: 42 }
     );
   });
 });

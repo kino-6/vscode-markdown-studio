@@ -30,7 +30,7 @@ describe('buildLoadingHtml property tests', () => {
         const divMatches = html.match(/class="[^"]*ms-env-line[^"]*"/g) ?? [];
         expect(divMatches.length).toBe(lines.length);
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -57,7 +57,7 @@ describe('buildLoadingHtml property tests', () => {
         expect(html).toContain('ms-env-ok');
         expect(html).not.toContain('ms-env-fail');
       }),
-      { numRuns: 100 },
+      { numRuns: 100, seed: 42 },
     );
 
     fc.assert(
@@ -66,7 +66,7 @@ describe('buildLoadingHtml property tests', () => {
         expect(html).toContain('ms-env-fail');
         expect(html).not.toContain('ms-env-ok');
       }),
-      { numRuns: 100 },
+      { numRuns: 100, seed: 42 },
     );
 
     fc.assert(
@@ -76,7 +76,7 @@ describe('buildLoadingHtml property tests', () => {
         expect(html).not.toContain('ms-env-fail');
         expect(html).toContain('ms-env-line');
       }),
-      { numRuns: 100 },
+      { numRuns: 100, seed: 42 },
     );
   });
 
@@ -100,7 +100,7 @@ describe('buildLoadingHtml property tests', () => {
         expect(html).toContain("default-src 'none'");
         expect(html).not.toContain('script-src');
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -119,7 +119,7 @@ describe('buildLoadingHtml property tests', () => {
         const html = buildLoadingHtml(undefined, undefined, lines);
         expect(html).not.toContain('ms-loading-timer');
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -153,7 +153,7 @@ describe('buildLoadingHtml property tests', () => {
         const rawInDiv = `>${line}</div>`;
         expect(html).not.toContain(rawInDiv);
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });

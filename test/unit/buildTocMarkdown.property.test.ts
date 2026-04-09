@@ -93,7 +93,7 @@ describe('buildTocMarkdown property tests – format correctness', () => {
           }
         }
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });
@@ -129,7 +129,7 @@ describe('buildTocMarkdown property tests – round-trip', () => {
           expect(parsed[i].anchor).toBe(filtered[i].anchorId);
         }
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });
@@ -181,7 +181,7 @@ describe('buildTocMarkdown property tests – ordered/unordered list toggle', ()
           expect(trimmed.startsWith('1. [')).toBe(false);
         }
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });

@@ -83,7 +83,7 @@ describe('previewExtraBlankLines preservation – Property 2', () => {
           expect(result).toBe(newlineCount + 1);
         }
       }),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 
@@ -109,7 +109,7 @@ describe('previewExtraBlankLines preservation – Property 2', () => {
         const numCount = extractLineNumberCount(result);
         expect(numCount).toBe(lineCount);
       }),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 
@@ -135,7 +135,7 @@ describe('previewExtraBlankLines preservation – Property 2', () => {
         expect(codeInner).not.toBeNull();
         expect(codeInner!.replace(/<[^>]*>/g, '').trim().length).toBeGreaterThan(0);
       }),
-      { numRuns: 100 }
+      { numRuns: 100, seed: 42 }
     );
   });
 
@@ -194,7 +194,7 @@ describe('previewExtraBlankLines preservation – Property 2', () => {
         expect(codeInner).not.toBeNull();
         expect(codeInner).toMatch(/<span class="hljs-/);
       }),
-      { numRuns: 100 }
+      { numRuns: 100, seed: 42 }
     );
   });
 });

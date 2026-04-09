@@ -131,7 +131,7 @@ describe('highlightCode property tests', () => {
         // Output must NOT contain inline style attributes (class-based only)
         expect(result).not.toContain('style="');
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -163,7 +163,7 @@ describe('highlightCode property tests', () => {
         const result = highlightCode(code, lang);
         expect(result).toBe('');
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -173,7 +173,7 @@ describe('highlightCode property tests', () => {
         const result = highlightCode(code, '');
         expect(result).toBe('');
       }),
-      { numRuns: 100 },
+      { numRuns: 100, seed: 42 },
     );
   });
 
@@ -191,7 +191,7 @@ describe('highlightCode property tests', () => {
         const result = highlightCode(code, lang);
         expect(typeof result).toBe('string');
       }),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 
@@ -237,7 +237,7 @@ describe('highlightCode property tests', () => {
           }
         },
       ),
-      { numRuns: 500 },
+      { numRuns: 500, seed: 42 },
     );
   });
 });

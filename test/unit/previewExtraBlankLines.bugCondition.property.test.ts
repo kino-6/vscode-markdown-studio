@@ -95,7 +95,7 @@ describe('previewExtraBlankLines bug condition – Property 1', () => {
         // The code content inside <code> must NOT end with \n
         expect(codeInner!.endsWith('\n')).toBe(false);
       }),
-      { numRuns: 100 }
+      { numRuns: 100, seed: 42 }
     );
   });
 
@@ -112,7 +112,7 @@ describe('previewExtraBlankLines bug condition – Property 1', () => {
         // The code content inside <code> must NOT end with \n
         expect(codeInner!.endsWith('\n')).toBe(false);
       }),
-      { numRuns: 100 }
+      { numRuns: 100, seed: 42 }
     );
   });
 
@@ -133,7 +133,7 @@ describe('previewExtraBlankLines bug condition – Property 1', () => {
         // Line number column count must match visible code lines
         expect(lineNumCount).toBe(visibleLines);
       }),
-      { numRuns: 100 }
+      { numRuns: 100, seed: 42 }
     );
   });
 });

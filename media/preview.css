@@ -570,3 +570,54 @@ dd {
     padding: 0;
   }
 }
+
+/* ── Diagram zoom & pan container ────────────────────── */
+
+.diagram-container {
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+  margin: 1rem 0;
+}
+
+.diagram-container svg,
+.diagram-container .mermaid-host {
+  will-change: transform;
+  transform-origin: 0 0;
+}
+
+/* ── Zoom indicator overlay ──────────────────────────── */
+
+.zoom-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.diagram-container:hover .zoom-indicator {
+  opacity: 1;
+}
+
+/* ── Diagram print rules ─────────────────────────────── */
+
+@media print {
+  .diagram-container {
+    overflow: visible;
+    cursor: default;
+  }
+  .diagram-container svg,
+  .diagram-container .mermaid-host {
+    transform: none !important;
+  }
+  .zoom-indicator {
+    display: none;
+  }
+}

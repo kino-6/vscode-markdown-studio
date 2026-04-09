@@ -133,7 +133,7 @@ describe("Graceful degradation property tests", () => {
           }
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 100, seed: 42 }
     );
   });
 });
@@ -232,7 +232,7 @@ describe("Storage isolation property tests", () => {
           await fs.rm(tmpDir, { recursive: true, force: true });
         }
       }),
-      { numRuns: 50 }
+      { numRuns: 50, seed: 42 }
     );
   });
 });
@@ -320,7 +320,7 @@ describe("Unix file permissions property tests", () => {
           }
         }
       ),
-      { numRuns: 50 }
+      { numRuns: 50, seed: 42 }
     );
   });
 });

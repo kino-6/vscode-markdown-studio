@@ -11,6 +11,7 @@ config/**
 out/**
 examples/**
 media/preview.js
+scripts/**
 
 *.ts
 !dist/**

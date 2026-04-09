@@ -22,3 +22,7 @@ Thumbs.db
 
 # Temp files
 e2e_log.txt
+
+# Demo GIF automation - intermediate files
+/demo/*.mp4
+scripts/demo/.vscode-demo/

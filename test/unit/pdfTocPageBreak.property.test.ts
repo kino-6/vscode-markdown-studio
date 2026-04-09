@@ -36,7 +36,7 @@ describe('pdfTocPageBreak property tests', () => {
         expect(result).toContain('<!-- TOC -->');
         expect(result).toContain('<!-- /TOC -->');
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -49,7 +49,7 @@ describe('pdfTocPageBreak property tests', () => {
         expect(html).not.toContain('page-break-before: always');
         expect(html).not.toContain('page-break-after: always');
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -61,7 +61,7 @@ describe('pdfTocPageBreak property tests', () => {
 
         expect(twice).toBe(once);
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 
@@ -73,7 +73,7 @@ describe('pdfTocPageBreak property tests', () => {
           expect(injectTocPageBreakCss(html)).toBe(html);
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });

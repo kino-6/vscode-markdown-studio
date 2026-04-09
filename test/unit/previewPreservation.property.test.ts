@@ -130,7 +130,7 @@ describe('Property 2a: Mermaid blocks produce mermaid-host placeholders', () => 
         // Must NOT contain raw fenced mermaid source as code blocks
         expect(result.htmlBody).not.toContain('```mermaid');
       }),
-      { numRuns: 100 },
+      { numRuns: 100, seed: 42 },
     );
   });
 });
@@ -159,7 +159,7 @@ describe('Property 2b: Mermaid placeholder encode/decode round-trip', () => {
           expect(decoded).toBe(source);
         },
       ),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });
@@ -196,7 +196,7 @@ describe("Property 2c: buildHtml CSP includes 'unsafe-eval'", () => {
         expect(cspMatch).not.toBeNull();
         expect(cspMatch![1]).toContain("'unsafe-eval'");
       }),
-      { numRuns: 50 },
+      { numRuns: 50, seed: 42 },
     );
   });
 });
@@ -232,7 +232,7 @@ describe('Property 2d: Standard Markdown produces non-empty HTML', () => {
         // No errors
         expect(result.errors).toHaveLength(0);
       }),
-      { numRuns: 100 },
+      { numRuns: 100, seed: 42 },
     );
   });
 });

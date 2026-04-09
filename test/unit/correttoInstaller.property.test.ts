@@ -59,7 +59,7 @@ describe("CorrettoInstaller property tests", () => {
         // Must end with correct archive extension
         expect(url).toMatch(new RegExp(`\\.${platform.archiveExt.replace(".", "\\.")}$`));
       }),
-      { numRuns: 100 }
+      { numRuns: 100, seed: 42 }
     );
   });
 
@@ -106,7 +106,7 @@ describe("CorrettoInstaller property tests", () => {
           await fs.promises.rm(tmpDir, { recursive: true, force: true });
         }
       }),
-      { numRuns: 20 }
+      { numRuns: 20, seed: 42 }
     );
   });
 
@@ -138,7 +138,7 @@ describe("CorrettoInstaller property tests", () => {
 
         expect(result.ok).toBe(shouldSucceed);
       }),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 });

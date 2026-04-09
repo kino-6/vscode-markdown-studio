@@ -108,7 +108,7 @@ describe('buildToc property tests – HTML structure', () => {
         const closeLi = (html.match(/<\/li>/g) || []).length;
         expect(openLi).toBe(closeLi);
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });
@@ -142,7 +142,7 @@ describe('buildToc property tests – round-trip', () => {
 
         expect(linkMatches.length).toBe(filteredCount);
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });
@@ -194,7 +194,7 @@ describe('buildToc property tests – level filtering', () => {
           expect(html).toContain(`href="#${anchorId}"`);
         }
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });
@@ -237,7 +237,7 @@ describe('buildToc property tests – ordered/unordered list toggle', () => {
         expect(unorderedHtml).toContain('<ul>');
         expect(unorderedHtml).toContain('</ul>');
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });
@@ -270,7 +270,7 @@ describe('buildToc property tests – page-break CSS toggle', () => {
         expect(withoutBreak).not.toContain('page-break-before');
         expect(withoutBreak).not.toContain('page-break-after');
       }),
-      { numRuns: 200 },
+      { numRuns: 200, seed: 42 },
     );
   });
 });

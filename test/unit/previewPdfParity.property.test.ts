@@ -95,7 +95,7 @@ describe('Property 7: Preview and PDF share identical highlighted tokens', () =>
           expect(previewResult.htmlBody).toBe(pdfResult.htmlBody);
         }
       ),
-      { numRuns: 200 }
+      { numRuns: 200, seed: 42 }
     );
   });
 
@@ -114,7 +114,7 @@ describe('Property 7: Preview and PDF share identical highlighted tokens', () =>
           expect(firstRender.htmlBody).toBe(secondRender.htmlBody);
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 100, seed: 42 }
     );
   });
 });

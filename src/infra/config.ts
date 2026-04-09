@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CodeBlockConfig, DEFAULT_ALLOWED_DOMAINS, ExternalResourceConfig, ExternalResourceMode, PdfHeaderFooterConfig, PdfIndexConfig, PdfTocConfig, ResolvedStyleConfig, StyleConfigOverrides, TocConfig } from '../types/models';
+import { CodeBlockConfig, DEFAULT_ALLOWED_DOMAINS, ExternalResourceConfig, ExternalResourceMode, PdfBookmarksConfig, PdfHeaderFooterConfig, PdfIndexConfig, PdfTocConfig, PreviewThemeMode, ResolvedStyleConfig, StyleConfigOverrides, TocConfig } from '../types/models';
 import { resolvePreset } from './presets';
 
 export function clampFontSize(n: number): number {
@@ -22,8 +22,11 @@ export interface MarkdownStudioConfig {
   codeBlock: CodeBlockConfig;
   pdfIndex: PdfIndexConfig;
   pdfToc: PdfTocConfig;
+  pdfBookmarks: PdfBookmarksConfig;
   theme: string;
   customCss: string;
+  outputFilename: string;
+  previewTheme: PreviewThemeMode;
 }
 
 /**
@@ -133,7 +136,12 @@ export function getConfig(): MarkdownStudioConfig {
     pdfToc: {
       hidden: cfg.get<boolean>('export.pdfToc.hidden', true),
     },
+    pdfBookmarks: {
+      enabled: cfg.get<boolean>('export.pdfBookmarks.enabled', true),
+    },
     theme: cfg.get<string>('style.theme', 'default'),
     customCss: cfg.get<string>('style.customCss', ''),
+    outputFilename: cfg.get<string>('export.outputFilename', '${filename}'),
+    previewTheme: cfg.get<PreviewThemeMode>('preview.theme', 'auto'),
   };
 }

@@ -4,9 +4,12 @@ import * as vscode from 'vscode';
 import { dependencyStatus } from '../extension';
 import { buildPdfOptions, injectPageBreakCss, injectTocPageBreakCss } from './pdfHeaderFooter';
 import { buildPdfIndexHtml, estimateIndexPageCount, HeadingPageEntry } from './pdfIndex';
+import { addBookmarks } from './pdfBookmarks';
+import { resolveOutputFilename, extractH1Title, FilenameContext } from './filenameResolver';
 import { getConfig } from '../infra/config';
 import { loadCustomCss } from '../infra/customCssLoader';
 import { buildHtml } from '../preview/buildHtml';
+import type { BookmarkEntry } from '../types/models';
 
 /** プログレス報告用の抽象インターフェース（VS Code APIへの直接依存を避ける） */
 export interface ProgressReporter {
@@ -193,13 +196,25 @@ export async function exportToPdf(
     throw err;
   }
 
-  const outputPath = path.join(path.dirname(document.uri.fsPath), `${path.basename(document.uri.fsPath, '.md')}.pdf`);
+  const filenameCtx: FilenameContext = {
+    filename: path.basename(document.uri.fsPath, path.extname(document.uri.fsPath)),
+    ext: path.extname(document.uri.fsPath).replace(/^\./, ''),
+    title: extractH1Title(document.getText()),
+  };
+  const resolvedName = resolveOutputFilename(cfg.outputFilename, filenameCtx);
+  const outputPath = path.join(path.dirname(document.uri.fsPath), resolvedName);
 
   try {
     checkCancellation(cancellation);
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle' });
+
+    // Force light mode for PDF output — remove dark/high-contrast classes
+    await page.evaluate(`(() => {
+      document.body.classList.remove('vscode-dark', 'vscode-high-contrast');
+      document.body.classList.add('vscode-light');
+    })()`);
 
     // Step 4: Mermaid rendering
     progress?.report('Rendering diagrams...', 15);
@@ -216,11 +231,11 @@ export async function exportToPdf(
       // Wait for Mermaid diagrams to render.
       // The IIFE script fires DOMContentLoaded listeners synchronously when added
       // after DOM is ready, but mermaid.render is async — poll for SVG output.
-      await page.waitForFunction(() => {
+      await page.waitForFunction(`(() => {
         const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
         if (hosts.length === 0) return true;
         return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
-      }, { timeout: 30_000 }).catch(() => {
+      })()`, { timeout: 30_000 }).catch(() => {
         // Timeout — proceed with PDF generation; some diagrams may be missing
       });
     }
@@ -234,6 +249,7 @@ export async function exportToPdf(
     const pdfOptions = buildPdfOptions(cfg.pdfHeaderFooter, documentTitle, cfg.style.margin);
 
     // --- PDF Index: 2-pass rendering ---
+    let bookmarkEntries: BookmarkEntry[] = [];
     if (cfg.pdfIndex.enabled) {
       // Step 6: Generate TOC
       progress?.report('Generating table of contents...', 15);
@@ -279,24 +295,73 @@ export async function exportToPdf(
           return { level: h.level, text: h.text, pageNumber, anchorId: h.anchorId };
         });
 
+        // Map heading entries to bookmark entries (drop anchorId)
+        // Add indexPageCount offset because the TOC page(s) are inserted before the content
         const indexPageCount = estimateIndexPageCount(headingEntries.length);
+        bookmarkEntries = headingEntries.map(({ level, text, pageNumber }) => ({
+          level, text, pageNumber: pageNumber + indexPageCount,
+        }));
+
         const indexHtml = buildPdfIndexHtml(headingEntries, cfg.pdfIndex.title, indexPageCount);
 
         // Pass 2: Insert index at top and re-render
         const htmlWithIndex = html.replace(/<body[^>]*>/, (match) => `${match}\n${indexHtml}`);
         await page.setContent(htmlWithIndex, { waitUntil: 'networkidle' });
+
+        // Force light mode for PDF output — remove dark/high-contrast classes
+        await page.evaluate(`(() => {
+          document.body.classList.remove('vscode-dark', 'vscode-high-contrast');
+          document.body.classList.add('vscode-light');
+        })()`);
+
         if (previewJsContent) {
           await page.addScriptTag({
             content: 'if(typeof acquireVsCodeApi==="undefined"){window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){return undefined},setState:function(){}};};}',
           });
           await page.addScriptTag({ content: previewJsContent });
-          await page.waitForFunction(() => {
+          await page.waitForFunction(`(() => {
             const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
             if (hosts.length === 0) return true;
             return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
-          }, { timeout: 30_000 }).catch(() => {});
+          })()`, { timeout: 30_000 }).catch(() => {});
         }
         await page.setViewportSize({ width: 980, height: 1400 });
+      }
+    } else if (cfg.pdfBookmarks.enabled) {
+      // Single-pass bookmark collection: generate temp PDF to count pages, then collect headings
+      const tempPdfBuffer = await page.pdf({
+        format: cfg.pageFormat,
+        printBackground: true,
+        preferCSSPageSize: true,
+        displayHeaderFooter: pdfOptions.displayHeaderFooter,
+        headerTemplate: pdfOptions.headerTemplate,
+        footerTemplate: pdfOptions.footerTemplate,
+        margin: pdfOptions.margin,
+      });
+
+      const pdfStr = tempPdfBuffer.toString('latin1');
+      const pageMatches = pdfStr.match(/\/Type\s*\/Page(?!s)/g);
+      const totalPages = pageMatches ? pageMatches.length : 1;
+
+      const domData: { headings: { level: number; text: string; offsetTop: number }[]; scrollHeight: number } = await page.evaluate(
+        `(function() {
+          var headings = [];
+          var els = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+          for (var i = 0; i < els.length; i++) {
+            var el = els[i];
+            var level = parseInt(el.tagName[1], 10);
+            headings.push({ level: level, text: (el.textContent || '').trim(), offsetTop: el.offsetTop });
+          }
+          return { headings: headings, scrollHeight: document.documentElement.scrollHeight };
+        })()`
+      );
+
+      if (domData.headings.length > 0) {
+        bookmarkEntries = domData.headings.map((h) => {
+          const ratio = domData.scrollHeight > 0 ? h.offsetTop / domData.scrollHeight : 0;
+          const pageNumber = Math.min(Math.floor(ratio * totalPages) + 1, totalPages);
+          return { level: h.level, text: h.text, pageNumber };
+        });
       }
     }
 
@@ -316,6 +381,13 @@ export async function exportToPdf(
     });
 
     await fs.access(outputPath);
+
+    // Add bookmarks to PDF
+    if (cfg.pdfBookmarks.enabled && bookmarkEntries.length > 0) {
+      progress?.report('Adding bookmarks...', 5);
+      await addBookmarks(outputPath, bookmarkEntries, cfg.toc.minLevel, cfg.toc.maxLevel);
+    }
+
     return outputPath;
   } catch (err) {
     if (err instanceof CancellationError) {
