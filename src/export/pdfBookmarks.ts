@@ -119,14 +119,27 @@ export async function addBookmarks(
   minLevel: number,
   maxLevel: number,
 ): Promise<void> {
-  if (entries.length === 0) return;
+  if (entries.length === 0) {
+    console.log('[Markdown Studio] addBookmarks: no entries, skipping');
+    return;
+  }
 
   const tree = buildBookmarkTree(entries, minLevel, maxLevel);
-  if (tree.length === 0) return;
+  if (tree.length === 0) {
+    console.log('[Markdown Studio] addBookmarks: tree is empty after filtering (minLevel=%d, maxLevel=%d, entries=%d)', minLevel, maxLevel, entries.length);
+    return;
+  }
+
+  console.log('[Markdown Studio] addBookmarks: adding %d bookmark nodes to %s', countNodes(tree), pdfPath);
 
   const pdfBytes = await fs.readFile(pdfPath);
-  const pdfDoc = await PDFDocument.load(pdfBytes);
+  const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
   const pages = pdfDoc.getPages();
+
+  if (pages.length === 0) {
+    console.warn('[Markdown Studio] addBookmarks: PDF has no pages, skipping');
+    return;
+  }
 
   // Create /Outlines root dictionary
   const outlinesDict = pdfDoc.context.obj({});
@@ -146,4 +159,5 @@ export async function addBookmarks(
 
   const modifiedBytes = await pdfDoc.save();
   await fs.writeFile(pdfPath, modifiedBytes);
+  console.log('[Markdown Studio] addBookmarks: successfully wrote bookmarks to %s', pdfPath);
 }

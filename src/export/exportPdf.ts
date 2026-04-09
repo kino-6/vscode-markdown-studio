@@ -385,7 +385,14 @@ export async function exportToPdf(
     // Add bookmarks to PDF
     if (cfg.pdfBookmarks.enabled && bookmarkEntries.length > 0) {
       progress?.report('Adding bookmarks...', 5);
-      await addBookmarks(outputPath, bookmarkEntries, cfg.toc.minLevel, cfg.toc.maxLevel);
+      try {
+        await addBookmarks(outputPath, bookmarkEntries, cfg.toc.minLevel, cfg.toc.maxLevel);
+      } catch (err) {
+        // Log but don't fail the export — bookmarks are non-critical
+        console.error('[Markdown Studio] Failed to add PDF bookmarks:', err instanceof Error ? err.message : String(err));
+      }
+    } else {
+      console.log('[Markdown Studio] Bookmarks skipped: enabled=%s, entries=%d', cfg.pdfBookmarks.enabled, bookmarkEntries.length);
     }
 
     return outputPath;
