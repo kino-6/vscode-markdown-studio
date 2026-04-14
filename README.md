@@ -204,13 +204,20 @@ See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) for license details.
 
 ### v0.8.0 — Stability and Polish
 
-- PDF bookmark reliability fix (Insert TOC + bookmark interaction)
+- PDF bookmark Japanese text fix (pdf-lib UTF-16BE encoding for non-ASCII titles)
+- Diagram zoom/pan UX overhaul:
+  - Focus-gated interaction: zoom/pan only when diagram is clicked/focused (GitHub-style)
+  - Prevent page scroll hijacking by diagram containers
+  - Add explicit "Reset to 100%" button overlay
+  - Re-render SVG at zoom level for crisp output (not just CSS transform)
+- markdown-pdf theme accuracy: match original Markdown PDF extension styling
+- Full-width preview mode: toggle command to remove max-width constraint for wide monitors
 - Demo GIF automation for Marketplace listing
 - Auto-export on save (watch mode)
-- DOCX export via Pandoc integration (optional dependency)
 
 ### v0.9.0 — Productivity
 
+- DOCX export via Pandoc integration (optional dependency)
 - Multi-file merge export (combine multiple .md into one PDF)
 - Presentation mode (slide deck from Markdown)
 - Bidirectional scroll sync between editor and preview
