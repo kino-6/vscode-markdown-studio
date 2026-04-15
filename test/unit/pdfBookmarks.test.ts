@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildBookmarkTree, BookmarkNode } from '../../src/export/pdfBookmarks';
+import { PDFHexString } from 'pdf-lib';
 import type { BookmarkEntry } from '../../src/types/models';
 
 /** Helper: recursively count all nodes in a tree */
@@ -156,5 +157,57 @@ describe('buildBookmarkTree', () => {
     ];
     const tree = buildBookmarkTree(entries, 2, 4);
     expect(tree).toEqual([]);
+  });
+});
+
+
+describe('PDFHexString.fromText() エンコーディング検証', () => {
+  it('日本語タイトルのエンコード→デコード往復が一致する', () => {
+    const title = '1. マークダウンレンダリング';
+    const hexStr = PDFHexString.fromText(title);
+    expect(hexStr.decodeText()).toBe(title);
+  });
+
+  it('中国語タイトルのエンコード→デコード往復が一致する', () => {
+    const title = '第一章 介绍';
+    const hexStr = PDFHexString.fromText(title);
+    expect(hexStr.decodeText()).toBe(title);
+  });
+
+  it('韓国語タイトルのエンコード→デコード往復が一致する', () => {
+    const title = '제1장 소개';
+    const hexStr = PDFHexString.fromText(title);
+    expect(hexStr.decodeText()).toBe(title);
+  });
+
+  it('絵文字タイトルのエンコード→デコード往復が一致する', () => {
+    const title = '📝 メモ';
+    const hexStr = PDFHexString.fromText(title);
+    expect(hexStr.decodeText()).toBe(title);
+  });
+
+  it('ASCII+日本語混在タイトルのエンコード→デコード往復が一致する', () => {
+    const title = '1. はじめに - Introduction';
+    const hexStr = PDFHexString.fromText(title);
+    expect(hexStr.decodeText()).toBe(title);
+  });
+
+  it('ASCII文字のみのタイトルのエンコード→デコード往復が一致する（保存性）', () => {
+    const title = '1. Introduction';
+    const hexStr = PDFHexString.fromText(title);
+    expect(hexStr.decodeText()).toBe(title);
+  });
+
+  it('空文字列のエンコード→デコード往復が一致する', () => {
+    const title = '';
+    const hexStr = PDFHexString.fromText(title);
+    expect(hexStr.decodeText()).toBe(title);
+  });
+
+  it('生成されたhex文字列がUTF-16BE BOM（FEFF）で始まる', () => {
+    const title = 'テスト';
+    const hexStr = PDFHexString.fromText(title);
+    // PDFHexString.fromText() はFEFF BOMを先頭に付与する
+    expect(hexStr.asString().toUpperCase().startsWith('FEFF')).toBe(true);
   });
 });
