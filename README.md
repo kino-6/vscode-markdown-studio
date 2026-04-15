@@ -189,7 +189,56 @@ See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) for license details.
 
 ## Known Issues
 
-- None currently tracked.
+- PDF bookmarks display garbled text for Japanese/CJK headings (fix planned for v0.8.0)
+
+## Troubleshooting
+
+### Dependency Installation Failures
+
+Markdown Studio auto-installs Amazon Corretto JDK (for PlantUML) and Playwright Chromium (for PDF export) on first activation. If installation fails:
+
+| Symptom | Cause | Solution |
+|---------|-------|----------|
+| Download timeout/failure | Corporate proxy or firewall | Set `http.proxy` in VS Code settings, or add CA certs via `markdownStudio.network.caCertificates` |
+| "Chromium not available" | Disk space insufficient | Chromium requires ~200MB. Free disk space and run `Setup Dependencies` |
+| PlantUML diagrams not rendering | Java not found | Run `Validate Local Environment` to check. Set `markdownStudio.java.path` to your Java binary |
+| macOS security block | Gatekeeper blocks unsigned binary | Open System Settings → Privacy & Security → Allow the blocked app |
+| ARM/x86 mismatch | Wrong architecture binary downloaded | Delete `~/.vscode/extensions/` cache and reinstall the extension |
+
+### Feature Availability Without Dependencies
+
+| Feature | Java Required | Chromium Required |
+|---------|:---:|:---:|
+| Markdown Preview | — | — |
+| Mermaid Diagrams | — | — |
+| Inline SVG | — | — |
+| Syntax Highlighting | — | — |
+| TOC Generation | — | — |
+| PlantUML Diagrams | ✅ | — |
+| PDF Export | — | ✅ |
+
+Preview and most features work without any external dependencies. Only PlantUML needs Java, and only PDF export needs Chromium.
+
+### Manual Dependency Setup
+
+If auto-install fails, you can install dependencies manually:
+
+```bash
+# Java (for PlantUML) — any JDK 11+ works
+brew install openjdk@21
+# Then set markdownStudio.java.path to the java binary path
+
+# Chromium (for PDF export) — Playwright manages this
+npx playwright install chromium
+```
+
+### Offline / Air-Gapped Environments
+
+For environments without internet access:
+1. Download the VSIX from [GitHub Releases](https://github.com/kino-6/vscode-markdown-studio/releases)
+2. Install via `code --install-extension markdown-studio-*.vsix`
+3. Install Java manually and set `markdownStudio.java.path`
+4. For PDF export, install Chromium on a connected machine and copy the browser directory
 
 ## Roadmap
 
