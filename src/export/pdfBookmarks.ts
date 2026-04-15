@@ -1,4 +1,4 @@
-import { PDFDocument, PDFDict, PDFName, PDFString, PDFNumber, type PDFRef, type PDFPage } from 'pdf-lib';
+import { PDFDocument, PDFDict, PDFName, PDFHexString, PDFNumber, type PDFRef, type PDFPage } from 'pdf-lib';
 import fs from 'node:fs/promises';
 import type { BookmarkEntry } from '../types/models';
 
@@ -83,7 +83,7 @@ function createOutlineItems(
     const clampedIndex = Math.max(0, Math.min(node.pageIndex, pages.length - 1));
     const pageRef = pages[clampedIndex].ref;
 
-    dict.set(PDFName.of('Title'), PDFString.of(node.title));
+    dict.set(PDFName.of('Title'), PDFHexString.fromText(node.title));
     dict.set(PDFName.of('Parent'), parentRef);
     dict.set(PDFName.of('Dest'), pdfDoc.context.obj([pageRef, PDFName.of('Fit')]));
 
