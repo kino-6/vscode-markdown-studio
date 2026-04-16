@@ -220,6 +220,11 @@ window.addEventListener('message', (event) => {
     return;
   }
 
+  if (message.type === 'rerender-plantuml-result') {
+    handlePlantUmlRerenderResult(message);
+    return;
+  }
+
   if (message.type !== 'update-body') return;
   if (message.generation <= lastAppliedGeneration) return;
 
@@ -284,9 +289,14 @@ window.hideLoadingOverlay = hideLoadingOverlay;
 const MIN_SCALE = 0.25;
 const MAX_SCALE = 4.0;
 const ZOOM_SENSITIVITY = 0.001;
+const RERENDER_DEBOUNCE_MS = 300;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
+}
+
+function isDefaultZoomState(state) {
+  return state.scale === 1.0 && state.translateX === 0 && state.translateY === 0;
 }
 
 function applyTransform(container, state) {
@@ -295,16 +305,163 @@ function applyTransform(container, state) {
   inner.style.transform = `translate(${state.translateX}px, ${state.translateY}px) scale(${state.scale})`;
   inner.style.transformOrigin = '0 0';
 
-  let indicator = container.querySelector('.zoom-indicator');
-  if (!indicator) {
-    indicator = document.createElement('div');
-    indicator.className = 'zoom-indicator';
-    container.appendChild(indicator);
+  // Update toolbar zoom level and reset button state
+  const toolbar = container.querySelector('.zoom-toolbar');
+  if (toolbar) {
+    const level = toolbar.querySelector('.zoom-toolbar-level');
+    if (level) {
+      level.textContent = `${Math.round(state.scale * 100)}%`;
+    }
+    const resetBtn = toolbar.querySelector('.zoom-toolbar-reset');
+    if (resetBtn) {
+      resetBtn.disabled = isDefaultZoomState(state);
+    }
   }
-  indicator.textContent = `${Math.round(state.scale * 100)}%`;
+}
+
+function createZoomToolbar(container, state) {
+  let toolbar = container.querySelector('.zoom-toolbar');
+  if (toolbar) return toolbar;
+
+  toolbar = document.createElement('div');
+  toolbar.className = 'zoom-toolbar';
+  toolbar.setAttribute('role', 'toolbar');
+  toolbar.setAttribute('aria-label', 'Diagram zoom controls');
+
+  const level = document.createElement('span');
+  level.className = 'zoom-toolbar-level';
+  level.textContent = '100%';
+
+  const resetBtn = document.createElement('button');
+  resetBtn.className = 'zoom-toolbar-reset';
+  resetBtn.setAttribute('aria-label', 'Reset zoom to 100%');
+  resetBtn.setAttribute('title', '100%にリセット');
+  resetBtn.textContent = '↺';
+  resetBtn.disabled = true;
+  resetBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    resetZoom(container, state);
+  });
+
+  toolbar.appendChild(level);
+  toolbar.appendChild(resetBtn);
+  container.appendChild(toolbar);
+  return toolbar;
+}
+
+function resetZoom(container, state) {
+  state.scale = 1.0;
+  state.translateX = 0;
+  state.translateY = 0;
+  applyTransform(container, state);
+  triggerSvgRerender(container, state);
+}
+
+function scheduleRerender(container, state) {
+  if (state._rerenderTimer) {
+    clearTimeout(state._rerenderTimer);
+  }
+  state._rerenderTimer = setTimeout(() => {
+    state._rerenderTimer = null;
+    triggerSvgRerender(container, state);
+  }, RERENDER_DEBOUNCE_MS);
+}
+
+function getDiagramType(container) {
+  const mermaidHost = container.querySelector('.mermaid-host');
+  if (mermaidHost) return 'mermaid';
+  if (container.hasAttribute('data-plantuml-src')) return 'plantuml';
+  return 'svg';
+}
+
+async function triggerSvgRerender(container, state) {
+  if (state.scale === 1.0) return;
+
+  const diagramType = getDiagramType(container);
+
+  if (diagramType === 'mermaid') {
+    await rerenderMermaid(container, state);
+  } else if (diagramType === 'plantuml') {
+    rerenderPlantUml(container, state);
+  }
+  // 'svg' type maintains CSS transform fallback
+}
+
+async function rerenderMermaid(container, state) {
+  const mermaidHost = container.querySelector('.mermaid-host');
+  if (!mermaidHost || !mermaidReady) return;
+
+  const encoded = mermaidHost.getAttribute('data-mermaid-src');
+  if (!encoded) return;
+
+  const source = safeDecode(encoded);
+  try {
+    await mermaid.parse(source);
+    const id = `ms-mermaid-rerender-${Date.now()}`;
+    const result = await mermaid.render(id, source);
+    mermaidHost.innerHTML = result.svg;
+
+    // Adjust new SVG viewBox for high-resolution display
+    const svg = mermaidHost.querySelector('svg');
+    if (svg) {
+      const origWidth = svg.getAttribute('width');
+      const origHeight = svg.getAttribute('height');
+      if (origWidth && origHeight) {
+        const w = parseFloat(origWidth);
+        const h = parseFloat(origHeight);
+        svg.setAttribute('width', String(w * state.scale));
+        svg.setAttribute('height', String(h * state.scale));
+        svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      }
+    }
+
+    // Reset CSS transform (SVG itself is already scaled)
+    mermaidHost.style.transform = 'none';
+    mermaidHost.style.transformOrigin = '0 0';
+  } catch (error) {
+    // Re-render failed — maintain CSS transform fallback
+    console.error('[Markdown Studio] Mermaid re-render failed:', error);
+  }
+}
+
+function rerenderPlantUml(container, state) {
+  const source = container.getAttribute('data-plantuml-src');
+  if (!source) return;
+
+  // Assign dynamic ID to container for response matching
+  if (!container.id) {
+    container.id = `plantuml-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  vscode.postMessage({
+    type: 'rerender-plantuml',
+    source: source,
+    scale: state.scale,
+    containerId: container.id,
+  });
+}
+
+function handlePlantUmlRerenderResult(message) {
+  const container = document.getElementById(message.containerId);
+  if (!container) return;
+
+  if (message.ok && message.svg) {
+    const inner = container.querySelector('svg');
+    if (inner) {
+      inner.outerHTML = message.svg;
+      // Reset CSS transform
+      const newSvg = container.querySelector('svg');
+      if (newSvg) {
+        newSvg.style.transform = 'none';
+        newSvg.style.transformOrigin = '0 0';
+      }
+    }
+  }
+  // On failure: maintain CSS transform fallback (do nothing)
 }
 
 function handleWheel(event, container, state) {
+  if (!state.focused) return;
   event.preventDefault();
   const rect = container.getBoundingClientRect();
   if (rect.width === 0 || rect.height === 0) return;
@@ -320,10 +477,16 @@ function handleWheel(event, container, state) {
   state.translateY = cursorY - ratio * (cursorY - state.translateY);
 
   applyTransform(container, state);
+  scheduleRerender(container, state);
 }
 
 function handleMouseDown(event, container, state) {
   if (event.button !== 0) return;
+  if (!state.focused) {
+    state.focused = true;
+    container.classList.add('diagram-focused');
+    return;
+  }
   state.dragging = true;
   state.dragStartX = event.clientX - state.translateX;
   state.dragStartY = event.clientY - state.translateY;
@@ -339,10 +502,11 @@ function handleMouseMove(event, container, state) {
 
 function handleMouseUp(container, state) {
   state.dragging = false;
-  container.style.cursor = 'grab';
+  container.style.cursor = state.focused ? 'grab' : 'default';
 }
 
 function handleDblClick(container, state) {
+  if (!state.focused) return;
   state.scale = 1.0;
   state.translateX = 0;
   state.translateY = 0;
@@ -356,10 +520,22 @@ function attachZoomPan(container) {
     translateY: 0,
     dragging: false,
     dragStartX: 0,
-    dragStartY: 0
+    dragStartY: 0,
+    focused: false,
+    _rerenderTimer: null
   };
   container._zoomState = state;
   container.setAttribute('data-zoom-init', 'true');
+
+  createZoomToolbar(container, state);
+
+  // Hover display control for zoom toolbar
+  container.addEventListener('mouseenter', () => {
+    container.classList.add('diagram-hover');
+  });
+  container.addEventListener('mouseleave', () => {
+    container.classList.remove('diagram-hover');
+  });
 
   container.addEventListener('wheel', (e) => handleWheel(e, container, state), { passive: false });
   container.addEventListener('mousedown', (e) => handleMouseDown(e, container, state));
@@ -367,6 +543,20 @@ function attachZoomPan(container) {
   container.addEventListener('mouseup', () => handleMouseUp(container, state));
   container.addEventListener('mouseleave', () => handleMouseUp(container, state));
   container.addEventListener('dblclick', () => handleDblClick(container, state));
+
+  document.addEventListener('mousedown', (e) => {
+    if (state.focused && !container.contains(e.target)) {
+      state.focused = false;
+      container.classList.remove('diagram-focused');
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && state.focused) {
+      state.focused = false;
+      container.classList.remove('diagram-focused');
+    }
+  });
 }
 
 function initZoomPan() {
@@ -376,4 +566,4 @@ function initZoomPan() {
   });
 }
 
-export { THEME_MAP, detectThemeKind, getMermaidTheme, resolveEffectiveThemeKind, applyThemeClass, onThemeChanged, observeThemeChanges, findSourceLine, lastAppliedGeneration, showLoadingOverlay, hideLoadingOverlay, registerTocLinkHandlers, initZoomPan, clamp, handleWheel, handleDblClick, handleMouseDown, handleMouseMove, handleMouseUp, applyTransform, attachZoomPan, MIN_SCALE, MAX_SCALE, ZOOM_SENSITIVITY };
+export { THEME_MAP, detectThemeKind, getMermaidTheme, resolveEffectiveThemeKind, applyThemeClass, onThemeChanged, observeThemeChanges, findSourceLine, lastAppliedGeneration, showLoadingOverlay, hideLoadingOverlay, registerTocLinkHandlers, initZoomPan, clamp, handleWheel, handleDblClick, handleMouseDown, handleMouseMove, handleMouseUp, applyTransform, attachZoomPan, MIN_SCALE, MAX_SCALE, ZOOM_SENSITIVITY, createZoomToolbar, resetZoom, isDefaultZoomState, scheduleRerender, getDiagramType, triggerSvgRerender, rerenderMermaid, rerenderPlantUml, handlePlantUmlRerenderResult, RERENDER_DEBOUNCE_MS };
