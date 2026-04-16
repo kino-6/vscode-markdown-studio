@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { buildHtml, buildLoadingHtml, renderBody } from './buildHtml';
 import { getPreviewAssetUris } from './previewAssets';
 import { validateEnvironment } from '../commands/validateEnvironmentCore';
+import { renderPlantUml } from '../renderers/renderPlantUml';
 import { dependencyStatus } from '../extension';
 import { getConfig } from '../infra/config';
 import { resolveThemePath } from '../infra/customCssLoader';
@@ -182,9 +183,19 @@ export async function openOrRefreshPreview(
     trackedUri = document.uri.toString();
 
     // Register message handler for the new document
-    messageSubscription = currentPanel.webview.onDidReceiveMessage(
-      (msg) => handleJumpToLine(document.uri, msg),
-    );
+    messageSubscription = currentPanel.webview.onDidReceiveMessage(async (msg) => {
+      handleJumpToLine(document.uri, msg);
+
+      if (msg.type === 'rerender-plantuml' && typeof msg.source === 'string') {
+        const result = await renderPlantUml(msg.source, context);
+        currentPanel!.webview.postMessage({
+          type: 'rerender-plantuml-result',
+          ok: result.ok,
+          svg: result.ok ? result.svg : undefined,
+          containerId: msg.containerId,
+        });
+      }
+    });
 
     const assets = getPreviewAssetUris(currentPanel.webview, context);
 
@@ -305,9 +316,19 @@ export async function openOrRefreshPreview(
   runTocValidation(document.getText(), document.uri);
 
   // Register message handler for jump-to-line
-  messageSubscription = panel.webview.onDidReceiveMessage(
-    (msg) => handleJumpToLine(document.uri, msg),
-  );
+  messageSubscription = panel.webview.onDidReceiveMessage(async (msg) => {
+    handleJumpToLine(document.uri, msg);
+
+    if (msg.type === 'rerender-plantuml' && typeof msg.source === 'string') {
+      const result = await renderPlantUml(msg.source, context);
+      panel.webview.postMessage({
+        type: 'rerender-plantuml-result',
+        ok: result.ok,
+        svg: result.ok ? result.svg : undefined,
+        containerId: msg.containerId,
+      });
+    }
+  });
 
   changeSubscription = vscode.workspace.onDidChangeTextDocument(async (event) => {
     if (event.document.uri.toString() !== trackedUri) return;
