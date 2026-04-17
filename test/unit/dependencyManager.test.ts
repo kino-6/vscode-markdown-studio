@@ -369,3 +369,158 @@ describe("DependencyManager NetworkConfig integration", () => {
     expect(deps.resolveNetworkConfig).not.toHaveBeenCalled();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Mutex behavior tests (Task 1.6)
+// ---------------------------------------------------------------------------
+
+describe("DependencyManager mutex behavior", () => {
+  beforeEach(async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "dm-mutex-"));
+    ctx = { globalStorageUri: { fsPath: tmpDir } } as any;
+  });
+
+  afterEach(async () => {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("concurrent ensureAll() calls return the same promise", async () => {
+    let resolveInstall!: (value: InstallerResult) => void;
+    const slowInstall = new Promise<InstallerResult>((resolve) => {
+      resolveInstall = resolve;
+    });
+
+    const deps = makeDeps({
+      correttoInstaller: {
+        install: vi.fn().mockReturnValue(slowInstall),
+        verify: vi.fn(),
+        getJavaPath: vi.fn(),
+      },
+    });
+    const dm = new DependencyManager(deps);
+
+    const p1 = dm.ensureAll(ctx);
+    const p2 = dm.ensureAll(ctx);
+
+    expect(p1).toBe(p2);
+
+    // Resolve the slow install so the promise completes
+    resolveInstall({ ok: true, path: JAVA_PATH });
+    await p1;
+  });
+
+  it("isSetupInProgress is true while ensureAll is running", async () => {
+    let resolveInstall!: (value: InstallerResult) => void;
+    const slowInstall = new Promise<InstallerResult>((resolve) => {
+      resolveInstall = resolve;
+    });
+
+    const deps = makeDeps({
+      correttoInstaller: {
+        install: vi.fn().mockReturnValue(slowInstall),
+        verify: vi.fn(),
+        getJavaPath: vi.fn(),
+      },
+    });
+    const dm = new DependencyManager(deps);
+
+    expect(dm.isSetupInProgress).toBe(false);
+
+    const p = dm.ensureAll(ctx);
+
+    expect(dm.isSetupInProgress).toBe(true);
+
+    resolveInstall({ ok: true, path: JAVA_PATH });
+    await p;
+
+    expect(dm.isSetupInProgress).toBe(false);
+  });
+
+  it("mutex resets after ensureAll completes successfully", async () => {
+    const deps = makeDeps();
+    const dm = new DependencyManager(deps);
+
+    await dm.ensureAll(ctx);
+    expect(dm.isSetupInProgress).toBe(false);
+
+    // A second call should start a new operation, not return a stale promise
+    const status = await dm.ensureAll(ctx);
+    expect(status).toBeDefined();
+    expect(dm.isSetupInProgress).toBe(false);
+  });
+
+  it("mutex resets after ensureAll fails with an error", async () => {
+    const readManifestFn = vi.fn()
+      .mockRejectedValueOnce(new Error("disk error"))
+      .mockResolvedValue(emptyManifest());
+    const deps = makeDeps({
+      readManifest: readManifestFn,
+    });
+    const dm = new DependencyManager(deps);
+
+    await expect(dm.ensureAll(ctx)).rejects.toThrow("disk error");
+    expect(dm.isSetupInProgress).toBe(false);
+
+    // Should be able to call again after failure
+    const status = await dm.ensureAll(ctx);
+    expect(status.allReady).toBe(true);
+  });
+
+  it("concurrent reinstall() calls return the same promise when setup is in progress", async () => {
+    let resolveInstall!: (value: InstallerResult) => void;
+    const slowInstall = new Promise<InstallerResult>((resolve) => {
+      resolveInstall = resolve;
+    });
+
+    const deps = makeDeps({
+      correttoInstaller: {
+        install: vi.fn().mockReturnValue(slowInstall),
+        verify: vi.fn(),
+        getJavaPath: vi.fn(),
+      },
+    });
+    const dm = new DependencyManager(deps);
+
+    const p1 = dm.reinstall(ctx);
+    // reinstall calls ensureAll internally, which sets the mutex.
+    // A second reinstall while the first is running should return the existing promise.
+    const p2 = dm.reinstall(ctx);
+
+    expect(p2).toBe(p1);
+
+    resolveInstall({ ok: true, path: JAVA_PATH });
+    await p1;
+  });
+
+  it("reinstall returns existing promise if ensureAll is already in progress", async () => {
+    let resolveInstall!: (value: InstallerResult) => void;
+    const slowInstall = new Promise<InstallerResult>((resolve) => {
+      resolveInstall = resolve;
+    });
+
+    const deps = makeDeps({
+      correttoInstaller: {
+        install: vi.fn().mockReturnValue(slowInstall),
+        verify: vi.fn(),
+        getJavaPath: vi.fn(),
+      },
+    });
+    const dm = new DependencyManager(deps);
+
+    // Start ensureAll first
+    const ensurePromise = dm.ensureAll(ctx);
+    expect(dm.isSetupInProgress).toBe(true);
+
+    // reinstall while ensureAll is running should return the existing promise
+    const reinstallPromise = dm.reinstall(ctx);
+    expect(reinstallPromise).toBe(ensurePromise);
+
+    resolveInstall({ ok: true, path: JAVA_PATH });
+    await ensurePromise;
+  });
+
+  it("isSetupInProgress is false initially", () => {
+    const dm = new DependencyManager(makeDeps());
+    expect(dm.isSetupInProgress).toBe(false);
+  });
+});

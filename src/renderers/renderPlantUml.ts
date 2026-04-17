@@ -49,6 +49,16 @@ export async function renderPlantUml(
   // Prefer managed Corretto path, fall back to user config
   const javaPath = dependencyStatus?.javaPath ?? cfg.javaPath;
 
+  // Early check: if no managed Java and no user-configured path, fail fast with actionable message
+  if (!dependencyStatus?.javaPath && !cfg.javaPath) {
+    const noJava: PlantUmlResult = {
+      ok: false,
+      error: "Java (Corretto) is not installed. Run 'Markdown Studio: Setup Dependencies' to install it automatically.",
+    };
+    cache.set(key, noJava);
+    return noJava;
+  }
+
   const inputFile = await createTempFile('puml', source);
   const result = await runProcess(
     javaPath,
@@ -66,7 +76,7 @@ export async function renderPlantUml(
     const errorMessage = result.timedOut
       ? 'PlantUML rendering timed out.'
       : isJavaMissing && !dependencyStatus?.javaPath
-        ? 'Java is not available. Run "Markdown Studio: Setup Dependencies" to install it automatically.'
+        ? "Java (Corretto) is not installed. Run 'Markdown Studio: Setup Dependencies' to install it automatically."
         : `PlantUML rendering failed: ${result.stderr || result.stdout}`;
 
     const failed: PlantUmlResult = { ok: false, error: errorMessage };

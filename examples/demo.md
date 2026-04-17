@@ -5,6 +5,7 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
 <!-- TOC -->
 - [Markdown Studio — Feature Demo](#markdown-studio-feature-demo)
   - [1. Markdown Rendering](#1-markdown-rendering)
+    - [日本語タイトル](#日本語タイトル)
     - [Task Lists](#task-lists)
     - [Footnotes](#footnotes)
     - [Emoji](#emoji)
@@ -64,13 +65,18 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
 - 日本語
   - 2byte文字テスト
 
+### 日本語タイトル
+
+- `hogehoge` あいうえお
+
 ### Task Lists
 
 - [x] Markdown rendering
 - [x] Mermaid diagrams
 - [x] PlantUML diagrams
-- [ ] LaTeX math (planned)
+- [x] LaTeX math
 - [x] Footnotes
+- [ ] No check
 
 ### Footnotes
 

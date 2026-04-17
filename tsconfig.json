@@ -32,6 +32,11 @@
     "test/unit/loadingOverlayMessageHandler.test.ts",
     "test/unit/initialLoadSpinner.test.ts",
     "test/unit/demoVscodeLauncher.test.ts",
-    "test/unit/zoomPanController.property.test.ts"
+    "test/unit/zoomPanController.property.test.ts",
+    "test/unit/diagramScrollHijack.test.ts",
+    "test/unit/diagramScrollHijack.bugCondition.property.test.ts",
+    "test/unit/diagramScrollHijack.fixVerification.property.test.ts",
+    "test/unit/diagramScrollHijack.preservation.property.test.ts",
+    "test/unit/diagramScrollHijack.edgeCases.test.ts"
   ]
 }

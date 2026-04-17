@@ -42,17 +42,41 @@ const defaultDeps: DependencyManagerDeps = {
 
 export class DependencyManager {
   private readonly deps: DependencyManagerDeps;
+  private _setupInProgress = false;
+  private _setupPromise: Promise<DependencyStatus> | null = null;
 
   constructor(deps?: Partial<DependencyManagerDeps>) {
     this.deps = { ...defaultDeps, ...deps };
+  }
+
+  /** Whether a setup operation (ensureAll/reinstall) is currently running. */
+  get isSetupInProgress(): boolean {
+    return this._setupInProgress;
   }
 
   /**
    * Ensure all dependencies are installed and ready.
    * Reads the manifest, verifies binaries on disk, installs missing ones
    * in parallel, writes updated manifest, and returns status.
+   *
+   * Concurrent calls are deduplicated: if a setup is already in progress,
+   * the existing promise is returned instead of starting a new one.
    */
-  async ensureAll(context: vscode.ExtensionContext): Promise<DependencyStatus> {
+  ensureAll(context: vscode.ExtensionContext): Promise<DependencyStatus> {
+    if (this._setupInProgress && this._setupPromise) {
+      return this._setupPromise;
+    }
+
+    this._setupInProgress = true;
+    this._setupPromise = this._doEnsureAll(context).finally(() => {
+      this._setupInProgress = false;
+      this._setupPromise = null;
+    });
+
+    return this._setupPromise;
+  }
+
+  private async _doEnsureAll(context: vscode.ExtensionContext): Promise<DependencyStatus> {
     const storageDir = context.globalStorageUri.fsPath;
     await fs.mkdir(storageDir, { recursive: true });
 
@@ -190,8 +214,25 @@ export class DependencyManager {
   /**
    * Force re-download and re-extract both dependencies.
    * Clears the manifest and runs a full installation.
+   *
+   * If a setup operation is already in progress, returns the existing
+   * promise instead of starting a concurrent install.
    */
-  async reinstall(context: vscode.ExtensionContext): Promise<DependencyStatus> {
+  reinstall(context: vscode.ExtensionContext): Promise<DependencyStatus> {
+    if (this._setupInProgress && this._setupPromise) {
+      return this._setupPromise;
+    }
+
+    this._setupInProgress = true;
+    this._setupPromise = this._doReinstall(context).finally(() => {
+      this._setupInProgress = false;
+      this._setupPromise = null;
+    });
+
+    return this._setupPromise;
+  }
+
+  private async _doReinstall(context: vscode.ExtensionContext): Promise<DependencyStatus> {
     const storageDir = context.globalStorageUri.fsPath;
     await fs.mkdir(storageDir, { recursive: true });
 
@@ -199,6 +240,7 @@ export class DependencyManager {
     const manifest: DependencyManifest = { version: MANIFEST_VERSION };
     await this.deps.writeManifest(storageDir, manifest);
 
-    return this.ensureAll(context);
+    // Call _doEnsureAll directly since we already hold the mutex
+    return this._doEnsureAll(context);
   }
 }
