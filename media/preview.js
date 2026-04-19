@@ -228,12 +228,23 @@ window.addEventListener('message', (event) => {
   if (message.type !== 'update-body') return;
   if (message.generation <= lastAppliedGeneration) return;
 
+  // Preserve zoom states before DOM replacement
+  const savedZoomStates = saveZoomStates();
+
   lastAppliedGeneration = message.generation;
   document.body.innerHTML = message.html;
-  renderMermaidBlocks();
-  initZoomPan();
-  addCopyButtons();
-  registerTocLinkHandlers();
+  renderMermaidBlocks().then(() => {
+    initZoomPan();
+    restoreZoomStates(savedZoomStates);
+    addCopyButtons();
+    registerTocLinkHandlers();
+  }).catch((error) => {
+    console.error('Mermaid rendering failed during update-body', error);
+    initZoomPan();
+    restoreZoomStates(savedZoomStates);
+    addCopyButtons();
+    registerTocLinkHandlers();
+  });
   // innerHTML destroyed the overlay element — showLoadingOverlay() would
   // re-create it, but the render is already done so just ensure it's gone.
   // If a future render-start arrives it will re-create the overlay.
@@ -559,6 +570,39 @@ function attachZoomPan(container) {
   });
 }
 
+function saveZoomStates() {
+  const states = [];
+  document.querySelectorAll('.diagram-container[data-zoom-init]').forEach((container, index) => {
+    const state = container._zoomState;
+    if (state && (state.scale !== 1.0 || state.translateX !== 0 || state.translateY !== 0)) {
+      states.push({
+        index,
+        scale: state.scale,
+        translateX: state.translateX,
+        translateY: state.translateY,
+      });
+    }
+  });
+  return states;
+}
+
+function restoreZoomStates(savedStates) {
+  if (!savedStates || savedStates.length === 0) return;
+  const containers = document.querySelectorAll('.diagram-container[data-zoom-init]');
+  for (const saved of savedStates) {
+    const container = containers[saved.index];
+    if (!container || !container._zoomState) continue;
+    container._zoomState.scale = saved.scale;
+    container._zoomState.translateX = saved.translateX;
+    container._zoomState.translateY = saved.translateY;
+    applyTransform(container, container._zoomState);
+    // Trigger high-res re-render for non-default zoom levels
+    if (saved.scale !== 1.0) {
+      triggerSvgRerender(container, container._zoomState);
+    }
+  }
+}
+
 function initZoomPan() {
   document.querySelectorAll('.diagram-container').forEach((container) => {
     if (container.hasAttribute('data-zoom-init')) return;
@@ -566,4 +610,4 @@ function initZoomPan() {
   });
 }
 
-export { THEME_MAP, detectThemeKind, getMermaidTheme, resolveEffectiveThemeKind, applyThemeClass, onThemeChanged, observeThemeChanges, findSourceLine, lastAppliedGeneration, showLoadingOverlay, hideLoadingOverlay, registerTocLinkHandlers, initZoomPan, clamp, handleWheel, handleDblClick, handleMouseDown, handleMouseMove, handleMouseUp, applyTransform, attachZoomPan, MIN_SCALE, MAX_SCALE, ZOOM_SENSITIVITY, createZoomToolbar, resetZoom, isDefaultZoomState, scheduleRerender, getDiagramType, triggerSvgRerender, rerenderMermaid, rerenderPlantUml, handlePlantUmlRerenderResult, RERENDER_DEBOUNCE_MS };
+export { THEME_MAP, detectThemeKind, getMermaidTheme, resolveEffectiveThemeKind, applyThemeClass, onThemeChanged, observeThemeChanges, findSourceLine, lastAppliedGeneration, showLoadingOverlay, hideLoadingOverlay, registerTocLinkHandlers, initZoomPan, clamp, handleWheel, handleDblClick, handleMouseDown, handleMouseMove, handleMouseUp, applyTransform, attachZoomPan, MIN_SCALE, MAX_SCALE, ZOOM_SENSITIVITY, createZoomToolbar, resetZoom, isDefaultZoomState, scheduleRerender, getDiagramType, triggerSvgRerender, rerenderMermaid, rerenderPlantUml, handlePlantUmlRerenderResult, RERENDER_DEBOUNCE_MS, saveZoomStates, restoreZoomStates };
