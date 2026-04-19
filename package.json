@@ -2,7 +2,7 @@
   "name": "markdown-studio",
   "displayName": "Markdown Studio",
   "description": "Local-first Markdown authoring studio with integrated diagram rendering (Mermaid, PlantUML), SVG support, and secure PDF export.",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "publisher": "local",
   "license": "MIT",
   "repository": {
