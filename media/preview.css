@@ -80,28 +80,6 @@ svg {
   height: auto;
 }
 
-/* ── Blockquotes ─────────────────────────────────────── */
-
-blockquote {
-  margin: 1rem 0;
-  padding: 0.25em 1em;
-  border-left: 0.25em solid var(--blockquote-border, #dfe2e5);
-  color: var(--blockquote-text, #6a737d);
-  background: var(--blockquote-bg, rgba(175, 184, 193, 0.08));
-  border-radius: 0 4px 4px 0;
-}
-
-blockquote p {
-  margin: 0.5em 0;
-}
-
-body.vscode-dark blockquote,
-body.vscode-high-contrast blockquote {
-  border-left-color: var(--blockquote-border, #444);
-  color: var(--blockquote-text, #8b949e);
-  background: var(--blockquote-bg, rgba(110, 118, 129, 0.1));
-}
-
 .ms-error {
   border: 1px solid var(--error-border);
   background: var(--error-bg);
@@ -173,18 +151,18 @@ table {
 
 th,
 td {
-  border: none;
-  border-bottom: 1px solid var(--table-border, #dfe2e5);
-  padding: 6px 13px;
+  border: 1px solid var(--table-border, #d0d7de);
+  padding: 0.5rem 0.75rem;
   text-align: left;
 }
 
 th {
+  background: var(--table-header-bg, #f6f8fa);
   font-weight: 600;
 }
 
 tbody tr:nth-child(even) {
-  background: none;
+  background: var(--table-stripe-bg, #f6f8fa80);
 }
 
 @media print {
@@ -208,8 +186,7 @@ tbody tr:nth-child(even) {
 
   th,
   td {
-    border: none;
-    border-bottom: 1px solid #ccc;
+    border: 1px solid #999;
   }
 
   h1 { margin-top: 24px; margin-bottom: 16px; }
@@ -231,12 +208,6 @@ tbody tr:nth-child(even) {
     background: #f6f8fa;
     border: 1px solid #d0d7de;
     page-break-inside: avoid;
-  }
-
-  blockquote {
-    border-left: 0.25em solid #ccc;
-    color: #555;
-    background: #f9f9f9;
   }
 
   pre code {
