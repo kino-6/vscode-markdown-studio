@@ -139,7 +139,7 @@ export function getConfig(): MarkdownStudioConfig {
     pdfBookmarks: {
       enabled: cfg.get<boolean>('export.pdfBookmarks.enabled', true),
     },
-    theme: cfg.get<string>('style.theme', 'default'),
+    theme: cfg.get<string>('style.theme', 'markdown-pdf'),
     customCss: cfg.get<string>('style.customCss', ''),
     outputFilename: cfg.get<string>('export.outputFilename', '${filename}'),
     previewTheme: cfg.get<PreviewThemeMode>('preview.theme', 'auto'),

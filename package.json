@@ -220,7 +220,7 @@
         },
         "markdownStudio.style.theme": {
           "type": "string",
-          "default": "default",
+          "default": "markdown-pdf",
           "enum": [
             "default",
             "modern",

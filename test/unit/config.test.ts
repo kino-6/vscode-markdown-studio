@@ -69,9 +69,9 @@ describe('getConfig().codeBlock', () => {
 });
 
 describe('getConfig().theme', () => {
-  it('returns default as default theme', () => {
+  it('returns markdown-pdf as default theme', () => {
     const config = getConfig();
-    expect(config.theme).toBe('default');
+    expect(config.theme).toBe('markdown-pdf');
   });
 });
 
