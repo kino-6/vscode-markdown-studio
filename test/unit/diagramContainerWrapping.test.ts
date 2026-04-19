@@ -77,7 +77,9 @@ describe('diagram container wrapping', () => {
     const md = '```plantuml\n@startuml\nA->B:Hi\n@enduml\n```';
     const result = await renderMarkdownDocument(md, fakeContext);
 
-    expect(result.htmlBody).toContain(`<div class="diagram-container">${svg}</div>`);
+    const source = '@startuml\nA->B:Hi\n@enduml';
+    const encodedSrc = encodeURIComponent(source);
+    expect(result.htmlBody).toContain(`<div class="diagram-container" data-plantuml-src="${encodedSrc}">${svg}</div>`);
   });
 
   // Requirement 1.2 (puml alias): puml blocks also wrapped
@@ -88,7 +90,9 @@ describe('diagram container wrapping', () => {
     const md = '```puml\n@startuml\nA->B\n@enduml\n```';
     const result = await renderMarkdownDocument(md, fakeContext);
 
-    expect(result.htmlBody).toContain(`<div class="diagram-container">${svg}</div>`);
+    const source = '@startuml\nA->B\n@enduml';
+    const encodedSrc = encodeURIComponent(source);
+    expect(result.htmlBody).toContain(`<div class="diagram-container" data-plantuml-src="${encodedSrc}">${svg}</div>`);
   });
 
   // Requirement 1.3: Inline SVG blocks wrapped in diagram-container

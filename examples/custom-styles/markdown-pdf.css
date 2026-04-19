@@ -130,9 +130,11 @@ tbody tr:nth-child(even) {
 
 blockquote {
   margin: 1rem 0;
-  padding: 0 1em;
-  border-left: 0.25em solid #dfe2e5;
+  padding: 0.25em 1em;
+  border-left: 0.25em solid #4caf50;
   color: #6a737d;
+  background: rgba(76, 175, 80, 0.04);
+  border-radius: 0 4px 4px 0;
 }
 
 blockquote p {
@@ -244,8 +246,9 @@ body.vscode-dark tbody tr:nth-child(even) {
 }
 
 body.vscode-dark blockquote {
-  border-left-color: #444;
+  border-left-color: #4caf50;
   color: #8b949e;
+  background: rgba(76, 175, 80, 0.06);
 }
 
 body.vscode-dark a {

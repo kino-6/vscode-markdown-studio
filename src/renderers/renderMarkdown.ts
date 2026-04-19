@@ -109,7 +109,8 @@ export async function renderMarkdownDocument(
     if (block.kind === 'plantuml' || block.kind === 'puml') {
       const result = await renderPlantUml(block.content, context);
       if (result.ok && result.svg) {
-        replacement = `<div class="diagram-container">${result.svg}</div>`;
+        const encodedSrc = encodeURIComponent(block.content);
+        replacement = `<div class="diagram-container" data-plantuml-src="${encodedSrc}">${result.svg}</div>`;
       } else {
         errors.push({
           title: 'PlantUML render error',

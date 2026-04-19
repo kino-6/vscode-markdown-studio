@@ -3,14 +3,15 @@
 Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
 
 <!-- TOC -->
-- [Markdown Studio — Feature Demo](#markdown-studio-feature-demo)
+- [Markdown Studio — Feature Demo](#markdown-studio--feature-demo)
   - [1. Markdown Rendering](#1-markdown-rendering)
+    - [日本語テスト](#日本語テスト)
     - [Task Lists](#task-lists)
     - [Footnotes](#footnotes)
     - [Emoji](#emoji)
     - [Math (KaTeX)](#math-katex)
     - [Definition Lists](#definition-lists)
-    - [Superscript / Subscript](#superscript-subscript)
+    - [Superscript / Subscript](#superscript--subscript)
   - [2. Mermaid Diagrams](#2-mermaid-diagrams)
     - [Markdown Studio Architecture](#markdown-studio-architecture)
     - [Extension Activation Flow](#extension-activation-flow)
@@ -20,8 +21,8 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
   - [4. Inline SVG (Sanitized)](#4-inline-svg-sanitized)
   - [5. Syntax Highlighting](#5-syntax-highlighting)
   - [6. Images and Security](#6-images-and-security)
-    - [✅ Local image (relative path — works)](#-local-image-relative-path-works)
-    - [✅ Local image (absolute path — works)](#-local-image-absolute-path-works)
+    - [✅ Local image (relative path — works)](#-local-image-relative-path--works)
+    - [✅ Local image (absolute path — works)](#-local-image-absolute-path--works)
     - [❌ External image (blocked by policy)](#-external-image-blocked-by-policy)
     - [❌ External link (blocked by policy)](#-external-link-blocked-by-policy)
     - [How to allow external resources](#how-to-allow-external-resources)
@@ -44,13 +45,13 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
 
 > Blockquotes work too.
 
-| Feature    | Status |
-|------------|--------|
-| Markdown   | ✅     |
-| Mermaid    | ✅     |
-| PlantUML   | ✅     |
-| SVG        | ✅     |
-| PDF Export | ✅     |
+| Feature    | Status | Remark |
+|------------|--------|--------|
+| Markdown   | ✅     | A      |
+| Mermaid    | ✅     | B      |
+| PlantUML   | ✅     | C      |
+| SVG        | ✅     | D      |
+| PDF Export | ✅     | E      |
 
 1. Ordered list item
 2. Another item
@@ -61,16 +62,19 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
 
 * Item
 
-- 日本語
-  - 2byte文字テスト
+### 日本語テスト
+
+- 日本語あ`いう`えお
+  - 2byte文字`テスト`
 
 ### Task Lists
 
 - [x] Markdown rendering
 - [x] Mermaid diagrams
 - [x] PlantUML diagrams
-- [ ] LaTeX math (planned)
+- [X] LaTeX math
 - [x] Footnotes
+- [ ] no checked
 
 ### Footnotes
 
@@ -759,4 +763,4 @@ The PDF uses the same HTML pipeline as the preview.
 
 ---
 
-*Markdown Studio v0.7.0*
+*Markdown Studio v0.8.0*

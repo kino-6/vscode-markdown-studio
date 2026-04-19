@@ -18,6 +18,35 @@ import { getConfig } from './infra/config';
 /** Module-level dependency status, accessible by other modules if needed. */
 export let dependencyStatus: DependencyStatus | undefined;
 
+/**
+ * Check whether a required dependency is available.
+ * Returns `true` if the dependency is ready, `false` otherwise.
+ * When the dependency is missing, shows an actionable error message.
+ */
+export function checkDependency(name: 'java' | 'chromium'): boolean {
+  if (name === 'chromium') {
+    if (dependencyStatus?.browserPath) {
+      return true;
+    }
+    void vscode.window.showErrorMessage(
+      "Chromium is not installed. Run 'Markdown Studio: Setup Dependencies' to install it."
+    );
+    return false;
+  }
+
+  if (name === 'java') {
+    if (dependencyStatus?.javaPath) {
+      return true;
+    }
+    void vscode.window.showErrorMessage(
+      "Java (Corretto) is not installed. Run 'Markdown Studio: Setup Dependencies' to install it."
+    );
+    return false;
+  }
+
+  return false;
+}
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const depManager = new DependencyManager();
 
