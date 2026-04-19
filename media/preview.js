@@ -423,14 +423,17 @@ async function rerenderMermaid(container, state) {
         svg.setAttribute('width', String(w * state.scale));
         svg.setAttribute('height', String(h * state.scale));
         svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+        svg.style.maxWidth = 'none';
       }
     }
 
-    // Reset CSS transform (SVG itself is already scaled)
-    mermaidHost.style.transform = 'none';
-    mermaidHost.style.transformOrigin = '0 0';
+    // Re-apply CSS transform for pan offset (translate) while SVG
+    // handles the zoom via width/height scaling.
+    // We keep the full transform so the pan position is preserved
+    // and the visual result matches what the user had before re-render.
+    applyTransform(container, state);
   } catch (error) {
-    // Re-render failed — maintain CSS transform fallback
+    // Re-render failed — CSS transform fallback is already in place
     console.error('[Markdown Studio] Mermaid re-render failed:', error);
   }
 }
@@ -596,10 +599,6 @@ function restoreZoomStates(savedStates) {
     container._zoomState.translateX = saved.translateX;
     container._zoomState.translateY = saved.translateY;
     applyTransform(container, container._zoomState);
-    // Trigger high-res re-render for non-default zoom levels
-    if (saved.scale !== 1.0) {
-      triggerSvgRerender(container, container._zoomState);
-    }
   }
 }
 
