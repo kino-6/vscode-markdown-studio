@@ -424,13 +424,13 @@ describe('Requirement 3: Table styles', () => {
 /* ── 4.5  Blockquote styles (Requirement 4) ──────────── */
 
 describe('Requirement 4: Blockquote styles', () => {
-  it('blockquote has padding 0 1em', () => {
-    expect(extractCssProperty(css, 'blockquote', 'padding')).toBe('0 1em');
+  it('blockquote has padding 0.25em 1em', () => {
+    expect(extractCssProperty(css, 'blockquote', 'padding')).toBe('0.25em 1em');
   });
 
-  it('blockquote has border-left 0.25em solid #dfe2e5', () => {
+  it('blockquote has border-left 0.25em solid #4caf50', () => {
     expect(extractCssProperty(css, 'blockquote', 'border-left')).toBe(
-      '0.25em solid #dfe2e5',
+      '0.25em solid #4caf50',
     );
   });
 
@@ -540,10 +540,10 @@ describe('Requirement 7: Dark mode styles (.vscode-dark)', () => {
     ).toBe('#3d444d');
   });
 
-  it('body.vscode-dark blockquote has border-left-color #444', () => {
+  it('body.vscode-dark blockquote has border-left-color #4caf50', () => {
     expect(
       extractCssProperty(css, 'body.vscode-dark blockquote', 'border-left-color'),
-    ).toBe('#444');
+    ).toBe('#4caf50');
   });
 
   it('body.vscode-dark blockquote has color #8b949e', () => {
