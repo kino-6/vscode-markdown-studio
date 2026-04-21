@@ -17,19 +17,24 @@ function escapeHtml(text: string): string {
  * Returns a default Playwright-compatible header template HTML string
  * containing the HTML-escaped document title, styled with inline CSS,
  * font-size ≤ 12px, spanning full page width.
+ *
+ * The hidden `url` span prevents Chromium from injecting "about:blank".
  */
 export function getDefaultHeaderTemplate(documentTitle: string): string {
   const escaped = escapeHtml(documentTitle);
-  return `<div style="font-size:10px;width:100%;text-align:center;"><span>${escaped}</span></div>`;
+  return `<div style="font-size:10px;width:100%;text-align:center;"><span class="url" style="display:none;"></span><span>${escaped}</span></div>`;
 }
 
 /**
  * Returns a default Playwright-compatible footer template HTML string
  * displaying "Page X of Y" using Playwright's special CSS classes
  * `pageNumber` and `totalPages`, styled with inline CSS, font-size ≤ 12px.
+ *
+ * The hidden `url` span prevents Chromium from injecting "about:blank"
+ * when the page is loaded via setContent() instead of a real URL.
  */
 export function getDefaultFooterTemplate(): string {
-  return '<div style="font-size:10px;width:100%;text-align:center;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>';
+  return '<div style="font-size:10px;width:100%;text-align:center;"><span class="url" style="display:none;"></span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>';
 }
 
 /** Unique marker comment used to detect if page-break CSS has already been injected. */
