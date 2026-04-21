@@ -49,16 +49,18 @@ export async function runProcess(
     const stderr: string[] = [];
     let timedOut = false;
 
-    const timer = setTimeout(() => {
-      timedOut = true;
-      killProcess(child);
-    }, timeoutMs);
+    const timer = timeoutMs > 0
+      ? setTimeout(() => {
+          timedOut = true;
+          killProcess(child);
+        }, timeoutMs)
+      : null;
 
     child.stdout.on('data', (chunk) => stdout.push(String(chunk)));
     child.stderr.on('data', (chunk) => stderr.push(String(chunk)));
 
     child.on('close', (exitCode) => {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       resolve({
         exitCode: exitCode ?? -1,
         stdout: stdout.join(''),
@@ -68,7 +70,7 @@ export async function runProcess(
     });
 
     child.on('error', (error) => {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       resolve({
         exitCode: -1,
         stdout: '',

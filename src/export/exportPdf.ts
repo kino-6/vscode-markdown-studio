@@ -228,16 +228,28 @@ export async function exportToPdf(
       });
       await page.addScriptTag({ content: previewJsContent });
 
-      // Wait for Mermaid diagrams to render.
-      // The IIFE script fires DOMContentLoaded listeners synchronously when added
-      // after DOM is ready, but mermaid.render is async — poll for SVG output.
-      await page.waitForFunction(`(() => {
-        const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
-        if (hosts.length === 0) return true;
-        return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
-      })()`, { timeout: 30_000 }).catch(() => {
+      // Wait for Mermaid diagrams to render with progress counter.
+      // timeout=0 means no limit (poll indefinitely until all diagrams are ready).
+      const diagramTimeoutMs = cfg.diagramTimeout > 0 ? cfg.diagramTimeout * 1000 : 0;
+      const startTime = Date.now();
+      const progressInterval = setInterval(() => {
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        progress?.report(`Rendering diagrams... (${elapsed}s)`);
+      }, 1000);
+
+      try {
+        await page.waitForFunction(`(() => {
+          const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
+          if (hosts.length === 0) return true;
+          return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
+        })()`, { timeout: diagramTimeoutMs });
+      } catch {
         // Timeout — proceed with PDF generation; some diagrams may be missing
-      });
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        progress?.report(`Diagram rendering timed out after ${elapsed}s — proceeding`);
+      } finally {
+        clearInterval(progressInterval);
+      }
     }
 
     await page.setViewportSize({ width: 980, height: 1400 });
@@ -319,11 +331,25 @@ export async function exportToPdf(
             content: 'if(typeof acquireVsCodeApi==="undefined"){window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){return undefined},setState:function(){}};};}',
           });
           await page.addScriptTag({ content: previewJsContent });
-          await page.waitForFunction(`(() => {
-            const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
-            if (hosts.length === 0) return true;
-            return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
-          })()`, { timeout: 30_000 }).catch(() => {});
+
+          const diagramTimeoutMs2 = cfg.diagramTimeout > 0 ? cfg.diagramTimeout * 1000 : 0;
+          const startTime2 = Date.now();
+          const progressInterval2 = setInterval(() => {
+            const elapsed = Math.round((Date.now() - startTime2) / 1000);
+            progress?.report(`Rendering diagrams (pass 2)... (${elapsed}s)`);
+          }, 1000);
+
+          try {
+            await page.waitForFunction(`(() => {
+              const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
+              if (hosts.length === 0) return true;
+              return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
+            })()`, { timeout: diagramTimeoutMs2 });
+          } catch {
+            // Timeout on pass 2
+          } finally {
+            clearInterval(progressInterval2);
+          }
         }
         await page.setViewportSize({ width: 980, height: 1400 });
       }

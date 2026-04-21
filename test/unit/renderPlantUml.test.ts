@@ -93,7 +93,7 @@ describe('renderPlantUml', () => {
     expect(runProcessMock).toHaveBeenCalledWith(
       '/managed/java',
       expect.any(Array),
-      15000
+      0
     );
   });
 
@@ -109,7 +109,7 @@ describe('renderPlantUml', () => {
     expect(runProcessMock).toHaveBeenCalledWith(
       '/custom/java',
       expect.any(Array),
-      15000
+      0
     );
   });
 
