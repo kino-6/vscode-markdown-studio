@@ -27,6 +27,7 @@ export interface MarkdownStudioConfig {
   customCss: string;
   outputFilename: string;
   previewTheme: PreviewThemeMode;
+  diagramTimeout: number;
 }
 
 /**
@@ -143,5 +144,6 @@ export function getConfig(): MarkdownStudioConfig {
     customCss: cfg.get<string>('style.customCss', ''),
     outputFilename: cfg.get<string>('export.outputFilename', '${filename}'),
     previewTheme: cfg.get<PreviewThemeMode>('preview.theme', 'auto'),
+    diagramTimeout: cfg.get<number>('export.diagramTimeout', 0),
   };
 }

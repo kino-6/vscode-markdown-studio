@@ -35,6 +35,7 @@ const baseConfig: MarkdownStudioConfig = {
   customCss: '',
   outputFilename: '${filename}',
   previewTheme: 'auto',
+  diagramTimeout: 0,
 };
 
 describe('validateEnvironment', () => {

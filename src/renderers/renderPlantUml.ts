@@ -60,10 +60,11 @@ export async function renderPlantUml(
   }
 
   const inputFile = await createTempFile('puml', source);
+  const timeoutMs = cfg.diagramTimeout > 0 ? cfg.diagramTimeout * 1000 : 0;
   const result = await runProcess(
     javaPath,
     ['-Djava.awt.headless=true', '-jar', jarPath, '-Playout=smetana', '-tsvg', inputFile],
-    15000
+    timeoutMs
   );
 
   if (result.timedOut || result.exitCode !== 0) {

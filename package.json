@@ -2,7 +2,7 @@
   "name": "markdown-studio",
   "displayName": "Markdown Studio",
   "description": "Local-first Markdown authoring studio with integrated diagram rendering (Mermaid, PlantUML), SVG support, and secure PDF export.",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "publisher": "local",
   "license": "MIT",
   "repository": {
@@ -270,6 +270,11 @@
           "type": "string",
           "default": "${filename}",
           "markdownDescription": "PDF出力ファイル名のテンプレート。テンプレート変数を使って動的なファイル名を生成できます。\n\n**使用可能な変数:**\n\n| 変数 | 説明 | 例 |\n|------|------|----|\n| `${filename}` | ソースファイル名（拡張子なし） | `document` |\n| `${date}` | エクスポート日（YYYY-MM-DD） | `2025-01-15` |\n| `${datetime}` | エクスポート日時（YYYY-MM-DD_HHmmss） | `2025-01-15_143022` |\n| `${title}` | 最初のH1見出しテキスト（なければファイル名） | `設計書` |\n| `${ext}` | ソースファイルの拡張子（ドットなし） | `md` |\n\n**使用例:**\n- `${filename}_${date}` → `document_2025-01-15.pdf`\n- `${title}` → `設計書.pdf`\n- `${filename}_${datetime}` → `document_2025-01-15_143022.pdf`\n- `${filename}.${ext}` → `document.md.pdf`\n- `${title}_${date}` → `設計書_2025-01-15.pdf`\n\n`.pdf` 拡張子は自動的に付与されます。ファイルシステムで禁止されている文字は自動的に除去されます。"
+        },
+        "markdownStudio.export.diagramTimeout": {
+          "type": "number",
+          "default": 0,
+          "markdownDescription": "ダイアグラム（Mermaid / PlantUML）レンダリングのタイムアウト（秒）。`0` は無制限。低スペック環境で複雑な図がタイムアウトする場合は `0` のままにしてください。"
         },
         "markdownStudio.network.caCertificates": {
           "type": "array",
