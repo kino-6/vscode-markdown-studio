@@ -75,6 +75,26 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#39;');
 }
 
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+
+  async function worker(): Promise<void> {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex++;
+      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+    }
+  }
+
+  const workerCount = Math.min(Math.max(concurrency, 1), items.length);
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
+}
+
 export async function renderMarkdownDocument(
   markdown: string,
   context: vscode.ExtensionContext
@@ -86,16 +106,17 @@ export async function renderMarkdownDocument(
   const fencedBlocks = scanFencedBlocks(markdown);
 
   const replacements: Array<{ startOffset: number; endOffset: number; text: string }> = [];
-  for (const block of fencedBlocks) {
+  const renderedBlocks = await mapWithConcurrency(fencedBlocks, 4, async (block) => {
     const sourceFence = block.raw;
     let replacement = sourceFence;
+    const blockErrors: RenderedMarkdown['errors'] = [];
 
     if (block.kind === 'mermaid') {
       const result = await renderMermaidBlock(block.content);
       if (result.ok && result.placeholder) {
         replacement = `<div class="diagram-container">${result.placeholder}</div>`;
       } else {
-        errors.push({
+        blockErrors.push({
           title: RUNTIME_MESSAGES.render.mermaidErrorTitle,
           detail: result.error ?? RUNTIME_MESSAGES.render.unknownMermaidIssue,
         });
@@ -114,7 +135,7 @@ export async function renderMarkdownDocument(
         const encodedSrc = encodeURIComponent(block.content);
         replacement = `<div class="diagram-container" data-plantuml-src="${encodedSrc}">${result.svg}</div>`;
       } else {
-        errors.push({
+        blockErrors.push({
           title: RUNTIME_MESSAGES.render.plantUmlErrorTitle,
           detail: result.error ?? RUNTIME_MESSAGES.render.unknownPlantUmlIssue,
         });
@@ -123,10 +144,20 @@ export async function renderMarkdownDocument(
     }
 
     replacement = padToLineCount(replacement, sourceFence);
-    replacements.push({
+    return {
       startOffset: block.startOffset,
       endOffset: block.endOffset,
       text: replacement,
+      errors: blockErrors,
+    };
+  });
+
+  for (const block of renderedBlocks) {
+    errors.push(...block.errors);
+    replacements.push({
+      startOffset: block.startOffset,
+      endOffset: block.endOffset,
+      text: block.text,
     });
   }
 

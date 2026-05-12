@@ -59,32 +59,39 @@ const MIME_TYPES: Record<string, string> = {
  */
 export async function inlineLocalImages(html: string): Promise<string> {
   const regex = /<img([^>]*)\bsrc="(file:\/\/[^"]+)"/g;
-  const replacements: { match: string; replacement: string }[] = [];
+  const imageRefs: { match: string; before: string; fileUri: string }[] = [];
 
   let m: RegExpExecArray | null;
   while ((m = regex.exec(html)) !== null) {
     const [fullMatch, before, fileUri] = m;
+    imageRefs.push({ match: fullMatch, before, fileUri });
+  }
+
+  const replacements = await Promise.all(imageRefs.map(async ({ match, before, fileUri }) => {
     const filePath = filePathFromUri(fileUri);
-    if (!filePath) continue;
+    if (!filePath) return undefined;
 
     const ext = path.extname(filePath).toLowerCase();
     const mime = MIME_TYPES[ext];
-    if (!mime) continue;
+    if (!mime) return undefined;
 
     try {
       const buf = await fs.readFile(filePath);
       const b64 = buf.toString('base64');
-      replacements.push({
-        match: fullMatch,
+      return {
+        match,
         replacement: `<img${before}src="data:${mime};base64,${b64}"`,
-      });
+      };
     } catch {
       // File not found or unreadable — leave the src as-is (graceful degradation)
+      return undefined;
     }
-  }
+  }));
 
   let result = html;
-  for (const { match, replacement } of replacements) {
+  for (const item of replacements) {
+    if (!item) continue;
+    const { match, replacement } = item;
     result = result.replace(match, replacement);
   }
   return result;
@@ -99,6 +106,20 @@ function filePathFromUri(fileUri: string): string | undefined {
   }
 }
 
+async function readUtf8IfExists(filePath: string): Promise<string | undefined> {
+  try {
+    return await fs.readFile(filePath, 'utf-8');
+  } catch {
+    return undefined;
+  }
+}
+
+async function insertPdfIndexIntoRenderedPage(page: { evaluate: (fn: (indexHtml: string) => void, indexHtml: string) => Promise<unknown> }, indexHtml: string): Promise<void> {
+  await page.evaluate((html: string) => {
+    document.body.insertAdjacentHTML('afterbegin', html);
+  }, indexHtml);
+}
+
 export async function exportToPdf(
   document: vscode.TextDocument,
   context: vscode.ExtensionContext,
@@ -106,6 +127,16 @@ export async function exportToPdf(
   cancellation?: CancellationChecker,
 ): Promise<string> {
   const cfg = getConfig();
+  const previewCssPath = path.join(context.extensionPath, 'media', 'preview.css');
+  const hljsCssPath = path.join(context.extensionPath, 'media', 'hljs-theme.css');
+  const katexCssPath = path.join(context.extensionPath, 'media', 'katex.min.css');
+  const previewJsPath = path.join(context.extensionPath, 'dist', 'preview.js');
+
+  const previewCssPromise = readUtf8IfExists(previewCssPath);
+  const hljsCssPromise = readUtf8IfExists(hljsCssPath);
+  const katexCssPromise = readUtf8IfExists(katexCssPath);
+  const previewJsContentPromise = readUtf8IfExists(previewJsPath);
+  const customCssPromise = loadCustomCss(cfg.theme, cfg.customCss, context.extensionPath);
 
   // Step 1: Build HTML
   progress?.report(RUNTIME_MESSAGES.exportProgress.buildingHtml, 15);
@@ -120,32 +151,26 @@ export async function exportToPdf(
   // Inline the preview CSS so tables, code blocks, and other elements are styled in the PDF.
   // There's no webview in the PDF path, so we read the CSS from disk
   // and inject it as <style> tags that Playwright can render.
-  const previewCssPath = path.join(context.extensionPath, 'media', 'preview.css');
-  const hljsCssPath = path.join(context.extensionPath, 'media', 'hljs-theme.css');
-  try {
-    const previewCss = await fs.readFile(previewCssPath, 'utf-8');
+  const [previewCss, hljsCss, katexCss, { css: customCss, warnings: customCssWarnings }, previewJsContent] = await Promise.all([
+    previewCssPromise,
+    hljsCssPromise,
+    katexCssPromise,
+    customCssPromise,
+    previewJsContentPromise,
+  ]);
+  if (previewCss) {
     html = html.replace('</head>', `<style>${previewCss}</style>\n</head>`);
-  } catch {
-    // CSS file missing — degrade gracefully
   }
-  try {
-    const hljsCss = await fs.readFile(hljsCssPath, 'utf-8');
+  if (hljsCss) {
     html = html.replace('</head>', `<style>${hljsCss}</style>\n</head>`);
-  } catch {
-    // CSS file missing — degrade gracefully, code blocks render without color
   }
 
   // Inject KaTeX CSS for math rendering in PDF
-  const katexCssPath = path.join(context.extensionPath, 'media', 'katex.min.css');
-  try {
-    const katexCss = await fs.readFile(katexCssPath, 'utf-8');
+  if (katexCss) {
     html = html.replace('</head>', `<style>${katexCss}</style>\n</head>`);
-  } catch {
-    // KaTeX CSS missing — math will render without proper styling
   }
 
   // Inject custom CSS (theme + inline) if configured
-  const { css: customCss, warnings: customCssWarnings } = await loadCustomCss(cfg.theme, cfg.customCss, context.extensionPath);
   for (const w of customCssWarnings) {
     console.warn(w);
   }
@@ -155,14 +180,6 @@ export async function exportToPdf(
 
   // Read the bundled preview script path for later injection via Playwright.
   // We inject it after setContent so DOMContentLoaded fires and Mermaid renders.
-  const previewJsPath = path.join(context.extensionPath, 'dist', 'preview.js');
-  let previewJsContent: string | undefined;
-  try {
-    previewJsContent = await fs.readFile(previewJsPath, 'utf-8');
-  } catch {
-    // preview.js missing — Mermaid diagrams will not render in PDF
-  }
-
   // Remove the loading overlay — it's only needed for the live preview webview
   html = html.replace(/<div id="ms-loading-overlay"[^>]*>.*?<\/div>\s*<\/div>/s, '');
 
@@ -330,41 +347,9 @@ export async function exportToPdf(
 
         const indexHtml = buildPdfIndexHtml(headingEntries, cfg.pdfIndex.title, indexPageCount);
 
-        // Pass 2: Insert index at top and re-render
-        const htmlWithIndex = html.replace(/<body[^>]*>/, (match) => `${match}\n${indexHtml}`);
-        await page.setContent(htmlWithIndex, { waitUntil: 'networkidle' });
-
-        // Force light mode for PDF output — remove dark/high-contrast classes
-        await page.evaluate(`(() => {
-          document.body.classList.remove('vscode-dark', 'vscode-high-contrast');
-          document.body.classList.add('vscode-light');
-        })()`);
-
-        if (previewJsContent) {
-          await page.addScriptTag({
-            content: 'if(typeof acquireVsCodeApi==="undefined"){window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){return undefined},setState:function(){}};};}',
-          });
-          await page.addScriptTag({ content: previewJsContent });
-
-          const diagramTimeoutMs2 = cfg.diagramTimeout > 0 ? cfg.diagramTimeout * 1000 : 0;
-          const startTime2 = Date.now();
-          const progressInterval2 = setInterval(() => {
-            const elapsed = Math.round((Date.now() - startTime2) / 1000);
-            progress?.report(RUNTIME_MESSAGES.exportProgress.renderingDiagramsPass2Elapsed(elapsed));
-          }, 1000);
-
-          try {
-            await page.waitForFunction(`(() => {
-              const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
-              if (hosts.length === 0) return true;
-              return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
-            })()`, { timeout: diagramTimeoutMs2 });
-          } catch {
-            // Timeout on pass 2
-          } finally {
-            clearInterval(progressInterval2);
-          }
-        }
+        // Insert the PDF Index into the already-rendered document. This avoids
+        // re-running Mermaid and layout work for the full markdown body.
+        await insertPdfIndexIntoRenderedPage(page, indexHtml);
         await page.setViewportSize({ width: 980, height: 1400 });
       }
     } else if (cfg.pdfBookmarks.enabled) {
