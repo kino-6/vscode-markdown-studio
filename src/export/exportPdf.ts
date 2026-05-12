@@ -63,6 +63,11 @@ type PdfAssets = {
   customCssWarnings: string[];
   previewJsContent?: string;
 };
+type PdfOptions = ReturnType<typeof buildPdfOptions>;
+type PdfPageOptions = NonNullable<Parameters<Page['pdf']>[0]>;
+type PdfRenderablePage = Pick<Page, 'pdf' | 'evaluate' | 'setViewportSize'>;
+type PdfHeading = { level: number; text: string; offsetTop: number; anchorId?: string };
+type HeadingDomData = { headings: PdfHeading[]; scrollHeight: number };
 
 /**
  * Converts local image file:// URIs in HTML to inline Base64 data URIs.
@@ -256,6 +261,179 @@ function countPdfPages(pdfBuffer: Buffer): number {
   return pageMatches ? pageMatches.length : 1;
 }
 
+function buildPdfPageOptions(cfg: PdfExportConfig, pdfOptions: PdfOptions): PdfPageOptions {
+  return {
+    format: cfg.pageFormat,
+    printBackground: true,
+    preferCSSPageSize: true,
+    displayHeaderFooter: pdfOptions.displayHeaderFooter,
+    headerTemplate: pdfOptions.headerTemplate,
+    footerTemplate: pdfOptions.footerTemplate,
+    margin: pdfOptions.margin,
+  };
+}
+
+async function renderPdfBuffer(page: PdfRenderablePage, cfg: PdfExportConfig, pdfOptions: PdfOptions): Promise<Buffer> {
+  return await page.pdf(buildPdfPageOptions(cfg, pdfOptions));
+}
+
+async function writePdfFile(
+  page: PdfRenderablePage,
+  outputPath: string,
+  cfg: PdfExportConfig,
+  pdfOptions: PdfOptions,
+): Promise<void> {
+  await page.pdf({
+    ...buildPdfPageOptions(cfg, pdfOptions),
+    path: outputPath,
+  });
+  await fs.access(outputPath);
+}
+
+function pageNumberForOffset(offsetTop: number, scrollHeight: number, totalPages: number): number {
+  const ratio = scrollHeight > 0 ? offsetTop / scrollHeight : 0;
+  return Math.min(Math.floor(ratio * totalPages) + 1, totalPages);
+}
+
+function mapDomHeadingsToEntries(domData: HeadingDomData, totalPages: number): HeadingPageEntry[] {
+  return domData.headings.map((h) => ({
+    level: h.level,
+    text: h.text,
+    pageNumber: pageNumberForOffset(h.offsetTop, domData.scrollHeight, totalPages),
+    anchorId: h.anchorId ?? '',
+  }));
+}
+
+function mapHeadingEntriesToBookmarks(headingEntries: HeadingPageEntry[], pageOffset = 0): BookmarkEntry[] {
+  return headingEntries.map(({ level, text, pageNumber }) => ({
+    level,
+    text,
+    pageNumber: pageNumber + pageOffset,
+  }));
+}
+
+async function collectPdfIndexHeadingData(page: PdfRenderablePage, cfg: PdfExportConfig): Promise<HeadingDomData> {
+  return await page.evaluate(
+    `(function() {
+      var headings = [];
+      var els = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        var level = parseInt(el.tagName[1], 10);
+        if (level < ${cfg.toc.minLevel} || level > ${cfg.toc.maxLevel}) continue;
+        if (el.classList.contains('ms-pdf-index-title')) continue;
+        headings.push({ level: level, text: (el.textContent || '').trim(), anchorId: el.id || '', offsetTop: el.offsetTop });
+      }
+      return { headings: headings, scrollHeight: document.documentElement.scrollHeight };
+    })()`
+  ) as HeadingDomData;
+}
+
+async function collectBookmarkHeadingData(page: PdfRenderablePage): Promise<HeadingDomData> {
+  return await page.evaluate(
+    `(function() {
+      var headings = [];
+      var els = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        var level = parseInt(el.tagName[1], 10);
+        headings.push({ level: level, text: (el.textContent || '').trim(), offsetTop: el.offsetTop });
+      }
+      return { headings: headings, scrollHeight: document.documentElement.scrollHeight };
+    })()`
+  ) as HeadingDomData;
+}
+
+async function preparePdfIndex(
+  page: PdfRenderablePage,
+  cfg: PdfExportConfig,
+  pdfOptions: PdfOptions,
+): Promise<BookmarkEntry[]> {
+  const totalPages = countPdfPages(await renderPdfBuffer(page, cfg, pdfOptions));
+  const domData = await collectPdfIndexHeadingData(page, cfg);
+  if (domData.headings.length === 0) {
+    return [];
+  }
+
+  const headingEntries = mapDomHeadingsToEntries(domData, totalPages);
+  const indexPageCount = estimateIndexPageCount(headingEntries.length);
+  const indexHtml = buildPdfIndexHtml(headingEntries, cfg.pdfIndex.title, indexPageCount);
+
+  await insertPdfIndexIntoRenderedPage(page, indexHtml);
+  await page.setViewportSize({ width: 980, height: 1400 });
+
+  return mapHeadingEntriesToBookmarks(headingEntries, indexPageCount);
+}
+
+async function collectBookmarkEntries(
+  page: PdfRenderablePage,
+  cfg: PdfExportConfig,
+  pdfOptions: PdfOptions,
+): Promise<BookmarkEntry[]> {
+  const totalPages = countPdfPages(await renderPdfBuffer(page, cfg, pdfOptions));
+  const domData = await collectBookmarkHeadingData(page);
+  if (domData.headings.length === 0) {
+    return [];
+  }
+  return mapHeadingEntriesToBookmarks(mapDomHeadingsToEntries(domData, totalPages));
+}
+
+async function prepareBookmarkEntries(
+  page: PdfRenderablePage,
+  cfg: PdfExportConfig,
+  pdfOptions: PdfOptions,
+  progress?: ProgressReporter,
+): Promise<BookmarkEntry[]> {
+  if (cfg.pdfIndex.enabled) {
+    progress?.report(RUNTIME_MESSAGES.exportProgress.generatingTableOfContents, 15);
+    return await preparePdfIndex(page, cfg, pdfOptions);
+  }
+
+  if (cfg.pdfBookmarks.enabled) {
+    return await collectBookmarkEntries(page, cfg, pdfOptions);
+  }
+
+  return [];
+}
+
+async function addPdfBookmarksIfNeeded(
+  outputPath: string,
+  bookmarkEntries: BookmarkEntry[],
+  cfg: PdfExportConfig,
+  progress?: ProgressReporter,
+): Promise<void> {
+  if (cfg.pdfBookmarks.enabled && bookmarkEntries.length > 0) {
+    progress?.report(RUNTIME_MESSAGES.exportProgress.addingBookmarks, 5);
+    try {
+      await addBookmarks(outputPath, bookmarkEntries, cfg.toc.minLevel, cfg.toc.maxLevel);
+    } catch (err) {
+      // Log but don't fail the export — bookmarks are non-critical
+      console.error('[Markdown Studio] Failed to add PDF bookmarks:', err instanceof Error ? err.message : String(err));
+    }
+  } else {
+    console.log('[Markdown Studio] Bookmarks skipped: enabled=%s, entries=%d', cfg.pdfBookmarks.enabled, bookmarkEntries.length);
+  }
+}
+
+function resolvePdfOutputPath(document: vscode.TextDocument, cfg: PdfExportConfig): string {
+  const filenameCtx: FilenameContext = {
+    filename: path.basename(document.uri.fsPath, path.extname(document.uri.fsPath)),
+    ext: path.extname(document.uri.fsPath).replace(/^\./, ''),
+    title: extractH1Title(document.getText()),
+  };
+  const resolvedName = resolveOutputFilename(cfg.outputFilename, filenameCtx);
+  return path.join(path.dirname(document.uri.fsPath), resolvedName);
+}
+
+async function cleanupPartialPdf(outputPath: string): Promise<void> {
+  try {
+    await fs.access(outputPath);
+    await fs.unlink(outputPath);
+  } catch {
+    // File doesn't exist or can't be deleted — ignore
+  }
+}
+
 export async function exportToPdf(
   document: vscode.TextDocument,
   context: vscode.ExtensionContext,
@@ -307,13 +485,7 @@ export async function exportToPdf(
     throw err;
   }
 
-  const filenameCtx: FilenameContext = {
-    filename: path.basename(document.uri.fsPath, path.extname(document.uri.fsPath)),
-    ext: path.extname(document.uri.fsPath).replace(/^\./, ''),
-    title: extractH1Title(document.getText()),
-  };
-  const resolvedName = resolveOutputFilename(cfg.outputFilename, filenameCtx);
-  const outputPath = path.join(path.dirname(document.uri.fsPath), resolvedName);
+  const outputPath = resolvePdfOutputPath(document, cfg);
 
   try {
     checkCancellation(cancellation);
@@ -347,139 +519,19 @@ export async function exportToPdf(
     const documentTitle = path.basename(document.uri.fsPath, '.md');
     const pdfOptions = buildPdfOptions(cfg.pdfHeaderFooter, documentTitle, cfg.style.margin);
 
-    // --- PDF Index: 2-pass rendering ---
-    let bookmarkEntries: BookmarkEntry[] = [];
-    if (cfg.pdfIndex.enabled) {
-      // Step 6: Generate TOC
-      progress?.report(RUNTIME_MESSAGES.exportProgress.generatingTableOfContents, 15);
-      // Pass 1: Generate PDF to buffer (no file) to get total page count
-      const tempPdfBuffer = await page.pdf({
-        format: cfg.pageFormat,
-        printBackground: true,
-        preferCSSPageSize: true,
-        displayHeaderFooter: pdfOptions.displayHeaderFooter,
-        headerTemplate: pdfOptions.headerTemplate,
-        footerTemplate: pdfOptions.footerTemplate,
-        margin: pdfOptions.margin,
-      });
-
-      const totalPages = countPdfPages(tempPdfBuffer);
-
-      // Get heading positions and total document height from the DOM
-      const domData: { headings: { level: number; text: string; anchorId: string; offsetTop: number }[]; scrollHeight: number } = await page.evaluate(
-        `(function() {
-          var headings = [];
-          var els = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
-          for (var i = 0; i < els.length; i++) {
-            var el = els[i];
-            var level = parseInt(el.tagName[1], 10);
-            if (level < ${cfg.toc.minLevel} || level > ${cfg.toc.maxLevel}) continue;
-            if (el.classList.contains('ms-pdf-index-title')) continue;
-            headings.push({ level: level, text: (el.textContent || '').trim(), anchorId: el.id || '', offsetTop: el.offsetTop });
-          }
-          return { headings: headings, scrollHeight: document.documentElement.scrollHeight };
-        })()`
-      );
-
-      if (domData.headings.length > 0) {
-        // Calculate page number for each heading using proportion:
-        // pageNumber = floor(offsetTop / scrollHeight * totalPages) + 1
-        const headingEntries: HeadingPageEntry[] = domData.headings.map((h) => {
-          const ratio = domData.scrollHeight > 0 ? h.offsetTop / domData.scrollHeight : 0;
-          const pageNumber = Math.min(Math.floor(ratio * totalPages) + 1, totalPages);
-          return { level: h.level, text: h.text, pageNumber, anchorId: h.anchorId };
-        });
-
-        // Map heading entries to bookmark entries (drop anchorId)
-        // Add indexPageCount offset because the TOC page(s) are inserted before the content
-        const indexPageCount = estimateIndexPageCount(headingEntries.length);
-        bookmarkEntries = headingEntries.map(({ level, text, pageNumber }) => ({
-          level, text, pageNumber: pageNumber + indexPageCount,
-        }));
-
-        const indexHtml = buildPdfIndexHtml(headingEntries, cfg.pdfIndex.title, indexPageCount);
-
-        // Insert the PDF Index into the already-rendered document. This avoids
-        // re-running Mermaid and layout work for the full markdown body.
-        await insertPdfIndexIntoRenderedPage(page, indexHtml);
-        await page.setViewportSize({ width: 980, height: 1400 });
-      }
-    } else if (cfg.pdfBookmarks.enabled) {
-      // Single-pass bookmark collection: generate temp PDF to count pages, then collect headings
-      const tempPdfBuffer = await page.pdf({
-        format: cfg.pageFormat,
-        printBackground: true,
-        preferCSSPageSize: true,
-        displayHeaderFooter: pdfOptions.displayHeaderFooter,
-        headerTemplate: pdfOptions.headerTemplate,
-        footerTemplate: pdfOptions.footerTemplate,
-        margin: pdfOptions.margin,
-      });
-
-      const totalPages = countPdfPages(tempPdfBuffer);
-
-      const domData: { headings: { level: number; text: string; offsetTop: number }[]; scrollHeight: number } = await page.evaluate(
-        `(function() {
-          var headings = [];
-          var els = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
-          for (var i = 0; i < els.length; i++) {
-            var el = els[i];
-            var level = parseInt(el.tagName[1], 10);
-            headings.push({ level: level, text: (el.textContent || '').trim(), offsetTop: el.offsetTop });
-          }
-          return { headings: headings, scrollHeight: document.documentElement.scrollHeight };
-        })()`
-      );
-
-      if (domData.headings.length > 0) {
-        bookmarkEntries = domData.headings.map((h) => {
-          const ratio = domData.scrollHeight > 0 ? h.offsetTop / domData.scrollHeight : 0;
-          const pageNumber = Math.min(Math.floor(ratio * totalPages) + 1, totalPages);
-          return { level: h.level, text: h.text, pageNumber };
-        });
-      }
-    }
+    const bookmarkEntries = await prepareBookmarkEntries(page, cfg, pdfOptions, progress);
 
     // Step 5: Generate PDF
     checkCancellation(cancellation);
     progress?.report(RUNTIME_MESSAGES.exportProgress.generatingPdf, 20);
 
-    await page.pdf({
-      path: outputPath,
-      format: cfg.pageFormat,
-      printBackground: true,
-      preferCSSPageSize: true,
-      displayHeaderFooter: pdfOptions.displayHeaderFooter,
-      headerTemplate: pdfOptions.headerTemplate,
-      footerTemplate: pdfOptions.footerTemplate,
-      margin: pdfOptions.margin,
-    });
-
-    await fs.access(outputPath);
-
-    // Add bookmarks to PDF
-    if (cfg.pdfBookmarks.enabled && bookmarkEntries.length > 0) {
-      progress?.report(RUNTIME_MESSAGES.exportProgress.addingBookmarks, 5);
-      try {
-        await addBookmarks(outputPath, bookmarkEntries, cfg.toc.minLevel, cfg.toc.maxLevel);
-      } catch (err) {
-        // Log but don't fail the export — bookmarks are non-critical
-        console.error('[Markdown Studio] Failed to add PDF bookmarks:', err instanceof Error ? err.message : String(err));
-      }
-    } else {
-      console.log('[Markdown Studio] Bookmarks skipped: enabled=%s, entries=%d', cfg.pdfBookmarks.enabled, bookmarkEntries.length);
-    }
+    await writePdfFile(page, outputPath, cfg, pdfOptions);
+    await addPdfBookmarksIfNeeded(outputPath, bookmarkEntries, cfg, progress);
 
     return outputPath;
   } catch (err) {
     if (err instanceof CancellationError) {
-      // Clean up partial PDF file if it exists
-      try {
-        await fs.access(outputPath);
-        await fs.unlink(outputPath);
-      } catch {
-        // File doesn't exist or can't be deleted — ignore
-      }
+      await cleanupPartialPdf(outputPath);
       throw err;
     }
     throw err;
