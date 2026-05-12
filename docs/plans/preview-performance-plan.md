@@ -19,25 +19,30 @@ Measured on `perf/pdf-export-parallel` after PDF export refactoring.
 
 ## Work Plan
 
-1. PlantUML cold preview improvement
-   - Investigate replacing many Java/JAR launches with a batch render path for multiple PlantUML fences.
-   - Keep the existing single-diagram `renderPlantUml` API for zoom rerender and tests.
-   - Preserve cache behavior so unchanged diagrams remain fast.
+- [x] PlantUML cold preview improvement
+  - [x] Investigate replacing many Java/JAR launches with a batch render path for multiple PlantUML fences.
+  - [x] Keep the existing single-diagram `renderPlantUml` API for zoom rerender and tests.
+  - [x] Preserve cache behavior so unchanged diagrams remain fast.
 
-2. Mermaid client cache
-   - Cache rendered Mermaid SVG by source and effective Mermaid theme.
-   - Reuse cached SVG on `update-body` when a diagram source is unchanged.
-   - Clear or partition cache on theme changes.
+- [x] Mermaid client cache
+  - [x] Cache rendered Mermaid SVG by source and effective Mermaid theme.
+  - [x] Reuse cached SVG on `update-body` when a diagram source is unchanged.
+  - [x] Clear or partition cache on theme changes.
 
-3. Event delegation for webview controls
-   - Replace repeated per-diagram document listeners with shared delegated handlers.
-   - Avoid accumulating stale listeners after `document.body.innerHTML` replacement.
-   - Keep existing zoom, reset, outside-click, Escape, copy, TOC, and external-link behavior.
+- [x] Event delegation for webview controls
+  - [x] Replace repeated per-diagram document listeners with shared delegated handlers.
+  - [x] Avoid accumulating stale listeners after `document.body.innerHTML` replacement.
+  - [x] Keep existing zoom, reset, outside-click, Escape, copy, TOC, and external-link behavior.
 
-4. Re-benchmark and document results
-   - Re-run server and browser preview benchmarks against `demo.md`, `demo_win.md`, and `demo_load.md`.
-   - Compare against the baseline above.
-   - Commit benchmark results and implementation together once each stage is validated.
+- [x] Re-benchmark and document results
+  - [x] Re-run server and browser preview benchmarks against `demo.md`, `demo_win.md`, and `demo_load.md`.
+  - [x] Compare against the baseline above.
+  - [x] Commit benchmark results and implementation together once each stage is validated.
+
+- [x] Add developer-only Preview benchmark command
+  - [x] Add `npm run benchmark:preview` for repeatable Preview measurements.
+  - [x] Keep it out of VS Code `contributes.commands` so it does not appear as a user-facing command.
+  - [x] Document it as a developer/debug command.
 
 ## Results
 
