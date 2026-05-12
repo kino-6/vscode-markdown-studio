@@ -172,6 +172,10 @@ function disconnectMermaidObserver() {
   }
 }
 
+function getMermaidBlocks() {
+  return Array.from(document.querySelectorAll('.mermaid-host[data-mermaid-src]'));
+}
+
 async function renderMermaidBlock(block, index) {
   const state = getMermaidBlockState(block);
   if (state === 'rendering' || state === 'rendered') return;
@@ -211,29 +215,16 @@ function enqueueMermaidBlockRender(block, index) {
   return mermaidRenderQueue;
 }
 
-async function renderMermaidBlocks(options = {}) {
-  if (!mermaidReady) {
-    console.warn('[Markdown Studio] Skipping Mermaid rendering — initialization failed');
-    return;
+async function renderMermaidBlocksEager(blocks) {
+  for (const [index, block] of blocks.entries()) {
+    await renderMermaidBlock(block, index);
   }
-  disconnectMermaidObserver();
+}
 
-  const blocks = Array.from(document.querySelectorAll('.mermaid-host[data-mermaid-src]'));
-  if (options.reset) {
-    for (const block of blocks) {
-      resetMermaidBlock(block);
-    }
-  }
-
-  if (isEagerMermaidRender() || typeof IntersectionObserver === 'undefined') {
-    for (const [index, block] of blocks.entries()) {
-      await renderMermaidBlock(block, index);
-    }
-    return;
-  }
-
+function splitMermaidBlocksByVisibility(blocks) {
   const visibleBlocks = [];
   const deferredBlocks = [];
+
   for (const [index, block] of blocks.entries()) {
     if (getMermaidBlockState(block) === 'rendered') continue;
     const entry = { block, index };
@@ -244,10 +235,16 @@ async function renderMermaidBlocks(options = {}) {
     }
   }
 
+  return { visibleBlocks, deferredBlocks };
+}
+
+async function renderVisibleMermaidBlocks(visibleBlocks) {
   for (const { block, index } of visibleBlocks) {
     await renderMermaidBlock(block, index);
   }
+}
 
+function observeDeferredMermaidBlocks(deferredBlocks) {
   if (deferredBlocks.length === 0) return;
 
   const indexByBlock = new WeakMap(deferredBlocks.map(({ block, index }) => [block, index]));
@@ -263,6 +260,30 @@ async function renderMermaidBlocks(options = {}) {
     setMermaidBlockState(block, 'pending');
     mermaidObserver.observe(block);
   }
+}
+
+async function renderMermaidBlocks(options = {}) {
+  if (!mermaidReady) {
+    console.warn('[Markdown Studio] Skipping Mermaid rendering — initialization failed');
+    return;
+  }
+  disconnectMermaidObserver();
+
+  const blocks = getMermaidBlocks();
+  if (options.reset) {
+    for (const block of blocks) {
+      resetMermaidBlock(block);
+    }
+  }
+
+  if (isEagerMermaidRender() || typeof IntersectionObserver === 'undefined') {
+    await renderMermaidBlocksEager(blocks);
+    return;
+  }
+
+  const { visibleBlocks, deferredBlocks } = splitMermaidBlocksByVisibility(blocks);
+  await renderVisibleMermaidBlocks(visibleBlocks);
+  observeDeferredMermaidBlocks(deferredBlocks);
 }
 
 function copyCodeFromButton(btn, preOverride) {
@@ -423,6 +444,16 @@ function hideLoadingOverlay() {
   }
 }
 
+function applyPreviewEnhancements(savedZoomStates) {
+  initZoomPan();
+  if (savedZoomStates) {
+    restoreZoomStates(savedZoomStates);
+  }
+  addCopyButtons();
+  registerTocLinkHandlers();
+  registerDocumentLinkHandlers();
+}
+
 let lastAppliedGeneration = -1;
 let currentOverride = 'auto';
 
@@ -463,18 +494,10 @@ window.addEventListener('message', (event) => {
   lastAppliedGeneration = message.generation;
   document.body.innerHTML = message.html;
   renderMermaidBlocks().then(() => {
-    initZoomPan();
-    restoreZoomStates(savedZoomStates);
-    addCopyButtons();
-    registerTocLinkHandlers();
-    registerDocumentLinkHandlers();
+    applyPreviewEnhancements(savedZoomStates);
   }).catch((error) => {
     console.error('Mermaid rendering failed during update-body', error);
-    initZoomPan();
-    restoreZoomStates(savedZoomStates);
-    addCopyButtons();
-    registerTocLinkHandlers();
-    registerDocumentLinkHandlers();
+    applyPreviewEnhancements(savedZoomStates);
   });
   // innerHTML destroyed the overlay element — showLoadingOverlay() would
   // re-create it, but the render is already done so just ensure it's gone.
