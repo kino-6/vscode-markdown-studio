@@ -50,12 +50,12 @@ import { renderMarkdownDocument } from '../../src/renderers/renderMarkdown';
 
 // All known hljs language names and aliases, plus specially-handled languages
 const KNOWN_LANGUAGES = new Set([
-  'atom', 'bash', 'c', 'cc', 'cjs', 'console', 'cpp', 'cs', 'csharp',
+  'atom', 'bash', 'bat', 'batch', 'c', 'cc', 'cjs', 'cmd', 'console', 'cpp', 'cs', 'csharp',
   'css', 'docker', 'dockerfile', 'go', 'golang', 'gyp', 'h', 'hh', 'hpp',
   'html', 'java', 'javascript', 'js', 'json', 'jsonc', 'jsp', 'jsx',
   'kotlin', 'kt', 'markdown', 'md', 'mjs', 'mkd', 'mkdown', 'php',
-  'plaintext', 'plist', 'py', 'python', 'rb', 'rs', 'rss', 'ruby', 'rust',
-  'sh', 'shell', 'shellsession', 'sql', 'svg', 'swift', 'text', 'ts',
+  'plaintext', 'plist', 'powershell', 'properties', 'ps1', 'pwsh', 'py', 'python', 'rb', 'rs', 'rss', 'ruby', 'rust',
+  'dos', 'ini', 'sh', 'shell', 'shellsession', 'sql', 'svg', 'swift', 'text', 'ts',
   'tsx', 'txt', 'typescript', 'xhtml', 'xml', 'xsl', 'yaml', 'yml', 'zsh',
   // Specially handled by the renderer (not hljs, but still not "unknown")
   'mermaid', 'puml', 'plantuml',

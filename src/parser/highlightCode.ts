@@ -8,6 +8,9 @@ import json from 'highlight.js/lib/languages/json';
 import yaml from 'highlight.js/lib/languages/yaml';
 import bash from 'highlight.js/lib/languages/bash';
 import shell from 'highlight.js/lib/languages/shell';
+import powershell from 'highlight.js/lib/languages/powershell';
+import dos from 'highlight.js/lib/languages/dos';
+import ini from 'highlight.js/lib/languages/ini';
 import xml from 'highlight.js/lib/languages/xml';
 import css from 'highlight.js/lib/languages/css';
 import sql from 'highlight.js/lib/languages/sql';
@@ -32,6 +35,9 @@ hljs.registerLanguage('json', json);
 hljs.registerLanguage('yaml', yaml);
 hljs.registerLanguage('bash', bash);
 hljs.registerLanguage('shell', shell);
+hljs.registerLanguage('powershell', powershell);
+hljs.registerLanguage('dos', dos);
+hljs.registerLanguage('ini', ini);
 // Registering 'xml' also provides 'html' as an alias
 hljs.registerLanguage('xml', xml);
 hljs.registerLanguage('css', css);
@@ -49,6 +55,8 @@ hljs.registerLanguage('dockerfile', dockerfile);
 hljs.registerLanguage('markdown', markdown);
 hljs.registerLanguage('plaintext', plaintext);
 
+hljs.registerAliases(['ps1', 'pwsh'], { languageName: 'powershell' });
+hljs.registerAliases(['bat', 'batch', 'cmd'], { languageName: 'dos' });
 
 /**
  * Highlights a code string using highlight.js for a given language.

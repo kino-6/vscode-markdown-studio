@@ -37,6 +37,17 @@ export function getDefaultFooterTemplate(): string {
   return '<div style="font-size:10px;width:100%;text-align:center;"><span class="url" style="display:none;"></span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>';
 }
 
+const EMPTY_TEMPLATE = '<span></span>';
+
+function normalizeCustomTemplate(template: string | null, fallbackTemplate: string): string {
+  if (template === null) {
+    return fallbackTemplate;
+  }
+  // Chromium treats an empty string as "template omitted" and falls back to
+  // its default header/footer, which can render `about:blank` for setContent().
+  return template === '' ? EMPTY_TEMPLATE : template;
+}
+
 /** Unique marker comment used to detect if page-break CSS has already been injected. */
 const PAGE_BREAK_MARKER = '/* md-studio-page-break */';
 
@@ -102,16 +113,16 @@ export function buildPdfOptions(config: PdfHeaderFooterConfig, documentTitle: st
 
   let headerTemplate: string;
   if (config.headerEnabled) {
-    headerTemplate = config.headerTemplate ?? getDefaultHeaderTemplate(documentTitle);
+    headerTemplate = normalizeCustomTemplate(config.headerTemplate, getDefaultHeaderTemplate(documentTitle));
   } else {
-    headerTemplate = '<span></span>';
+    headerTemplate = EMPTY_TEMPLATE;
   }
 
   let footerTemplate: string;
   if (config.footerEnabled) {
-    footerTemplate = config.footerTemplate ?? getDefaultFooterTemplate();
+    footerTemplate = normalizeCustomTemplate(config.footerTemplate, getDefaultFooterTemplate());
   } else {
-    footerTemplate = '<span></span>';
+    footerTemplate = EMPTY_TEMPLATE;
   }
 
   let margin: { top: string; bottom: string; left: string; right: string };

@@ -100,6 +100,12 @@ code {
   border-radius: 3px;
 }
 
+pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+}
+
 /* ── Tables ──────────────────────────────────────────── */
 
 table {
@@ -230,6 +236,11 @@ body.vscode-dark pre {
 
 body.vscode-dark code {
   background: rgba(110, 118, 129, 0.3);
+}
+
+body.vscode-dark pre code {
+  background: none;
+  color: inherit;
 }
 
 body.vscode-dark th,

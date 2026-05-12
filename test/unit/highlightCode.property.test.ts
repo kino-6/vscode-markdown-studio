@@ -53,6 +53,26 @@ const LANGUAGE_SNIPPETS: Record<string, string[]> = {
     '$ echo hello',
     '$ ls -la /tmp',
   ],
+  powershell: [
+    '$workspace = "C:\\Users\\Public\\Documents\\Markdown Studio"',
+    'Write-Host "Previewing $markdown"\n& $java -version',
+  ],
+  dos: [
+    '@echo off\nset WORKSPACE=C:\\Users\\Public\\Documents\\Markdown Studio',
+    'if exist "%DEMO%" (\n  echo File exists\n) else (\n  echo Missing demo file\n)',
+  ],
+  bat: [
+    '@echo off\nset DEMO=%WORKSPACE%\\demo_win.md',
+    'echo Exporting "%DEMO%"',
+  ],
+  cmd: [
+    'if exist "%DEMO%" echo File exists',
+    'set PATH=C:\\Program Files\\Markdown Studio\\bin;%PATH%',
+  ],
+  ini: [
+    '[workspace]\nroot=C:\\Users\\Public\\Documents\\Markdown Studio',
+    'markdown=demo_win.md\nimage=images\\logo.svg',
+  ],
   html: [
     '<div class="container"><p>Hello</p></div>',
     '<a href="https://example.com">Link</a>',
@@ -146,12 +166,12 @@ describe('highlightCode property tests', () => {
   it('Property 2: unknown language returns empty string', () => {
     // All language names and aliases recognized by the registered hljs instance
     const RECOGNIZED_LANGUAGES = new Set([
-      'atom', 'bash', 'c', 'cc', 'cjs', 'console', 'cpp', 'cs', 'csharp',
+      'atom', 'bash', 'bat', 'batch', 'c', 'cc', 'cjs', 'cmd', 'console', 'cpp', 'cs', 'csharp',
       'css', 'docker', 'dockerfile', 'go', 'golang', 'gyp', 'h', 'hh', 'hpp',
       'html', 'java', 'javascript', 'js', 'json', 'jsonc', 'jsp', 'jsx',
       'kotlin', 'kt', 'markdown', 'md', 'mjs', 'mkd', 'mkdown', 'php',
-      'plaintext', 'plist', 'py', 'python', 'rb', 'rs', 'rss', 'ruby', 'rust',
-      'sh', 'shell', 'shellsession', 'sql', 'svg', 'swift', 'text', 'ts',
+      'plaintext', 'plist', 'powershell', 'properties', 'ps1', 'pwsh', 'py', 'python', 'rb', 'rs', 'rss', 'ruby', 'rust',
+      'dos', 'ini', 'sh', 'shell', 'shellsession', 'sql', 'svg', 'swift', 'text', 'ts',
       'tsx', 'txt', 'typescript', 'xhtml', 'xml', 'xsl', 'yaml', 'yml', 'zsh',
     ]);
 

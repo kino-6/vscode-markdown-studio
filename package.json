@@ -2,7 +2,7 @@
   "name": "markdown-studio",
   "displayName": "Markdown Studio",
   "description": "Local-first Markdown authoring studio with integrated diagram rendering (Mermaid, PlantUML), SVG support, and secure PDF export.",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "publisher": "local",
   "license": "MIT",
   "repository": {
@@ -299,7 +299,8 @@
     "test:ci": "npm run lint && npm run test:unit && npm run test:integration",
     "package": "npm run build && rm -f dist/*.vsix && vsce package -o dist/",
     "reinstall": "bash dev_reinstall.sh",
-    "demo": "npx tsx scripts/demo/index.ts"
+    "demo": "npx tsx scripts/demo/index.ts",
+    "repro:about-blank-footer": "node scripts/repro/aboutBlankFooter.js"
   },
   "dependencies": {
     "@vscode/markdown-it-katex": "^1.1.2",

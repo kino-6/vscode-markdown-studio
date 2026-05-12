@@ -51,7 +51,7 @@ describe('pdfHeaderFooter property tests', () => {
    */
   it('Property 2: custom header template passthrough', () => {
     fc.assert(
-      fc.property(fc.string({ minLength: 1 }), (customTemplate) => {
+      fc.property(fc.string({ minLength: 1 }).filter((s) => s !== ''), (customTemplate) => {
         const config: PdfHeaderFooterConfig = {
           headerEnabled: true,
           headerTemplate: customTemplate,
@@ -70,7 +70,7 @@ describe('pdfHeaderFooter property tests', () => {
 
   it('Property 2: custom footer template passthrough', () => {
     fc.assert(
-      fc.property(fc.string({ minLength: 1 }), (customTemplate) => {
+      fc.property(fc.string({ minLength: 1 }).filter((s) => s !== ''), (customTemplate) => {
         const config: PdfHeaderFooterConfig = {
           headerEnabled: false,
           headerTemplate: null,
@@ -84,6 +84,26 @@ describe('pdfHeaderFooter property tests', () => {
         expect(result.footerTemplate).toBe(customTemplate);
       }),
       { numRuns: 200, seed: 42 },
+    );
+  });
+
+  it('Property 2b: empty custom templates never pass through as empty strings', () => {
+    fc.assert(
+      fc.property(fc.boolean(), fc.boolean(), (headerEnabled, footerEnabled) => {
+        const config: PdfHeaderFooterConfig = {
+          headerEnabled,
+          headerTemplate: '',
+          footerEnabled,
+          footerTemplate: '',
+          pageBreakEnabled: false,
+        };
+
+        const result = buildPdfOptions(config, 'any-title');
+
+        expect(result.headerTemplate).not.toBe('');
+        expect(result.footerTemplate).not.toBe('');
+      }),
+      { numRuns: 20, seed: 42 },
     );
   });
 

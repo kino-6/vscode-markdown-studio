@@ -49,6 +49,12 @@ code {
   border-radius: 3px;
 }
 
+pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+}
+
 /* ── Tables ──────────────────────────────────────────── */
 
 table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
@@ -97,6 +103,7 @@ body.vscode-dark {
 
 body.vscode-dark pre { background: #222; border-color: #333; }
 body.vscode-dark code { background: #2a2a2a; }
+body.vscode-dark pre code { background: none; color: inherit; }
 body.vscode-dark th, body.vscode-dark td { border-color: #333; }
 body.vscode-dark blockquote { border-left-color: #444; color: #999; }
 body.vscode-dark a { color: #3b82f6; }

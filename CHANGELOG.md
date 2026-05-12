@@ -2,6 +2,13 @@
 
 All notable changes to Markdown Studio will be documented in this file.
 
+## [0.8.3] - 2026-05-12
+
+### Fixed
+
+- Added Windows shell syntax highlighting for PowerShell, cmd/batch, and INI-style fenced code blocks.
+- Prevented code blocks from inheriting inline-code accent colors in preview, PDF export, and bundled themes.
+
 ## [0.7.0] - 2026-04-08
 
 ### Added
