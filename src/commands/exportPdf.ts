@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 import { exportToPdf, ProgressReporter, CancellationChecker, CancellationError } from '../export/exportPdf';
+import { RUNTIME_MESSAGES } from '../infra/messages';
 
 export async function exportPdfCommand(context: vscode.ExtensionContext): Promise<void> {
   const editor = vscode.window.activeTextEditor;
   if (!editor || editor.document.languageId !== 'markdown') {
-    void vscode.window.showWarningMessage('Markdown Studio: Open a Markdown file first.');
+    void vscode.window.showWarningMessage(RUNTIME_MESSAGES.command.openMarkdownFirst);
     return;
   }
 
@@ -12,7 +13,7 @@ export async function exportPdfCommand(context: vscode.ExtensionContext): Promis
     const outputPath = await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
-        title: 'Markdown Studio: Exporting PDF',
+        title: RUNTIME_MESSAGES.exportPdf.progressTitle,
         cancellable: true,
       },
       async (progress, token) => {
@@ -27,19 +28,17 @@ export async function exportPdfCommand(context: vscode.ExtensionContext): Promis
         return exportToPdf(editor.document, context, reporter, cancellation);
       }
     );
-    void vscode.window.showInformationMessage(`Markdown Studio: Exported PDF to ${outputPath}`);
+    void vscode.window.showInformationMessage(RUNTIME_MESSAGES.exportPdf.success(outputPath));
   } catch (error) {
     if (error instanceof CancellationError) {
-      void vscode.window.showInformationMessage('Markdown Studio: Export cancelled.');
+      void vscode.window.showInformationMessage(RUNTIME_MESSAGES.exportPdf.cancelled);
       return;
     }
     const msg = String(error);
     if (msg.includes('Executable doesn\'t exist') || msg.includes('browserType.launch')) {
-      void vscode.window.showErrorMessage(
-        "Markdown Studio: Chromium is not installed. Run 'Markdown Studio: Setup Dependencies' to install it automatically."
-      );
+      void vscode.window.showErrorMessage(RUNTIME_MESSAGES.dependencies.chromiumMissingAutomatic);
     } else {
-      void vscode.window.showErrorMessage(`Markdown Studio PDF export failed: ${msg}`);
+      void vscode.window.showErrorMessage(RUNTIME_MESSAGES.exportPdf.failed(msg));
     }
   }
 }

@@ -16,8 +16,6 @@ scripts/**
 *.ts
 !dist/**
 tsconfig.json
-vitest.config.ts
-.vscode-test.mjs
 e2e_log.txt
 *.vsix
 dist/*.vsix

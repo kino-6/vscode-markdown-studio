@@ -15,6 +15,7 @@ import { resolveAnchors } from './toc/anchorResolver';
 import { buildTocMarkdown } from './toc/buildTocMarkdown';
 import { getConfig } from './infra/config';
 import { detectLineEnding, normalizeLineEndings } from './infra/lineEndings';
+import { RUNTIME_MESSAGES } from './infra/messages';
 
 /** Module-level dependency status, accessible by other modules if needed. */
 export let dependencyStatus: DependencyStatus | undefined;
@@ -29,9 +30,7 @@ export function checkDependency(name: 'java' | 'chromium'): boolean {
     if (dependencyStatus?.browserPath) {
       return true;
     }
-    void vscode.window.showErrorMessage(
-      "Chromium is not installed. Run 'Markdown Studio: Setup Dependencies' to install it."
-    );
+    void vscode.window.showErrorMessage(RUNTIME_MESSAGES.dependencies.chromiumMissing);
     return false;
   }
 
@@ -39,9 +38,7 @@ export function checkDependency(name: 'java' | 'chromium'): boolean {
     if (dependencyStatus?.javaPath) {
       return true;
     }
-    void vscode.window.showErrorMessage(
-      "Java (Corretto) is not installed. Run 'Markdown Studio: Setup Dependencies' to install it."
-    );
+    void vscode.window.showErrorMessage(RUNTIME_MESSAGES.dependencies.javaMissing);
     return false;
   }
 
@@ -57,19 +54,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     dependencyStatus = await depManager.ensureAll(context);
 
     if (!dependencyStatus.allReady) {
-      vscode.window.showWarningMessage(
-        `Markdown Studio: Some dependencies failed to install. ` +
-        `${dependencyStatus.errors.join('; ')}. ` +
-        `Run "Markdown Studio: Setup Dependencies" to retry.`
-      );
+      vscode.window.showWarningMessage(RUNTIME_MESSAGES.dependencies.partialFailureWithRetry(dependencyStatus.errors));
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     dependencyStatus = { allReady: false, errors: [message] };
-    vscode.window.showWarningMessage(
-      `Markdown Studio: Dependency setup failed. ${message}. ` +
-      `Run "Markdown Studio: Setup Dependencies" to retry.`
-    );
+    vscode.window.showWarningMessage(RUNTIME_MESSAGES.dependencies.setupFailedWithRetry(message));
   }
 
   context.subscriptions.push(
@@ -85,17 +75,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         const status = await depManager.reinstall(context);
         dependencyStatus = status;
         if (status.allReady) {
-          vscode.window.showInformationMessage('Markdown Studio: All dependencies installed successfully.');
+          vscode.window.showInformationMessage(RUNTIME_MESSAGES.dependencies.allInstalled);
         } else {
-          vscode.window.showWarningMessage(
-            `Markdown Studio: Some dependencies failed to install. ${status.errors.join('; ')}.`
-          );
+          vscode.window.showWarningMessage(RUNTIME_MESSAGES.dependencies.partialFailure(status.errors));
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        vscode.window.showErrorMessage(
-          `Markdown Studio: Dependency setup failed. ${message}`
-        );
+        vscode.window.showErrorMessage(RUNTIME_MESSAGES.dependencies.setupFailed(message));
       }
     }),
     vscode.commands.registerCommand('markdownStudio.insertToc', async () => insertTocCommand()),

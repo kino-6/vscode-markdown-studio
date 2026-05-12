@@ -2,17 +2,17 @@ import { PDFDocument, PDFDict, PDFName, PDFHexString, PDFNumber, type PDFRef, ty
 import fs from 'node:fs/promises';
 import type { BookmarkEntry } from '../types/models';
 
-/** ブックマークツリーのノード */
+/** Bookmark tree node. */
 export interface BookmarkNode {
   title: string;
-  pageIndex: number;   // 0-based ページインデックス
-  level: number;       // 見出しレベル (1-6)
+  pageIndex: number;   // 0-based page index.
+  level: number;       // Heading level (1-6).
   children: BookmarkNode[];
 }
 
 /**
- * フラットな見出しエントリ配列からブックマークツリーを構築する。
- * 見出しレベルの階層関係に基づき、親子関係を決定する。
+ * Builds a bookmark tree from a flat heading entry list.
+ * Parent-child relationships are derived from heading levels.
  */
 export function buildBookmarkTree(
   entries: BookmarkEntry[],
@@ -50,7 +50,7 @@ export function buildBookmarkTree(
   return roots;
 }
 
-/** 再帰的にノード数をカウントする */
+/** Counts bookmark nodes recursively. */
 function countNodes(nodes: BookmarkNode[]): number {
   let count = 0;
   for (const n of nodes) {
@@ -60,9 +60,8 @@ function countNodes(nodes: BookmarkNode[]): number {
 }
 
 /**
- * ブックマークノード配列からPDFアウトラインアイテムを再帰的に作成し、
- * 兄弟間の /Next, /Prev リンクを設定する。
- * 返り値は [firstRef, lastRef] のタプル。
+ * Recursively creates PDF outline items from bookmark nodes and wires
+ * sibling /Next and /Prev links. Returns [firstRef, lastRef].
  */
 function createOutlineItems(
   pdfDoc: PDFDocument,
@@ -110,8 +109,8 @@ function createOutlineItems(
 }
 
 /**
- * 生成済みPDFファイルにブックマークアウトラインを埋め込む。
- * pdf-lib を使用してPDFのOutlineディクショナリを構築し、ファイルを上書き保存する。
+ * Embeds bookmark outlines into an existing PDF file.
+ * Uses pdf-lib to build the PDF Outline dictionary, then overwrites the file.
  */
 export async function addBookmarks(
   pdfPath: string,

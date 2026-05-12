@@ -111,20 +111,20 @@ export interface ExternalResourceConfig {
   allowedDomains: string[];
 }
 
-/** 抽出された見出しエントリ */
+/** Extracted heading entry. */
 export interface HeadingEntry {
-  level: number;       // 1〜6
-  text: string;        // プレーンテキスト（インライン書式除去済み）
-  line: number;        // ソース行番号（0-based）
+  level: number;       // 1-6
+  text: string;        // Plain text with inline markup removed.
+  line: number;        // 0-based source line number.
 }
 
-/** 見出しとアンカーIDのマッピング */
+/** Mapping between a heading and its anchor ID. */
 export interface AnchorMapping {
   heading: HeadingEntry;
   anchorId: string;
 }
 
-/** TOC生成設定 */
+/** TOC generation settings. */
 export interface TocConfig {
   minLevel: number;
   maxLevel: number;
@@ -132,7 +132,7 @@ export interface TocConfig {
   pageBreak: boolean;
 }
 
-/** TOC検証の診断情報 */
+/** Diagnostic information for TOC validation. */
 export interface TocDiagnostic {
   line: number;
   anchorId: string;
@@ -140,7 +140,7 @@ export interface TocDiagnostic {
   message: string;
 }
 
-/** TOC生成結果 */
+/** TOC generation result. */
 export interface TocResult {
   html: string;
   headings: HeadingEntry[];
@@ -148,38 +148,38 @@ export interface TocResult {
   diagnostics: TocDiagnostic[];
 }
 
-/** コードブロック設定 */
+/** Code block settings. */
 export interface CodeBlockConfig {
   lineNumbers: boolean;
 }
 
-/** カスタムCSS読み込み結果 */
+/** Custom CSS loading result. */
 export interface CustomCssResult {
-  /** 読み込み成功時のCSS文字列。失敗時は空文字列 */
+  /** CSS string when loading succeeds, otherwise an empty string. */
   css: string;
-  /** 警告・エラーメッセージ（ログ出力用） */
+  /** Warning and error messages for logging. */
   warnings: string[];
 }
 
-/** PDF Index設定 */
+/** PDF index settings. */
 export interface PdfIndexConfig {
   enabled: boolean;
   title: string;
 }
 
-/** PDF ToC表示設定 */
+/** PDF inline TOC visibility settings. */
 export interface PdfTocConfig {
   hidden: boolean;
 }
 
-/** PDFブックマーク設定 */
+/** PDF bookmark settings. */
 export interface PdfBookmarksConfig {
   enabled: boolean;
 }
 
-/** ブックマーク生成用の見出しエントリ（HeadingPageEntryからanchorIdを除いた軽量版） */
+/** Lightweight heading entry for bookmark generation. */
 export interface BookmarkEntry {
   level: number;
   text: string;
-  pageNumber: number;  // 1-based ページ番号
+  pageNumber: number;  // 1-based page number.
 }

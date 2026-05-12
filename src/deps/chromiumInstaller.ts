@@ -3,6 +3,7 @@ import * as path from "path";
 import type { InstallerResult } from "./types";
 import type { NetworkConfig } from "../infra/networkConfig";
 import { runProcess } from "../infra/runProcess";
+import { RUNTIME_MESSAGES } from "../infra/messages";
 
 /**
  * Returns the absolute path to the chromium browser directory.
@@ -71,7 +72,7 @@ export const chromiumInstaller = {
     const restoreEnv = applyNetworkEnv(networkConfig);
 
     try {
-      progress("Installing Chromium browser...", 20);
+      progress(RUNTIME_MESSAGES.dependencyProgress.installingChromium, 20);
 
       try {
         // Try programmatic install first
@@ -90,19 +91,19 @@ export const chromiumInstaller = {
           if (result.exitCode !== 0) {
             return {
               ok: false,
-              error: `Chromium install failed: ${result.stderr || result.stdout}`,
+              error: RUNTIME_MESSAGES.dependencies.chromiumInstallFailed(result.stderr || result.stdout),
             };
           }
         } catch (cliErr) {
           return {
             ok: false,
-            error: `Chromium installation failed: ${cliErr instanceof Error ? cliErr.message : String(cliErr)}`,
+            error: RUNTIME_MESSAGES.dependencies.chromiumInstallationFailed(cliErr instanceof Error ? cliErr.message : String(cliErr)),
           };
         }
       }
 
       // Verify installation
-      progress("Verifying Chromium installation...", 5);
+      progress(RUNTIME_MESSAGES.dependencyProgress.verifyingChromium, 5);
       try {
         const { chromium } = await import("playwright");
         const browser = await chromium.launch({ headless: true });
@@ -111,7 +112,7 @@ export const chromiumInstaller = {
       } catch (err) {
         return {
           ok: false,
-          error: `Chromium verification failed: ${err instanceof Error ? err.message : String(err)}`,
+          error: RUNTIME_MESSAGES.dependencies.chromiumVerificationFailed(err instanceof Error ? err.message : String(err)),
         };
       }
     } finally {
@@ -139,7 +140,7 @@ export const chromiumInstaller = {
     } catch (err) {
       return {
         ok: false,
-        error: `Chromium verification failed: ${err instanceof Error ? err.message : String(err)}`,
+        error: RUNTIME_MESSAGES.dependencies.chromiumVerificationFailed(err instanceof Error ? err.message : String(err)),
       };
     } finally {
       restoreEnv();

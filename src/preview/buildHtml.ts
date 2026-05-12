@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { renderMarkdownDocument } from '../renderers/renderMarkdown';
 import { getConfig } from '../infra/config';
 import { loadCustomCss } from '../infra/customCssLoader';
+import { RUNTIME_MESSAGES } from '../infra/messages';
 import { ResolvedStyleConfig } from '../types/models';
 import { PreviewAssetUris } from './previewAssets';
 
@@ -221,7 +222,7 @@ export async function buildHtml(
   // Show popup for syntax errors (user's customCss was skipped)
   const syntaxWarning = customCssWarnings.find(w => w.includes('skipped due to syntax errors'));
   if (syntaxWarning) {
-    vscode.window.showWarningMessage(`Markdown Studio: Custom CSS has syntax errors — rendering with default styles. Fix your CSS to apply it.`);
+    vscode.window.showWarningMessage(RUNTIME_MESSAGES.customCss.syntaxWarning);
   }
   const customCssBlock = customCss
     ? `<style>/* md-studio-custom-css */\n${customCss}</style>`

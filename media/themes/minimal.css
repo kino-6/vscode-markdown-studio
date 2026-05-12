@@ -2,7 +2,7 @@
  * Markdown Studio — Minimal Theme
  *
  * Usage:
- *   "markdownStudio.style.customCssPath": "./examples/custom-styles/minimal.css"
+ *   Paste this file into "markdownStudio.style.customCss" or copy selected rules.
  *
  * A bare-bones starting point for building your own theme.
  * Only essential overrides — everything else inherits from the preset.

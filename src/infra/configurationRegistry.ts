@@ -1,0 +1,77 @@
+import type { ExternalResourceMode, PreviewThemeMode } from '../types/models';
+import { DEFAULT_ALLOWED_DOMAINS } from '../types/models';
+
+export const CONFIG_SECTION = 'markdownStudio';
+
+export const CONFIG_KEYS = {
+  plantUmlMode: 'plantuml.mode',
+  javaPath: 'java.path',
+  pageFormat: 'export.pageFormat',
+  legacyBlockExternalLinks: 'security.blockExternalLinks',
+  externalResourceMode: 'security.externalResources.mode',
+  externalResourceAllowedDomains: 'security.externalResources.allowedDomains',
+  exportHeaderEnabled: 'export.header.enabled',
+  exportHeaderTemplate: 'export.header.template',
+  exportFooterEnabled: 'export.footer.enabled',
+  exportFooterTemplate: 'export.footer.template',
+  exportPageBreakEnabled: 'export.pageBreak.enabled',
+  exportPdfIndexEnabled: 'export.pdfIndex.enabled',
+  exportPdfIndexTitle: 'export.pdfIndex.title',
+  exportPdfTocHidden: 'export.pdfToc.hidden',
+  exportPdfBookmarksEnabled: 'export.pdfBookmarks.enabled',
+  previewTheme: 'preview.theme',
+  previewSourceJumpEnabled: 'preview.sourceJump.enabled',
+  stylePreset: 'style.preset',
+  styleFontFamily: 'style.fontFamily',
+  styleFontSize: 'style.fontSize',
+  styleLineHeight: 'style.lineHeight',
+  styleTheme: 'style.theme',
+  styleCustomCss: 'style.customCss',
+  exportMargin: 'export.margin',
+  tocLevels: 'toc.levels',
+  tocOrderedList: 'toc.orderedList',
+  tocPageBreak: 'toc.pageBreak',
+  codeBlockLineNumbers: 'codeBlock.lineNumbers',
+  exportOutputFilename: 'export.outputFilename',
+  exportDiagramTimeout: 'export.diagramTimeout',
+  networkCaCertificates: 'network.caCertificates',
+} as const;
+
+export const CONFIG_DEFAULTS = {
+  plantUmlMode: 'bundled-jar' as const,
+  javaPath: 'java',
+  pageFormat: 'A4' as const,
+  legacyBlockExternalLinks: true,
+  externalResourceMode: 'whitelist' as ExternalResourceMode,
+  externalResourceAllowedDomains: [...DEFAULT_ALLOWED_DOMAINS],
+  exportHeaderEnabled: true,
+  exportHeaderTemplate: null as string | null,
+  exportFooterEnabled: true,
+  exportFooterTemplate: null as string | null,
+  exportPageBreakEnabled: true,
+  exportPdfIndexEnabled: true,
+  exportPdfIndexTitle: 'Table of Contents',
+  exportPdfTocHidden: true,
+  exportPdfBookmarksEnabled: true,
+  previewTheme: 'auto' as PreviewThemeMode,
+  previewSourceJumpEnabled: false,
+  stylePreset: 'markdown-pdf',
+  styleFontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+  styleFontSize: 14,
+  styleLineHeight: 1.6,
+  styleTheme: 'markdown-pdf',
+  styleCustomCss: '',
+  exportMargin: '20mm',
+  tocLevels: '1-3',
+  tocOrderedList: false,
+  tocPageBreak: true,
+  codeBlockLineNumbers: true,
+  exportOutputFilename: '${filename}',
+  exportDiagramTimeout: 0,
+  networkCaCertificates: [] as string[],
+} as const;
+
+export function configurationPath(key: string): string {
+  return `${CONFIG_SECTION}.${key}`;
+}
+

@@ -2,6 +2,7 @@ import MarkdownIt from 'markdown-it';
 import * as vscode from 'vscode';
 import { getConfig } from '../infra/config';
 import { countLineBreaks, detectLineEnding } from '../infra/lineEndings';
+import { RUNTIME_MESSAGES } from '../infra/messages';
 import { createMarkdownParser } from '../parser/parseMarkdown';
 import { scanFencedBlocks } from '../parser/scanFencedBlocks';
 import { extractHeadings } from '../toc/extractHeadings';
@@ -95,10 +96,10 @@ export async function renderMarkdownDocument(
         replacement = `<div class="diagram-container">${result.placeholder}</div>`;
       } else {
         errors.push({
-          title: 'Mermaid render error',
-          detail: result.error ?? 'Unknown Mermaid rendering issue.'
+          title: RUNTIME_MESSAGES.render.mermaidErrorTitle,
+          detail: result.error ?? RUNTIME_MESSAGES.render.unknownMermaidIssue,
         });
-        replacement = `<div class="ms-error"><div class="ms-error-title">Mermaid render error</div><pre>${escapeHtml(result.error ?? 'Unknown error')}</pre></div>`;
+        replacement = `<div class="ms-error"><div class="ms-error-title">${RUNTIME_MESSAGES.render.mermaidErrorTitle}</div><pre>${escapeHtml(result.error ?? RUNTIME_MESSAGES.render.unknownError)}</pre></div>`;
       }
     }
 
@@ -114,10 +115,10 @@ export async function renderMarkdownDocument(
         replacement = `<div class="diagram-container" data-plantuml-src="${encodedSrc}">${result.svg}</div>`;
       } else {
         errors.push({
-          title: 'PlantUML render error',
-          detail: result.error ?? 'Unknown PlantUML rendering issue.'
+          title: RUNTIME_MESSAGES.render.plantUmlErrorTitle,
+          detail: result.error ?? RUNTIME_MESSAGES.render.unknownPlantUmlIssue,
         });
-        replacement = `<div class="ms-error"><div class="ms-error-title">PlantUML render error</div><pre>${escapeHtml(result.error ?? 'Unknown error')}</pre></div>`;
+        replacement = `<div class="ms-error"><div class="ms-error-title">${RUNTIME_MESSAGES.render.plantUmlErrorTitle}</div><pre>${escapeHtml(result.error ?? RUNTIME_MESSAGES.render.unknownError)}</pre></div>`;
       }
     }
 

@@ -1,8 +1,9 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { CustomCssResult } from '../types/models';
+import { RUNTIME_MESSAGES } from './messages';
 
-/** CSSファイルの最大サイズ（1MB） */
+/** Maximum CSS file size (1 MB). */
 export const MAX_CSS_FILE_SIZE = 1 * 1024 * 1024;
 
 /** Bundled theme names that can be used without a file path. */
@@ -13,9 +14,9 @@ export const BUNDLED_THEMES: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * CSSコンテンツから危険な記述を除去する。
- * - <script> タグを除去
- * - javascript: URLを除去
+ * Removes dangerous content from CSS.
+ * - Strips <script> tags
+ * - Strips javascript: URLs
  */
 export function sanitizeCss(css: string): string {
   // Remove <script>...</script> tags (case-insensitive, dotAll)
@@ -28,8 +29,8 @@ export function sanitizeCss(css: string): string {
 }
 
 /**
- * テーマ名からCSSファイルパスを解決する。
- * "default" または空文字列の場合はnullを返す。
+ * Resolves a bundled theme name to a CSS file path.
+ * Returns null for "default" or an empty theme name.
  */
 export function resolveThemePath(
   theme: string,
@@ -45,8 +46,8 @@ export function resolveThemePath(
 }
 
 /**
- * テーマCSS + インラインカスタムCSSを結合して返す。
- * テーマファイル読み取り → サニタイズ → インラインCSS追記の順。
+ * Returns bundled theme CSS plus inline custom CSS.
+ * Processing order: read theme file, sanitize, then append inline CSS.
  */
 export async function loadCustomCss(
   theme: string,
@@ -56,7 +57,7 @@ export async function loadCustomCss(
   const warnings: string[] = [];
   const parts: string[] = [];
 
-  // 1. テーマファイル読み取り
+  // 1. Read bundled theme CSS.
   const themePath = resolveThemePath(theme, extensionPath);
   if (themePath) {
     try {
@@ -81,12 +82,12 @@ export async function loadCustomCss(
     }
   }
 
-  // 2. インラインカスタムCSS追記（構文エラー時はスキップ）
+  // 2. Append inline custom CSS unless syntax validation fails.
   if (customCss.trim()) {
     const syntaxErrors = validateCssSyntax(customCss);
     if (syntaxErrors.length > 0) {
       warnings.push(...syntaxErrors);
-      warnings.push('Custom CSS was skipped due to syntax errors — rendering with default styles');
+      warnings.push(RUNTIME_MESSAGES.customCss.skippedForSyntaxErrors);
     } else {
       const sanitized = sanitizeCss(customCss);
       if (sanitized !== customCss) {
@@ -100,9 +101,9 @@ export async function loadCustomCss(
 }
 
 /**
- * 簡易CSSバリデーション。
- * 括弧の対応と基本的な構文エラーをチェックする。
- * エラーがあればメッセージの配列を返し、問題なければ空配列を返す。
+ * Lightweight CSS validation.
+ * Checks brace matching and basic syntax errors.
+ * Returns warning messages when problems are found, otherwise an empty array.
  */
 export function validateCssSyntax(css: string): string[] {
   const errors: string[] = [];
