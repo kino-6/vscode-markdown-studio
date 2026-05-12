@@ -174,6 +174,34 @@ describe('buildPdfOptions', () => {
 
     expect(result.footerTemplate).toBe(customFooter);
   });
+
+  it('empty custom header template uses a non-empty blank template', () => {
+    const config: PdfHeaderFooterConfig = {
+      headerEnabled: true,
+      headerTemplate: '',
+      footerEnabled: false,
+      footerTemplate: null,
+      pageBreakEnabled: false,
+    };
+
+    const result = buildPdfOptions(config, 'Title');
+
+    expect(result.headerTemplate).toBe('<span></span>');
+  });
+
+  it('empty custom footer template uses a non-empty blank template', () => {
+    const config: PdfHeaderFooterConfig = {
+      headerEnabled: false,
+      headerTemplate: null,
+      footerEnabled: true,
+      footerTemplate: '',
+      pageBreakEnabled: false,
+    };
+
+    const result = buildPdfOptions(config, 'Title');
+
+    expect(result.footerTemplate).toBe('<span></span>');
+  });
 });
 
 describe('injectPageBreakCss', () => {
