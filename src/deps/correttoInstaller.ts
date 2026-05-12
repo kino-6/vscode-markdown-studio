@@ -5,6 +5,7 @@ import type { NetworkConfig } from "../infra/networkConfig";
 import { downloadFile } from "./download";
 import { extractTarGz, extractZip, findJavaBinary } from "./extract";
 import { runProcess } from "../infra/runProcess";
+import { RUNTIME_MESSAGES } from "../infra/messages";
 
 const CORRETTO_BASE_URL = "https://corretto.aws/downloads/latest";
 
@@ -59,12 +60,12 @@ export async function verifyJava(javaPath: string): Promise<InstallerResult> {
     }
     return {
       ok: false,
-      error: `Java verification failed: exit code ${result.exitCode}`,
+      error: RUNTIME_MESSAGES.dependencies.javaVerificationFailed(result.exitCode),
     };
   } catch (err) {
     return {
       ok: false,
-      error: `Java verification error: ${err instanceof Error ? err.message : String(err)}`,
+      error: RUNTIME_MESSAGES.dependencies.javaVerificationError(err instanceof Error ? err.message : String(err)),
     };
   }
 }
@@ -92,11 +93,11 @@ export const correttoInstaller = {
 
     try {
       // Step 1: Download
-      progress("Downloading Amazon Corretto JDK...", 10);
+      progress(RUNTIME_MESSAGES.dependencyProgress.downloadingCorretto, 10);
       await downloadFile(url, archivePath, networkConfig);
 
       // Step 2: Extract
-      progress("Extracting JDK...", 20);
+      progress(RUNTIME_MESSAGES.dependencyProgress.extractingJdk, 20);
       await fs.promises.rm(targetDir, { recursive: true, force: true });
       await fs.promises.mkdir(targetDir, { recursive: true });
 
@@ -110,7 +111,7 @@ export const correttoInstaller = {
       const javaPath = await findJavaBinary(targetDir, platform);
 
       // Step 4: Verify
-      progress("Verifying Java installation...", 5);
+      progress(RUNTIME_MESSAGES.dependencyProgress.verifyingJava, 5);
       const verification = await verifyJava(javaPath);
       if (!verification.ok) {
         return verification;
@@ -125,7 +126,7 @@ export const correttoInstaller = {
       await fs.promises.unlink(archivePath).catch(() => {});
       return {
         ok: false,
-        error: `Corretto installation failed: ${err instanceof Error ? err.message : String(err)}`,
+        error: RUNTIME_MESSAGES.dependencies.correttoInstallFailed(err instanceof Error ? err.message : String(err)),
       };
     }
   },
@@ -152,7 +153,7 @@ export const correttoInstaller = {
     } catch (err) {
       return {
         ok: false,
-        error: `Corretto verification failed: ${err instanceof Error ? err.message : String(err)}`,
+        error: RUNTIME_MESSAGES.dependencies.correttoVerificationFailed(err instanceof Error ? err.message : String(err)),
       };
     }
   },

@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { DependencyStatus } from '../deps/types';
 import { MarkdownStudioConfig } from '../infra/config';
+import { RUNTIME_MESSAGES } from '../infra/messages';
 import { runProcess as defaultRunProcess } from '../infra/runProcess';
 
 export interface EnvironmentValidationResult {
@@ -42,35 +43,35 @@ export async function validateEnvironment(
   const javaCheck = await runtimeDeps.runProcess(javaPath, ['-version'], 8000);
   if (javaCheck.exitCode === 0 || javaCheck.stderr.toLowerCase().includes('version')) {
     if (managedDeps?.javaPath) {
-      lines.push('✅ Java detected (managed Corretto)');
+      lines.push(RUNTIME_MESSAGES.validation.javaDetectedManaged);
     } else {
-      lines.push('✅ Java detected (system)');
+      lines.push(RUNTIME_MESSAGES.validation.javaDetectedSystem);
     }
   } else {
-    lines.push('❌ Java missing or inaccessible');
+    lines.push(RUNTIME_MESSAGES.validation.javaMissing);
   }
 
   const jarPath = path.join(extensionPath, 'third_party', 'plantuml', 'plantuml.jar');
   try {
     await runtimeDeps.access(jarPath);
-    lines.push('✅ Bundled PlantUML jar found');
+    lines.push(RUNTIME_MESSAGES.validation.bundledPlantUmlJarFound);
   } catch {
-    lines.push(`❌ Bundled PlantUML jar missing at ${jarPath}`);
+    lines.push(RUNTIME_MESSAGES.validation.bundledPlantUmlJarMissing(jarPath));
   }
 
   try {
     const probe = path.join(runtimeDeps.tmpdir(), `markdown-studio-write-test-${runtimeDeps.now()}.txt`);
     await runtimeDeps.writeFile(probe, 'ok', 'utf8');
     await runtimeDeps.unlink(probe);
-    lines.push('✅ Temp directory writable');
+    lines.push(RUNTIME_MESSAGES.validation.tempDirectoryWritable);
   } catch {
-    lines.push('❌ Temp directory is not writable');
+    lines.push(RUNTIME_MESSAGES.validation.tempDirectoryNotWritable);
   }
 
   if (managedDeps?.browserPath) {
-    lines.push('✅ Managed Chromium browser available');
+    lines.push(RUNTIME_MESSAGES.validation.managedChromiumAvailable);
   } else if (managedDeps) {
-    lines.push('❌ Managed Chromium browser not available');
+    lines.push(RUNTIME_MESSAGES.validation.managedChromiumUnavailable);
   }
 
   return { ok: lines.every((line) => line.startsWith('✅')), lines };

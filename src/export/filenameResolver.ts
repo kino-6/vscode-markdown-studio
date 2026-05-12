@@ -1,18 +1,18 @@
-/** テンプレート変数解決に必要なコンテキスト */
+/** Context required to resolve filename template variables. */
 export interface FilenameContext {
-  /** ソースファイル名（拡張子なし） */
+  /** Source file name without extension. */
   filename: string;
-  /** ソースファイルの拡張子（ドットなし） */
+  /** Source file extension without the leading dot. */
   ext: string;
-  /** ドキュメント内の最初のH1見出しテキスト（存在しない場合はundefined） */
+  /** First H1 heading text in the document, if one exists. */
   title?: string;
-  /** エクスポート実行時刻（テスト時に注入可能） */
+  /** Export timestamp, injectable for tests. */
   now?: Date;
 }
 
 /**
- * Markdownテキストから最初のH1見出しのプレーンテキストを抽出する。
- * H1が存在しない場合は undefined を返す。
+ * Extracts the plain text of the first H1 heading from Markdown.
+ * Returns undefined when no H1 exists.
  */
 export function extractH1Title(markdown: string): string | undefined {
   const match = /^#\s+(.+)$/m.exec(markdown);
@@ -20,7 +20,7 @@ export function extractH1Title(markdown: string): string | undefined {
 }
 
 /**
- * Date を YYYY-MM-DD 形式のローカル日付文字列に変換する。
+ * Converts a Date to a local YYYY-MM-DD date string.
  */
 function formatDate(d: Date): string {
   const y = d.getFullYear();
@@ -30,7 +30,7 @@ function formatDate(d: Date): string {
 }
 
 /**
- * Date を YYYY-MM-DD_HHmmss 形式のローカル日時文字列に変換する。
+ * Converts a Date to a local YYYY-MM-DD_HHmmss datetime string.
  */
 function formatDatetime(d: Date): string {
   const date = formatDate(d);
@@ -41,8 +41,8 @@ function formatDatetime(d: Date): string {
 }
 
 /**
- * テンプレート内の `${variableName}` パターンを検出し、
- * 定義済み変数は値に置換、未定義変数はそのまま残す。
+ * Replaces known `${variableName}` patterns in a template.
+ * Unknown variables are left unchanged.
  */
 export function resolveVariables(template: string, ctx: FilenameContext): string {
   const now = ctx.now ?? new Date();
@@ -62,8 +62,8 @@ export function resolveVariables(template: string, ctx: FilenameContext): string
 }
 
 /**
- * ファイルシステムで禁止されている文字の除去、
- * 先頭/末尾の空白・ドットの除去を行う。
+ * Removes filesystem-forbidden characters and trims leading/trailing
+ * whitespace and dots.
  */
 export function sanitizeFilename(name: string): string {
   // Remove forbidden characters: / \ : * ? " < > |
@@ -74,7 +74,7 @@ export function sanitizeFilename(name: string): string {
 }
 
 /**
- * `.pdf` 拡張子を付与する。既に `.pdf` で終わる場合は付与しない。
+ * Adds the `.pdf` extension unless the name already ends with `.pdf`.
  */
 export function ensurePdfExtension(name: string): string {
   if (name.toLowerCase().endsWith('.pdf')) {
@@ -84,8 +84,8 @@ export function ensurePdfExtension(name: string): string {
 }
 
 /**
- * テンプレート文字列を解決し、サニタイズ済みのファイル名（.pdf付き）を返す。
- * 空テンプレートの場合は `${filename}` にフォールバックする。
+ * Resolves a template string and returns a sanitized filename with `.pdf`.
+ * Empty templates fall back to `${filename}`.
  */
 export function resolveOutputFilename(template: string, ctx: FilenameContext): string {
   // Empty template fallback

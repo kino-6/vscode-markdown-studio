@@ -1,4 +1,4 @@
-/** 見出しとページ番号のマッピング */
+/** Mapping between a heading and its PDF page number. */
 export interface HeadingPageEntry {
   level: number;
   text: string;
@@ -6,7 +6,7 @@ export interface HeadingPageEntry {
   anchorId: string;
 }
 
-/** HTML特殊文字のエスケープ */
+/** Escapes HTML-special characters. */
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
@@ -17,8 +17,8 @@ function escapeHtml(text: string): string {
 }
 
 /**
- * 目次ページ数を推定する。
- * 1ページあたり約30エントリと仮定。
+ * Estimates the number of PDF index pages.
+ * Assumes roughly 30 entries per page.
  */
 export function estimateIndexPageCount(entryCount: number): number {
   if (entryCount === 0) return 0;
@@ -26,7 +26,7 @@ export function estimateIndexPageCount(entryCount: number): number {
 }
 
 /**
- * ページ番号付きPDF目次HTMLを生成する。
+ * Builds PDF index HTML with page numbers.
  */
 export function buildPdfIndexHtml(
   entries: HeadingPageEntry[],

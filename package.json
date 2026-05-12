@@ -1,8 +1,8 @@
 {
   "name": "markdown-studio",
   "displayName": "Markdown Studio",
-  "description": "Local-first Markdown authoring studio with integrated diagram rendering (Mermaid, PlantUML), SVG support, and secure PDF export.",
-  "version": "0.8.3",
+  "description": "%extension.description%",
+  "version": "0.8.4",
   "publisher": "local",
   "license": "MIT",
   "repository": {
@@ -33,31 +33,31 @@
     "commands": [
       {
         "command": "markdownStudio.openPreview",
-        "title": "Markdown Studio: Preview"
+        "title": "%command.openPreview.title%"
       },
       {
         "command": "markdownStudio.exportPdf",
-        "title": "Markdown Studio: Export PDF"
+        "title": "%command.exportPdf.title%"
       },
       {
         "command": "markdownStudio.validateEnvironment",
-        "title": "Markdown Studio: Validate Local Environment"
+        "title": "%command.validateEnvironment.title%"
       },
       {
         "command": "markdownStudio.reloadPreview",
-        "title": "Markdown Studio: Reload Preview (Clear Cache)"
+        "title": "%command.reloadPreview.title%"
       },
       {
         "command": "markdownStudio.setupDependencies",
-        "title": "Markdown Studio: Setup Dependencies"
+        "title": "%command.setupDependencies.title%"
       },
       {
         "command": "markdownStudio.insertToc",
-        "title": "Markdown Studio: Insert TOC"
+        "title": "%command.insertToc.title%"
       }
     ],
     "configuration": {
-      "title": "Markdown Studio",
+      "title": "%configuration.title%",
       "properties": {
         "markdownStudio.plantuml.mode": {
           "type": "string",
@@ -67,12 +67,12 @@
             "external-command",
             "docker"
           ],
-          "description": "PlantUML rendering mode. MVP only fully supports bundled-jar."
+          "description": "%configuration.plantuml.mode.description%"
         },
         "markdownStudio.java.path": {
           "type": "string",
           "default": "java",
-          "description": "Path to Java executable used for PlantUML rendering."
+          "description": "%configuration.java.path.description%"
         },
         "markdownStudio.export.pageFormat": {
           "type": "string",
@@ -85,13 +85,13 @@
             "Legal",
             "Tabloid"
           ],
-          "description": "Page format for PDF export."
+          "description": "%configuration.export.pageFormat.description%"
         },
         "markdownStudio.security.blockExternalLinks": {
           "type": "boolean",
           "default": true,
-          "description": "Block external links and remote resources in preview/export by default.",
-          "deprecationMessage": "非推奨: markdownStudio.security.externalResources.mode を使用してください"
+          "description": "%configuration.security.blockExternalLinks.description%",
+          "deprecationMessage": "%configuration.security.blockExternalLinks.deprecationMessage%"
         },
         "markdownStudio.security.externalResources.mode": {
           "type": "string",
@@ -102,11 +102,11 @@
             "allow-all"
           ],
           "enumDescriptions": [
-            "Block all external resources",
-            "Allow only whitelisted domains",
-            "Allow all external resources"
+            "%configuration.security.externalResources.mode.enum.blockAll%",
+            "%configuration.security.externalResources.mode.enum.whitelist%",
+            "%configuration.security.externalResources.mode.enum.allowAll%"
           ],
-          "description": "外部リソースの制御モード"
+          "description": "%configuration.security.externalResources.mode.description%"
         },
         "markdownStudio.security.externalResources.allowedDomains": {
           "type": "array",
@@ -118,12 +118,12 @@
             "raw.githubusercontent.com",
             "user-images.githubusercontent.com"
           ],
-          "description": "ホワイトリストモードで許可するドメインのリスト"
+          "description": "%configuration.security.externalResources.allowedDomains.description%"
         },
         "markdownStudio.export.header.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable header in PDF export. When enabled, a header with the document title is added to each page."
+          "description": "%configuration.export.header.enabled.description%"
         },
         "markdownStudio.export.header.template": {
           "type": [
@@ -131,12 +131,12 @@
             "null"
           ],
           "default": null,
-          "description": "Custom HTML template for the PDF export header. Use Playwright CSS classes (pageNumber, totalPages, title, date, url) for dynamic content. When null, the built-in default template is used."
+          "description": "%configuration.export.header.template.description%"
         },
         "markdownStudio.export.footer.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable footer in PDF export. When enabled, a footer with page numbers is added to each page."
+          "description": "%configuration.export.footer.enabled.description%"
         },
         "markdownStudio.export.footer.template": {
           "type": [
@@ -144,32 +144,32 @@
             "null"
           ],
           "default": null,
-          "description": "Custom HTML template for the PDF export footer. Use Playwright CSS classes (pageNumber, totalPages, title, date, url) for dynamic content. When null, the built-in default template is used."
+          "description": "%configuration.export.footer.template.description%"
         },
         "markdownStudio.export.pageBreak.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable CSS page-break support in PDF export. When enabled, page-break-before and page-break-after CSS properties are honored."
+          "description": "%configuration.export.pageBreak.enabled.description%"
         },
         "markdownStudio.export.pdfIndex.enabled": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Generate a Table of Contents page with page numbers at the beginning of the PDF."
+          "markdownDescription": "%configuration.export.pdfIndex.enabled.markdownDescription%"
         },
         "markdownStudio.export.pdfIndex.title": {
           "type": "string",
           "default": "Table of Contents",
-          "markdownDescription": "Title displayed at the top of the PDF index page."
+          "markdownDescription": "%configuration.export.pdfIndex.title.markdownDescription%"
         },
         "markdownStudio.export.pdfToc.hidden": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Hide inline Table of Contents in PDF export. Recognized patterns: `[toc]` / `[[toc]]` markers and `<!-- TOC -->` / `<!-- /TOC -->` comment markers. Hand-written ToC lists without these markers are not detected — wrap them in `<!-- TOC -->` / `<!-- /TOC -->` to enable hiding."
+          "markdownDescription": "%configuration.export.pdfToc.hidden.markdownDescription%"
         },
         "markdownStudio.export.pdfBookmarks.enabled": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "PDFエクスポート時にブックマーク（しおり/アウトライン）を生成する。PDFビューアのサイドバーナビゲーションに表示される。"
+          "markdownDescription": "%configuration.export.pdfBookmarks.enabled.markdownDescription%"
         },
         "markdownStudio.preview.theme": {
           "type": "string",
@@ -180,16 +180,16 @@
             "dark"
           ],
           "enumDescriptions": [
-            "VS Codeのカラーテーマに自動追従",
-            "常にライトモードで表示",
-            "常にダークモードで表示"
+            "%configuration.preview.theme.enum.auto%",
+            "%configuration.preview.theme.enum.light%",
+            "%configuration.preview.theme.enum.dark%"
           ],
-          "description": "プレビューのテーマモード。autoはVS Codeのカラーテーマに追従します。"
+          "description": "%configuration.preview.theme.description%"
         },
         "markdownStudio.preview.sourceJump.enabled": {
           "type": "boolean",
           "default": false,
-          "description": "Double-click in preview jumps to the corresponding source line."
+          "description": "%configuration.preview.sourceJump.enabled.description%"
         },
         "markdownStudio.style.preset": {
           "type": "string",
@@ -201,22 +201,22 @@
             "academic",
             "custom"
           ],
-          "markdownDescription": "Base style preset — sets default font, size, line-height, heading and code-block styles. Priority: **Preset → Individual overrides → Theme → Custom CSS** (each layer overrides the previous)."
+          "markdownDescription": "%configuration.style.preset.markdownDescription%"
         },
         "markdownStudio.style.fontFamily": {
           "type": "string",
           "default": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Helvetica, Arial, sans-serif",
-          "markdownDescription": "Override the preset's font family. Takes priority over the preset default, but can be overridden by Theme or Custom CSS."
+          "markdownDescription": "%configuration.style.fontFamily.markdownDescription%"
         },
         "markdownStudio.style.fontSize": {
           "type": "number",
           "default": 14,
-          "markdownDescription": "Override the preset's font size in pixels (8–32). Takes priority over the preset default, but can be overridden by Theme or Custom CSS."
+          "markdownDescription": "%configuration.style.fontSize.markdownDescription%"
         },
         "markdownStudio.style.lineHeight": {
           "type": "number",
           "default": 1.6,
-          "markdownDescription": "Override the preset's line height (1.0–3.0). Takes priority over the preset default, but can be overridden by Theme or Custom CSS."
+          "markdownDescription": "%configuration.style.lineHeight.markdownDescription%"
         },
         "markdownStudio.style.theme": {
           "type": "string",
@@ -228,53 +228,53 @@
             "minimal"
           ],
           "enumDescriptions": [
-            "Default — no extra theme, uses preset + individual overrides only",
-            "Modern — `body { font-family: Inter, system-ui; }` indigo accents (#6366f1), soft shadows, rounded corners",
-            "Markdown PDF — `table { border: none; }` classic look matching the Markdown PDF extension, simple borders",
-            "Minimal — `body { max-width: 720px; }` bare-bones, clean starting point for customization"
+            "%configuration.style.theme.enum.default%",
+            "%configuration.style.theme.enum.modern%",
+            "%configuration.style.theme.enum.markdownPdf%",
+            "%configuration.style.theme.enum.minimal%"
           ],
-          "markdownDescription": "Visual theme applied on top of the preset. Overrides preset and individual settings. Can be further overridden by Custom CSS."
+          "markdownDescription": "%configuration.style.theme.markdownDescription%"
         },
         "markdownStudio.style.customCss": {
           "type": "string",
           "default": "",
           "editPresentation": "multilineText",
-          "markdownDescription": "Final CSS layer — overrides everything above (preset, individual settings, theme). Write CSS rules directly.\n\n**Examples:**\n\n`h1 { color: navy; border-bottom: 2px solid navy; }`\n\n`blockquote { border-left: 3px solid orange; background: #fff8f0; }`\n\n`table { border-collapse: collapse; } th, td { border: 1px solid #ddd; padding: 8px; }`\n\n`code { background: #f0f0f0; color: #d63384; }`\n\nFull theme samples: [modern.css](https://github.com/kino-6/vscode-markdown-studio/blob/main/examples/custom-styles/modern.css) · [markdown-pdf.css](https://github.com/kino-6/vscode-markdown-studio/blob/main/examples/custom-styles/markdown-pdf.css) · [minimal.css](https://github.com/kino-6/vscode-markdown-studio/blob/main/examples/custom-styles/minimal.css)"
+          "markdownDescription": "%configuration.style.customCss.markdownDescription%"
         },
         "markdownStudio.export.margin": {
           "type": "string",
           "default": "20mm",
-          "description": "Page margin for PDF export. Accepts CSS units (mm, cm, in, px)."
+          "description": "%configuration.export.margin.description%"
         },
         "markdownStudio.toc.levels": {
           "type": "string",
           "default": "1-3",
-          "description": "TOCに含める見出しレベルの範囲（例: '1-3', '2-4'）"
+          "description": "%configuration.toc.levels.description%"
         },
         "markdownStudio.toc.orderedList": {
           "type": "boolean",
           "default": false,
-          "description": "TOCを番号付きリスト（ol）で生成する"
+          "description": "%configuration.toc.orderedList.description%"
         },
         "markdownStudio.toc.pageBreak": {
           "type": "boolean",
           "default": true,
-          "description": "PDFエクスポート時にTOCの前後に改ページを挿入する"
+          "description": "%configuration.toc.pageBreak.description%"
         },
         "markdownStudio.codeBlock.lineNumbers": {
           "type": "boolean",
           "default": true,
-          "description": "コードブロックに行番号を表示する"
+          "description": "%configuration.codeBlock.lineNumbers.description%"
         },
         "markdownStudio.export.outputFilename": {
           "type": "string",
           "default": "${filename}",
-          "markdownDescription": "PDF出力ファイル名のテンプレート。テンプレート変数を使って動的なファイル名を生成できます。\n\n**使用可能な変数:**\n\n| 変数 | 説明 | 例 |\n|------|------|----|\n| `${filename}` | ソースファイル名（拡張子なし） | `document` |\n| `${date}` | エクスポート日（YYYY-MM-DD） | `2025-01-15` |\n| `${datetime}` | エクスポート日時（YYYY-MM-DD_HHmmss） | `2025-01-15_143022` |\n| `${title}` | 最初のH1見出しテキスト（なければファイル名） | `設計書` |\n| `${ext}` | ソースファイルの拡張子（ドットなし） | `md` |\n\n**使用例:**\n- `${filename}_${date}` → `document_2025-01-15.pdf`\n- `${title}` → `設計書.pdf`\n- `${filename}_${datetime}` → `document_2025-01-15_143022.pdf`\n- `${filename}.${ext}` → `document.md.pdf`\n- `${title}_${date}` → `設計書_2025-01-15.pdf`\n\n`.pdf` 拡張子は自動的に付与されます。ファイルシステムで禁止されている文字は自動的に除去されます。"
+          "markdownDescription": "%configuration.export.outputFilename.markdownDescription%"
         },
         "markdownStudio.export.diagramTimeout": {
           "type": "number",
           "default": 0,
-          "markdownDescription": "ダイアグラム（Mermaid / PlantUML）レンダリングのタイムアウト（秒）。`0` は無制限。低スペック環境で複雑な図がタイムアウトする場合は `0` のままにしてください。"
+          "markdownDescription": "%configuration.export.diagramTimeout.markdownDescription%"
         },
         "markdownStudio.network.caCertificates": {
           "type": "array",
@@ -282,7 +282,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "追加のCA証明書ファイルパス（PEM形式）。Zscaler等のSSLインスペクション環境で使用。"
+          "description": "%configuration.network.caCertificates.description%"
         }
       }
     }
@@ -291,14 +291,14 @@
     "build": "node config/esbuild.js",
     "watch": "node config/esbuild.js --watch",
     "lint": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run -c config/vitest.config.ts",
     "test:unit": "vitest run -c config/vitest.unit.config.ts",
     "test:integration": "vitest run -c config/vitest.integration.config.ts",
     "pretest:e2e": "tsc -p config/tsconfig.e2e.json && npm run build",
-    "test:e2e": "vscode-test",
+    "test:e2e": "vscode-test --config config/vscode-test.mjs",
     "test:ci": "npm run lint && npm run test:unit && npm run test:integration",
     "package": "npm run build && rm -f dist/*.vsix && vsce package -o dist/",
-    "reinstall": "bash dev_reinstall.sh",
+    "reinstall": "bash scripts/dev/reinstall.sh",
     "demo": "npx tsx scripts/demo/index.ts",
     "repro:about-blank-footer": "node scripts/repro/aboutBlankFooter.js"
   },

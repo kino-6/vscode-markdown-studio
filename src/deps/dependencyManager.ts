@@ -7,6 +7,7 @@ import { chromiumInstaller as defaultChromiumInstaller } from "./chromiumInstall
 import { detectPlatform as defaultDetectPlatform } from "./platformDetector";
 import { resolveNetworkConfig as defaultResolveNetworkConfig } from "../infra/networkConfig";
 import type { NetworkConfig } from "../infra/networkConfig";
+import { RUNTIME_MESSAGES } from "../infra/messages";
 
 /**
  * Injectable dependencies for testability.
@@ -104,7 +105,7 @@ export class DependencyManager {
     return vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
-        title: "Markdown Studio: Setting up dependencies",
+        title: RUNTIME_MESSAGES.dependencies.setupProgressTitle,
         cancellable: false,
       },
       async (progress) => {
@@ -187,20 +188,20 @@ export class DependencyManager {
       if (await this.deps.fileExists(manifest.corretto.javaPath)) {
         javaPath = manifest.corretto.javaPath;
       } else {
-        errors.push("Corretto: binary missing from disk");
+        errors.push(RUNTIME_MESSAGES.dependencyStatus.correttoBinaryMissing);
       }
     } else {
-      errors.push("Corretto: not installed");
+      errors.push(RUNTIME_MESSAGES.dependencyStatus.correttoNotInstalled);
     }
 
     if (manifest.chromium) {
       if (await this.deps.fileExists(manifest.chromium.browserPath)) {
         browserPath = manifest.chromium.browserPath;
       } else {
-        errors.push("Chromium: binary missing from disk");
+        errors.push(RUNTIME_MESSAGES.dependencyStatus.chromiumBinaryMissing);
       }
     } else {
-      errors.push("Chromium: not installed");
+      errors.push(RUNTIME_MESSAGES.dependencyStatus.chromiumNotInstalled);
     }
 
     return {

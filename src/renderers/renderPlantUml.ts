@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { dependencyStatus } from '../extension';
 import { ContentCache } from '../infra/cache';
 import { getConfig } from '../infra/config';
+import { RUNTIME_MESSAGES } from '../infra/messages';
 import { runProcess } from '../infra/runProcess';
 import { createTempFile } from '../infra/tempFiles';
 import { PlantUmlResult } from '../types/models';
@@ -31,7 +32,7 @@ export async function renderPlantUml(
   if (cfg.plantUmlMode !== 'bundled-jar') {
     const unsupported: PlantUmlResult = {
       ok: false,
-      error: `PlantUML mode '${cfg.plantUmlMode}' is reserved for future MVP iterations.`
+      error: RUNTIME_MESSAGES.plantUml.unsupportedMode(cfg.plantUmlMode),
     };
     cache.set(key, unsupported);
     return unsupported;
@@ -41,7 +42,7 @@ export async function renderPlantUml(
   try {
     await fs.access(jarPath);
   } catch {
-    const missing = { ok: false, error: `Bundled PlantUML jar missing at ${jarPath}` };
+    const missing = { ok: false, error: RUNTIME_MESSAGES.plantUml.bundledJarMissing(jarPath) };
     cache.set(key, missing);
     return missing;
   }
@@ -53,7 +54,7 @@ export async function renderPlantUml(
   if (!dependencyStatus?.javaPath && !cfg.javaPath) {
     const noJava: PlantUmlResult = {
       ok: false,
-      error: "Java (Corretto) is not installed. Run 'Markdown Studio: Setup Dependencies' to install it automatically.",
+      error: RUNTIME_MESSAGES.dependencies.javaMissingAutomatic,
     };
     cache.set(key, noJava);
     return noJava;
@@ -75,10 +76,10 @@ export async function renderPlantUml(
        result.exitCode === 127);
 
     const errorMessage = result.timedOut
-      ? 'PlantUML rendering timed out.'
+      ? RUNTIME_MESSAGES.plantUml.timedOut
       : isJavaMissing && !dependencyStatus?.javaPath
-        ? "Java (Corretto) is not installed. Run 'Markdown Studio: Setup Dependencies' to install it automatically."
-        : `PlantUML rendering failed: ${result.stderr || result.stdout}`;
+        ? RUNTIME_MESSAGES.dependencies.javaMissingAutomatic
+        : RUNTIME_MESSAGES.plantUml.failed(result.stderr || result.stdout);
 
     const failed: PlantUmlResult = { ok: false, error: errorMessage };
     cache.set(key, failed);
@@ -95,7 +96,7 @@ export async function renderPlantUml(
     cache.set(key, ok);
     return ok;
   } catch {
-    const missingSvg = { ok: false, error: 'PlantUML did not produce SVG output.' };
+    const missingSvg = { ok: false, error: RUNTIME_MESSAGES.plantUml.missingSvg };
     cache.set(key, missingSvg);
     return missingSvg;
   }

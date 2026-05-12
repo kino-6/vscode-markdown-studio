@@ -5,6 +5,7 @@ import { validateEnvironment } from '../commands/validateEnvironmentCore';
 import { renderPlantUml } from '../renderers/renderPlantUml';
 import { dependencyStatus } from '../extension';
 import { getConfig } from '../infra/config';
+import { CONFIG_KEYS, configurationPath } from '../infra/configurationRegistry';
 import { resolveThemePath } from '../infra/customCssLoader';
 import { createMarkdownParser } from '../parser/parseMarkdown';
 import { extractHeadings } from '../toc/extractHeadings';
@@ -271,7 +272,10 @@ export async function openOrRefreshPreview(
     // Set up CSS file watcher and config change listener
     setupCssWatcher(context, document);
     configChangeSubscription = vscode.workspace.onDidChangeConfiguration(async (e) => {
-      if (e.affectsConfiguration('markdownStudio.style.theme') || e.affectsConfiguration('markdownStudio.style.customCss')) {
+      if (
+        e.affectsConfiguration(configurationPath(CONFIG_KEYS.styleTheme)) ||
+        e.affectsConfiguration(configurationPath(CONFIG_KEYS.styleCustomCss))
+      ) {
         disposeCssWatcher();
         setupCssWatcher(context, document);
         // Re-render preview with new theme/customCss
@@ -286,7 +290,7 @@ export async function openOrRefreshPreview(
           );
         }
       }
-      if (e.affectsConfiguration('markdownStudio.preview.theme')) {
+      if (e.affectsConfiguration(configurationPath(CONFIG_KEYS.previewTheme))) {
         if (currentPanel) {
           const cfg = getConfig();
           currentPanel.webview.postMessage({ type: 'theme-override', value: cfg.previewTheme });
@@ -390,7 +394,10 @@ export async function openOrRefreshPreview(
   // Set up CSS file watcher and config change listener
   setupCssWatcher(context, document);
   configChangeSubscription = vscode.workspace.onDidChangeConfiguration(async (e) => {
-    if (e.affectsConfiguration('markdownStudio.style.theme') || e.affectsConfiguration('markdownStudio.style.customCss')) {
+    if (
+      e.affectsConfiguration(configurationPath(CONFIG_KEYS.styleTheme)) ||
+      e.affectsConfiguration(configurationPath(CONFIG_KEYS.styleCustomCss))
+    ) {
       disposeCssWatcher();
       setupCssWatcher(context, document);
       // Re-render preview with new theme/customCss
@@ -405,7 +412,7 @@ export async function openOrRefreshPreview(
         );
       }
     }
-    if (e.affectsConfiguration('markdownStudio.preview.theme')) {
+    if (e.affectsConfiguration(configurationPath(CONFIG_KEYS.previewTheme))) {
       if (currentPanel) {
         const cfg = getConfig();
         currentPanel.webview.postMessage({ type: 'theme-override', value: cfg.previewTheme });

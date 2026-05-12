@@ -2,10 +2,11 @@
 set -euo pipefail
 
 # Markdown Studio — 開発用クリーン再インストールスクリプト
-# Usage: ./dev_reinstall.sh
+# Usage: scripts/dev/reinstall.sh
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$SCRIPT_DIR"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$REPO_ROOT"
 
 # package.json からバージョンと名前を動的取得
 VERSION=$(node -p "require('./package.json').version")

@@ -99,69 +99,21 @@ Five built-in presets with per-setting overrides:
 
 ## Configuration
 
-| Setting | Type | Default | Description |
-| ------- | ---- | ------- | ----------- |
-| `markdownStudio.style.preset` | enum | `markdown-pdf` | Style preset |
-| `markdownStudio.style.fontFamily` | string | (preset default) | Body font family |
-| `markdownStudio.style.fontSize` | number | (preset default) | Body font size (px, 8–32) |
-| `markdownStudio.style.lineHeight` | number | (preset default) | Body line height (1.0–3.0) |
-| `markdownStudio.export.margin` | string | (preset default) | PDF page margin (CSS units) |
-| `markdownStudio.export.pageFormat` | enum | `A4` | Page size (A3/A4/A5/Letter/Legal/Tabloid) |
-| `markdownStudio.export.header.enabled` | boolean | `true` | PDF header (document title) |
-| `markdownStudio.export.header.template` | string | (built-in) | Custom HTML template for PDF header |
-| `markdownStudio.export.footer.enabled` | boolean | `true` | PDF footer (page numbers) |
-| `markdownStudio.export.footer.template` | string | (built-in) | Custom HTML template for PDF footer |
-| `markdownStudio.export.pageBreak.enabled` | boolean | `true` | Honor CSS page-break properties |
-| `markdownStudio.preview.sourceJump.enabled` | boolean | `false` | Double-click preview → source line |
-| `markdownStudio.security.externalResources.mode` | enum | `whitelist` | External resource control mode |
-| `markdownStudio.security.externalResources.allowedDomains` | array | GitHub domains | Whitelisted domains |
-| `markdownStudio.toc.levels` | string | `1-3` | TOC heading level range (e.g. `2-4`) |
-| `markdownStudio.toc.orderedList` | boolean | `false` | Use ordered list for TOC |
-| `markdownStudio.toc.pageBreak` | boolean | `true` | Page break around TOC in PDF |
-| `markdownStudio.codeBlock.lineNumbers` | boolean | `true` | Show line numbers in code blocks |
-| `markdownStudio.network.caCertificates` | array | `[]` | Extra CA certificate paths (PEM) for SSL inspection |
-| `markdownStudio.style.theme` | enum | `default` | Built-in CSS theme (default / modern / markdown-pdf / minimal) |
-| `markdownStudio.style.customCss` | string | `""` | Additional CSS rules written directly in settings |
-| `markdownStudio.export.outputFilename` | string | `${filename}` | PDF output filename template (variables: `${filename}`, `${date}`, `${datetime}`, `${title}`, `${ext}`) |
-| `markdownStudio.export.pdfBookmarks.enabled` | boolean | `true` | Generate PDF bookmarks (outlines) from headings |
-| `markdownStudio.preview.theme` | enum | `auto` | Preview theme mode (auto / light / dark) |
+See [docs/configuration.md](./docs/configuration.md) for the full settings reference.
+See [docs/glossary.md](./docs/glossary.md) for terminology used across UI strings and docs.
 
-### Custom CSS
+Common settings:
 
-Styling is applied in layers. Each layer overrides the one before it:
-
-```
-1. Base CSS        — layout, tables, code blocks, TOC structure
-2. Preset          — font, size, line-height, heading/code-block defaults (preset setting)
-3. Individual      — fontFamily, fontSize, lineHeight overrides (per-setting)
-4. Theme           — full visual theme: modern, markdown-pdf, minimal (theme setting)
-5. Custom CSS      — your own CSS rules (customCss setting)
-```
-
-Pick a preset for basic typography, then optionally layer a theme on top for a complete visual overhaul. Use customCss for final tweaks.
-
-```jsonc
-// 1. Choose a preset for base typography
-"markdownStudio.style.preset": "github"
-
-// 2. Optionally override individual values
-"markdownStudio.style.fontSize": 15
-
-// 3. Layer a visual theme on top
-"markdownStudio.style.theme": "modern"
-
-// 4. Fine-tune with inline CSS
-"markdownStudio.style.customCss": "h1 { color: navy; }"
-```
-
-Built-in themes:
-
-| Theme | Description |
-|-------|-------------|
-| `default` | No extra styling — preset only |
-| `modern` | Indigo accents, soft shadows, refined typography |
-| `markdown-pdf` | Classic Markdown PDF extension look |
-| `minimal` | Bare-bones, clean starting point |
+| Setting | Default | Purpose |
+| ------- | ------- | ------- |
+| `markdownStudio.preview.theme` | `auto` | Follow VS Code theme, or force light/dark preview. |
+| `markdownStudio.style.preset` | `markdown-pdf` | Base typography preset. |
+| `markdownStudio.style.theme` | `markdown-pdf` | Visual theme layered above the preset. |
+| `markdownStudio.style.customCss` | `""` | Final CSS override layer. |
+| `markdownStudio.export.pageFormat` | `A4` | PDF page size. |
+| `markdownStudio.export.outputFilename` | `${filename}` | PDF filename template. |
+| `markdownStudio.security.externalResources.mode` | `whitelist` | External resource policy. |
+| `markdownStudio.network.caCertificates` | `[]` | Extra CA certificates for proxy/SSL inspection environments. |
 
 The same CSS stack applies to both preview and PDF export.
 
@@ -169,7 +121,7 @@ The same CSS stack applies to both preview and PDF export.
 
 PlantUML v1.2024.8 is bundled at `third_party/plantuml/plantuml.jar` (GPLv2).
 Uses Smetana layout engine — no external Graphviz installation needed.
-See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) for license details.
+See [third-party-notices.md](./docs/third-party-notices.md) for license details.
 
 ### Table of Contents (TOC)
 
@@ -187,58 +139,9 @@ See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) for license details.
 - Proxy auto-detection from VS Code settings and environment variables
 - Custom CA certificate paths for SSL inspection environments (e.g. Zscaler)
 
-## Known Issues
-
-- PDF bookmarks display garbled text for Japanese/CJK headings (fix planned for v0.8.0)
-
 ## Troubleshooting
 
-### Dependency Installation Failures
-
-Markdown Studio auto-installs Amazon Corretto JDK (for PlantUML) and Playwright Chromium (for PDF export) on first activation. If installation fails:
-
-| Symptom | Cause | Solution |
-|---------|-------|----------|
-| Download timeout/failure | Corporate proxy or firewall | Set `http.proxy` in VS Code settings, or add CA certs via `markdownStudio.network.caCertificates` |
-| "Chromium not available" | Disk space insufficient | Chromium requires ~200MB. Free disk space and run `Setup Dependencies` |
-| PlantUML diagrams not rendering | Java not found | Run `Validate Local Environment` to check. Set `markdownStudio.java.path` to your Java binary |
-| macOS security block | Gatekeeper blocks unsigned binary | Open System Settings → Privacy & Security → Allow the blocked app |
-| ARM/x86 mismatch | Wrong architecture binary downloaded | Delete `~/.vscode/extensions/` cache and reinstall the extension |
-
-### Feature Availability Without Dependencies
-
-| Feature | Java Required | Chromium Required |
-|---------|:---:|:---:|
-| Markdown Preview | — | — |
-| Mermaid Diagrams | — | — |
-| Inline SVG | — | — |
-| Syntax Highlighting | — | — |
-| TOC Generation | — | — |
-| PlantUML Diagrams | ✅ | — |
-| PDF Export | — | ✅ |
-
-Preview and most features work without any external dependencies. Only PlantUML needs Java, and only PDF export needs Chromium.
-
-### Manual Dependency Setup
-
-If auto-install fails, you can install dependencies manually:
-
-```bash
-# Java (for PlantUML) — any JDK 11+ works
-brew install openjdk@21
-# Then set markdownStudio.java.path to the java binary path
-
-# Chromium (for PDF export) — Playwright manages this
-npx playwright install chromium
-```
-
-### Offline / Air-Gapped Environments
-
-For environments without internet access:
-1. Download the VSIX from [GitHub Releases](https://github.com/kino-6/vscode-markdown-studio/releases)
-2. Install via `code --install-extension markdown-studio-*.vsix`
-3. Install Java manually and set `markdownStudio.java.path`
-4. For PDF export, install Chromium on a connected machine and copy the browser directory
+See [docs/troubleshooting.md](./docs/troubleshooting.md) for dependency setup, proxy/CA guidance, and offline installation notes.
 
 ## Roadmap
 
@@ -250,10 +153,10 @@ For environments without internet access:
 | KaTeX math, Footnotes, Emoji, Task lists, Definition lists, Sup/Sub | v0.5.0 |
 | PDF export progress + cancellation, code block blank line fix | v0.6.0 |
 | PDF Index, filename customization, theme auto-switch, bookmarks, diagram zoom/pan | v0.7.0 |
+| Manifest localization, configuration cleanup, docs split, glossary | v0.8.4 |
 
-### v0.8.0 — Stability and Polish
+### v0.9.0 — Productivity
 
-- PDF bookmark Japanese text fix (pdf-lib UTF-16BE encoding for non-ASCII titles)
 - Diagram zoom/pan UX overhaul:
   - Focus-gated interaction: zoom/pan only when diagram is clicked/focused (GitHub-style)
   - Prevent page scroll hijacking by diagram containers
@@ -263,9 +166,6 @@ For environments without internet access:
 - Full-width preview mode: toggle command to remove max-width constraint for wide monitors
 - Demo GIF automation for Marketplace listing
 - Auto-export on save (watch mode)
-
-### v0.9.0 — Productivity
-
 - DOCX export via Pandoc integration (optional dependency)
 - Multi-file merge export (combine multiple .md into one PDF)
 - Presentation mode (slide deck from Markdown)
@@ -319,7 +219,7 @@ code --install-extension dist/markdown-studio-*.vsix
 Development reinstall (clears all caches):
 
 ```bash
-./dev_reinstall.sh
+scripts/dev/reinstall.sh
 ```
 
 ## Tests
@@ -330,7 +230,7 @@ npm run test:integration   # Integration tests
 npm run test:ci            # lint + unit + integration
 ```
 
-See [TESTING.md](./TESTING.md) for details.
+See [testing.md](./docs/testing.md) for details.
 
 ## Demo
 

@@ -2,6 +2,17 @@
 
 All notable changes to Markdown Studio will be documented in this file.
 
+## [0.8.4] - 2026-05-12
+
+### Changed
+
+- Centralized runtime configuration keys and defaults in `src/infra/configurationRegistry.ts`.
+- Localized extension manifest strings with English defaults and Japanese `package.nls.ja.json` translations.
+- Split configuration and troubleshooting references from README into `docs/configuration.md` and `docs/troubleshooting.md`.
+- Added `docs/glossary.md` to keep UI, docs, and Japanese terminology consistent.
+- Shortened long Settings UI descriptions and moved details into docs.
+- Standardized production TypeScript comments on English while preserving Japanese/CJK test and sample content.
+
 ## [0.8.3] - 2026-05-12
 
 ### Fixed

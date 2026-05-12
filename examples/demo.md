@@ -310,7 +310,7 @@ export function activate(context: vscode.ExtensionContext): void {
   "markdownStudio.plantuml.mode": "bundled-jar",
   "markdownStudio.java.path": "java",
   "markdownStudio.export.pageFormat": "A4",
-  "markdownStudio.security.blockExternalLinks": true
+  "markdownStudio.security.externalResources.mode": "whitelist"
 }
 ```
 
@@ -358,7 +358,7 @@ RUN npm install
 <!-- DEMO:SECURITY -->
 ## 6. Images and Security
 
-Markdown Studio is local-first. The default security policy (`blockExternalLinks = true`) blocks external resources while allowing local files.
+Markdown Studio is local-first. The default security policy (`externalResources.mode = "whitelist"`) allows local files and selected trusted remote domains.
 
 ### ✅ Local image (relative path — works)
 
@@ -383,17 +383,17 @@ Images with absolute file paths also work in the preview.
 
 ![Remote image](https://example.com/image.png)
 
-External URLs (`https://...`) are blocked by default. The image above shows a policy notice instead.
+External URLs outside the allowlist are blocked by default. The image above shows a policy notice instead.
 
 ### ❌ External link (blocked by policy)
 
 [External link](https://example.com) — blocked by default ✋
 
-External links are replaced with a blocked notice in the preview.
+External links outside the allowlist are replaced with a blocked notice in the preview.
 
 ### How to allow external resources
 
-Set `markdownStudio.security.blockExternalLinks` to `false` in VS Code settings to allow external images and links. This is not recommended for corporate/secure environments.
+Set `markdownStudio.security.externalResources.mode` to `allow-all` in VS Code settings to allow external images and links. This is not recommended for corporate/secure environments.
 
 ### Security Summary
 
@@ -401,8 +401,8 @@ Set `markdownStudio.security.blockExternalLinks` to `false` in VS Code settings 
 |--------------|---------|-------------|
 | Local images (relative path) | ✅ Allowed | — |
 | Local images (absolute path) | ✅ Allowed | — |
-| External images (https://) | ❌ Blocked | `blockExternalLinks: false` |
-| External links (https://) | ❌ Blocked | `blockExternalLinks: false` |
+| External images (https://) | ❌ Blocked unless allowlisted | `externalResources.mode: allow-all` |
+| External links (https://) | ❌ Blocked unless allowlisted | `externalResources.mode: allow-all` |
 | Inline SVG | ✅ Allowed | — |
 | Mermaid diagrams | ✅ Allowed | — |
 | PlantUML diagrams | ✅ Allowed | — |

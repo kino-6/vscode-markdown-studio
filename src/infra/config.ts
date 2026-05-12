@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { CodeBlockConfig, DEFAULT_ALLOWED_DOMAINS, ExternalResourceConfig, ExternalResourceMode, PdfBookmarksConfig, PdfHeaderFooterConfig, PdfIndexConfig, PdfTocConfig, PreviewThemeMode, ResolvedStyleConfig, StyleConfigOverrides, TocConfig } from '../types/models';
+import { CodeBlockConfig, ExternalResourceConfig, ExternalResourceMode, PdfBookmarksConfig, PdfHeaderFooterConfig, PdfIndexConfig, PdfTocConfig, PreviewThemeMode, ResolvedStyleConfig, StyleConfigOverrides, TocConfig } from '../types/models';
+import { CONFIG_DEFAULTS, CONFIG_KEYS, CONFIG_SECTION } from './configurationRegistry';
 import { resolvePreset } from './presets';
 
 export function clampFontSize(n: number): number {
@@ -60,90 +61,87 @@ function hasUserValue(cfg: vscode.WorkspaceConfiguration, key: string): boolean 
 export function resolveExternalResourceConfig(
   cfg: vscode.WorkspaceConfiguration
 ): ExternalResourceConfig {
-  const hasNewMode = hasUserValue(cfg, 'security.externalResources.mode');
-  const hasLegacy = hasUserValue(cfg, 'security.blockExternalLinks');
+  const hasNewMode = hasUserValue(cfg, CONFIG_KEYS.externalResourceMode);
+  const hasLegacy = hasUserValue(cfg, CONFIG_KEYS.legacyBlockExternalLinks);
 
-  // New settings explicitly set → use new settings
   if (hasNewMode) {
     return {
-      mode: cfg.get<ExternalResourceMode>('security.externalResources.mode', 'whitelist'),
-      allowedDomains: cfg.get<string[]>('security.externalResources.allowedDomains', [...DEFAULT_ALLOWED_DOMAINS]),
+      mode: cfg.get<ExternalResourceMode>(CONFIG_KEYS.externalResourceMode, CONFIG_DEFAULTS.externalResourceMode),
+      allowedDomains: cfg.get<string[]>(CONFIG_KEYS.externalResourceAllowedDomains, [...CONFIG_DEFAULTS.externalResourceAllowedDomains]),
     };
   }
 
-  // Legacy only → migrate
   if (hasLegacy) {
-    const blockAll = cfg.get<boolean>('security.blockExternalLinks', true);
+    const blockAll = cfg.get<boolean>(CONFIG_KEYS.legacyBlockExternalLinks, CONFIG_DEFAULTS.legacyBlockExternalLinks);
     return {
       mode: blockAll ? 'block-all' : 'allow-all',
-      allowedDomains: [...DEFAULT_ALLOWED_DOMAINS],
+      allowedDomains: [...CONFIG_DEFAULTS.externalResourceAllowedDomains],
     };
   }
 
-  // Neither set → defaults
   return {
-    mode: 'whitelist',
-    allowedDomains: [...DEFAULT_ALLOWED_DOMAINS],
+    mode: CONFIG_DEFAULTS.externalResourceMode,
+    allowedDomains: [...CONFIG_DEFAULTS.externalResourceAllowedDomains],
   };
 }
 
 export function getConfig(): MarkdownStudioConfig {
-  const cfg = vscode.workspace.getConfiguration('markdownStudio');
+  const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
 
-  const presetName = cfg.get<string>('style.preset', 'markdown-pdf');
+  const presetName = cfg.get<string>(CONFIG_KEYS.stylePreset, CONFIG_DEFAULTS.stylePreset);
 
   const overrides: Partial<StyleConfigOverrides> = {};
-  if (hasUserValue(cfg, 'style.fontFamily')) {
-    overrides.fontFamily = cfg.get<string>('style.fontFamily')!;
+  if (hasUserValue(cfg, CONFIG_KEYS.styleFontFamily)) {
+    overrides.fontFamily = cfg.get<string>(CONFIG_KEYS.styleFontFamily)!;
   }
-  if (hasUserValue(cfg, 'style.fontSize')) {
-    overrides.fontSize = clampFontSize(cfg.get<number>('style.fontSize')!);
+  if (hasUserValue(cfg, CONFIG_KEYS.styleFontSize)) {
+    overrides.fontSize = clampFontSize(cfg.get<number>(CONFIG_KEYS.styleFontSize)!);
   }
-  if (hasUserValue(cfg, 'style.lineHeight')) {
-    overrides.lineHeight = clampLineHeight(cfg.get<number>('style.lineHeight')!);
+  if (hasUserValue(cfg, CONFIG_KEYS.styleLineHeight)) {
+    overrides.lineHeight = clampLineHeight(cfg.get<number>(CONFIG_KEYS.styleLineHeight)!);
   }
-  if (hasUserValue(cfg, 'export.margin')) {
-    overrides.margin = cfg.get<string>('export.margin')!;
+  if (hasUserValue(cfg, CONFIG_KEYS.exportMargin)) {
+    overrides.margin = cfg.get<string>(CONFIG_KEYS.exportMargin)!;
   }
 
   const style = resolvePreset(presetName, overrides);
 
   return {
-    plantUmlMode: cfg.get('plantuml.mode', 'bundled-jar'),
-    javaPath: cfg.get('java.path', 'java'),
-    pageFormat: cfg.get('export.pageFormat', 'A4'),
+    plantUmlMode: cfg.get(CONFIG_KEYS.plantUmlMode, CONFIG_DEFAULTS.plantUmlMode),
+    javaPath: cfg.get(CONFIG_KEYS.javaPath, CONFIG_DEFAULTS.javaPath),
+    pageFormat: cfg.get(CONFIG_KEYS.pageFormat, CONFIG_DEFAULTS.pageFormat),
     externalResources: resolveExternalResourceConfig(cfg),
     pdfHeaderFooter: {
-      headerEnabled: cfg.get<boolean>('export.header.enabled', true),
-      headerTemplate: cfg.get<string | null>('export.header.template', null),
-      footerEnabled: cfg.get<boolean>('export.footer.enabled', true),
-      footerTemplate: cfg.get<string | null>('export.footer.template', null),
-      pageBreakEnabled: cfg.get<boolean>('export.pageBreak.enabled', true),
+      headerEnabled: cfg.get<boolean>(CONFIG_KEYS.exportHeaderEnabled, CONFIG_DEFAULTS.exportHeaderEnabled),
+      headerTemplate: cfg.get<string | null>(CONFIG_KEYS.exportHeaderTemplate, CONFIG_DEFAULTS.exportHeaderTemplate),
+      footerEnabled: cfg.get<boolean>(CONFIG_KEYS.exportFooterEnabled, CONFIG_DEFAULTS.exportFooterEnabled),
+      footerTemplate: cfg.get<string | null>(CONFIG_KEYS.exportFooterTemplate, CONFIG_DEFAULTS.exportFooterTemplate),
+      pageBreakEnabled: cfg.get<boolean>(CONFIG_KEYS.exportPageBreakEnabled, CONFIG_DEFAULTS.exportPageBreakEnabled),
     },
-    sourceJumpEnabled: cfg.get<boolean>('preview.sourceJump.enabled', false),
+    sourceJumpEnabled: cfg.get<boolean>(CONFIG_KEYS.previewSourceJumpEnabled, CONFIG_DEFAULTS.previewSourceJumpEnabled),
     style,
     toc: {
-      ...parseLevels(cfg.get<string>('toc.levels', '1-3')),
-      orderedList: cfg.get<boolean>('toc.orderedList', false),
-      pageBreak: cfg.get<boolean>('toc.pageBreak', true),
+      ...parseLevels(cfg.get<string>(CONFIG_KEYS.tocLevels, CONFIG_DEFAULTS.tocLevels)),
+      orderedList: cfg.get<boolean>(CONFIG_KEYS.tocOrderedList, CONFIG_DEFAULTS.tocOrderedList),
+      pageBreak: cfg.get<boolean>(CONFIG_KEYS.tocPageBreak, CONFIG_DEFAULTS.tocPageBreak),
     },
     codeBlock: {
-      lineNumbers: cfg.get<boolean>('codeBlock.lineNumbers', true),
+      lineNumbers: cfg.get<boolean>(CONFIG_KEYS.codeBlockLineNumbers, CONFIG_DEFAULTS.codeBlockLineNumbers),
     },
     pdfIndex: {
-      enabled: cfg.get<boolean>('export.pdfIndex.enabled', true),
-      title: cfg.get<string>('export.pdfIndex.title', 'Table of Contents'),
+      enabled: cfg.get<boolean>(CONFIG_KEYS.exportPdfIndexEnabled, CONFIG_DEFAULTS.exportPdfIndexEnabled),
+      title: cfg.get<string>(CONFIG_KEYS.exportPdfIndexTitle, CONFIG_DEFAULTS.exportPdfIndexTitle),
     },
     pdfToc: {
-      hidden: cfg.get<boolean>('export.pdfToc.hidden', true),
+      hidden: cfg.get<boolean>(CONFIG_KEYS.exportPdfTocHidden, CONFIG_DEFAULTS.exportPdfTocHidden),
     },
     pdfBookmarks: {
-      enabled: cfg.get<boolean>('export.pdfBookmarks.enabled', true),
+      enabled: cfg.get<boolean>(CONFIG_KEYS.exportPdfBookmarksEnabled, CONFIG_DEFAULTS.exportPdfBookmarksEnabled),
     },
-    theme: cfg.get<string>('style.theme', 'markdown-pdf'),
-    customCss: cfg.get<string>('style.customCss', ''),
-    outputFilename: cfg.get<string>('export.outputFilename', '${filename}'),
-    previewTheme: cfg.get<PreviewThemeMode>('preview.theme', 'auto'),
-    diagramTimeout: cfg.get<number>('export.diagramTimeout', 0),
+    theme: cfg.get<string>(CONFIG_KEYS.styleTheme, CONFIG_DEFAULTS.styleTheme),
+    customCss: cfg.get<string>(CONFIG_KEYS.styleCustomCss, CONFIG_DEFAULTS.styleCustomCss),
+    outputFilename: cfg.get<string>(CONFIG_KEYS.exportOutputFilename, CONFIG_DEFAULTS.exportOutputFilename),
+    previewTheme: cfg.get<PreviewThemeMode>(CONFIG_KEYS.previewTheme, CONFIG_DEFAULTS.previewTheme),
+    diagramTimeout: cfg.get<number>(CONFIG_KEYS.exportDiagramTimeout, CONFIG_DEFAULTS.exportDiagramTimeout),
   };
 }

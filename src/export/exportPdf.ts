@@ -11,26 +11,27 @@ import { getConfig } from '../infra/config';
 import { loadCustomCss } from '../infra/customCssLoader';
 import { buildHtml } from '../preview/buildHtml';
 import type { BookmarkEntry } from '../types/models';
+import { RUNTIME_MESSAGES } from '../infra/messages';
 
-/** プログレス報告用の抽象インターフェース（VS Code APIへの直接依存を避ける） */
+/** Progress reporting abstraction that avoids direct VS Code API coupling. */
 export interface ProgressReporter {
   report(message: string, increment?: number): void;
 }
 
-/** キャンセルチェック用の抽象インターフェース */
+/** Cancellation checking abstraction. */
 export interface CancellationChecker {
   isCancelled(): boolean;
 }
 
-/** エクスポートキャンセルを示すカスタムエラー */
+/** Custom error for user-cancelled exports. */
 export class CancellationError extends Error {
   constructor() {
-    super('Export cancelled by user');
+    super(RUNTIME_MESSAGES.exportPdf.cancellationError);
     this.name = 'CancellationError';
   }
 }
 
-/** キャンセル状態をチェックし、キャンセルされていれば CancellationError をスローする */
+/** Throws CancellationError when the current export was cancelled. */
 export function checkCancellation(cancellation?: CancellationChecker): void {
   if (cancellation?.isCancelled()) {
     throw new CancellationError();
@@ -107,13 +108,13 @@ export async function exportToPdf(
   const cfg = getConfig();
 
   // Step 1: Build HTML
-  progress?.report('Building HTML...', 15);
+  progress?.report(RUNTIME_MESSAGES.exportProgress.buildingHtml, 15);
   let html = await buildHtml(document.getText(), context, undefined, undefined, document.uri);
 
   checkCancellation(cancellation);
 
   // Step 2: Inline local images as Base64 data URIs for Playwright rendering
-  progress?.report('Processing images...', 15);
+  progress?.report(RUNTIME_MESSAGES.exportProgress.processingImages, 15);
   html = await inlineLocalImages(html);
 
   // Inline the preview CSS so tables, code blocks, and other elements are styled in the PDF.
@@ -186,7 +187,7 @@ export async function exportToPdf(
   checkCancellation(cancellation);
 
   // Step 3: Launch Chromium
-  progress?.report('Launching browser...', 20);
+  progress?.report(RUNTIME_MESSAGES.exportProgress.launchingBrowser, 20);
 
   // Point Playwright at the managed Chromium directory when available
   if (dependencyStatus?.browserPath) {
@@ -203,7 +204,7 @@ export async function exportToPdf(
   } catch (err) {
     if (!dependencyStatus?.browserPath) {
       throw new Error(
-        'Chromium browser is not available. Run "Markdown Studio: Setup Dependencies" to install it automatically.'
+        RUNTIME_MESSAGES.dependencies.chromiumBrowserUnavailable
       );
     }
     throw err;
@@ -230,7 +231,7 @@ export async function exportToPdf(
     })()`);
 
     // Step 4: Mermaid rendering
-    progress?.report('Rendering diagrams...', 15);
+    progress?.report(RUNTIME_MESSAGES.exportProgress.renderingDiagrams, 15);
 
     // Inject the bundled preview script (contains Mermaid) into the Playwright page.
     // We use addScriptTag after setContent so the DOM is ready.
@@ -247,7 +248,7 @@ export async function exportToPdf(
       const startTime = Date.now();
       const progressInterval = setInterval(() => {
         const elapsed = Math.round((Date.now() - startTime) / 1000);
-        progress?.report(`Rendering diagrams... (${elapsed}s)`);
+        progress?.report(RUNTIME_MESSAGES.exportProgress.renderingDiagramsElapsed(elapsed));
       }, 1000);
 
       try {
@@ -259,7 +260,7 @@ export async function exportToPdf(
       } catch {
         // Timeout — proceed with PDF generation; some diagrams may be missing
         const elapsed = Math.round((Date.now() - startTime) / 1000);
-        progress?.report(`Diagram rendering timed out after ${elapsed}s — proceeding`);
+        progress?.report(RUNTIME_MESSAGES.exportProgress.diagramTimeoutProceeding(elapsed));
       } finally {
         clearInterval(progressInterval);
       }
@@ -277,7 +278,7 @@ export async function exportToPdf(
     let bookmarkEntries: BookmarkEntry[] = [];
     if (cfg.pdfIndex.enabled) {
       // Step 6: Generate TOC
-      progress?.report('Generating table of contents...', 15);
+      progress?.report(RUNTIME_MESSAGES.exportProgress.generatingTableOfContents, 15);
       // Pass 1: Generate PDF to buffer (no file) to get total page count
       const tempPdfBuffer = await page.pdf({
         format: cfg.pageFormat,
@@ -349,7 +350,7 @@ export async function exportToPdf(
           const startTime2 = Date.now();
           const progressInterval2 = setInterval(() => {
             const elapsed = Math.round((Date.now() - startTime2) / 1000);
-            progress?.report(`Rendering diagrams (pass 2)... (${elapsed}s)`);
+            progress?.report(RUNTIME_MESSAGES.exportProgress.renderingDiagramsPass2Elapsed(elapsed));
           }, 1000);
 
           try {
@@ -406,7 +407,7 @@ export async function exportToPdf(
 
     // Step 5: Generate PDF
     checkCancellation(cancellation);
-    progress?.report('Generating PDF...', 20);
+    progress?.report(RUNTIME_MESSAGES.exportProgress.generatingPdf, 20);
 
     await page.pdf({
       path: outputPath,
@@ -423,7 +424,7 @@ export async function exportToPdf(
 
     // Add bookmarks to PDF
     if (cfg.pdfBookmarks.enabled && bookmarkEntries.length > 0) {
-      progress?.report('Adding bookmarks...', 5);
+      progress?.report(RUNTIME_MESSAGES.exportProgress.addingBookmarks, 5);
       try {
         await addBookmarks(outputPath, bookmarkEntries, cfg.toc.minLevel, cfg.toc.maxLevel);
       } catch (err) {
