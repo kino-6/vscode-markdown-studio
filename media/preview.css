@@ -74,6 +74,18 @@ code {
   color: #9a050f;
 }
 
+pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+body.vscode-dark pre code,
+body.vscode-high-contrast pre code {
+  background: transparent;
+  color: inherit;
+}
+
 img,
 svg {
   max-width: 100%;

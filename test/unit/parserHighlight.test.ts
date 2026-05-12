@@ -15,6 +15,20 @@ describe('parser syntax highlighting integration', () => {
     expect(html).toContain('<span class="hljs-');
   });
 
+  it('renders Windows shell language aliases with hljs class spans', () => {
+    const samples = [
+      '```powershell\n$workspace = "C:\\Users\\Public\\Documents\\Markdown Studio"\nWrite-Host $workspace\n```',
+      '```bat\n@echo off\nset DEMO=%WORKSPACE%\\demo_win.md\n```',
+      '```ini\n[workspace]\nroot=C:\\Users\\Public\\Documents\\Markdown Studio\n```',
+    ];
+
+    for (const md of samples) {
+      const html = parser.render(md);
+      expect(html).toMatch(/class="hljs/);
+      expect(html).toContain('<span class="hljs-');
+    }
+  });
+
   it('renders a fenced block with an unknown language as plain escaped <pre><code>', () => {
     const md = '```unknownlang\nconst x = 1;\n```';
     const html = parser.render(md);

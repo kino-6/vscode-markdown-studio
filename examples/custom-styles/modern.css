@@ -151,6 +151,12 @@ code {
   color: var(--modern-accent);
 }
 
+pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+}
+
 /* ── Tables ──────────────────────────────────────────── */
 
 table {
@@ -355,6 +361,11 @@ body.vscode-dark h1 {
 body.vscode-dark code {
   background: var(--modern-accent-bg);
   color: var(--modern-accent-light);
+}
+
+body.vscode-dark pre code {
+  background: none;
+  color: inherit;
 }
 
 body.vscode-dark img {
