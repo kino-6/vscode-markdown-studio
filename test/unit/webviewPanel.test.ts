@@ -60,11 +60,19 @@ vi.mock('vscode', () => {
       showWarningMessage: vi.fn(),
       showTextDocument: vi.fn(),
     },
+    env: {
+      openExternal: vi.fn(async () => true),
+    },
     languages: {
       createDiagnosticCollection: vi.fn(() => mockDiagnosticCollection),
     },
     ViewColumn: { Beside: 2, One: 1 },
     Uri: {
+      parse: (value: string) => {
+        const match = value.match(/^([a-z][a-z0-9+\-.]*):/i);
+        if (!match) throw new Error('Invalid URI');
+        return { scheme: match[1], toString: () => value };
+      },
       joinPath: (...parts: Array<{ path?: string } | string>) => ({
         path: parts.map((p) => (typeof p === 'string' ? p : p.path ?? '')).join('/'),
       }),
@@ -132,7 +140,7 @@ vi.mock('../../src/toc/tocValidator', () => ({
 /*  Imports (after mocks)                                              */
 /* ------------------------------------------------------------------ */
 
-import { openOrRefreshPreview, _resetPanelForTesting } from '../../src/preview/webviewPanel';
+import { handleOpenExternalMessage, openOrRefreshPreview, _resetPanelForTesting } from '../../src/preview/webviewPanel';
 import { renderBody, buildLoadingHtml } from '../../src/preview/buildHtml';
 import { validateEnvironment } from '../../src/commands/validateEnvironmentCore';
 import * as vscode from 'vscode';
@@ -209,6 +217,33 @@ describe('openOrRefreshPreview – panel reuse (R3/D3)', () => {
     // Same panel is returned, html was refreshed
     expect(panel2).toBe(panel1);
     expect(panel2.webview.html).toBe('<html>mock</html>');
+  });
+});
+
+describe('handleOpenExternalMessage', () => {
+  beforeEach(() => {
+    vi.mocked(vscode.env.openExternal).mockClear();
+  });
+
+  it('opens user-clicked file URI links through VS Code', async () => {
+    await handleOpenExternalMessage({
+      type: 'openExternal',
+      href: 'file:///C:/Users/Public/Documents/Markdown%20Studio/demo_win.md',
+    });
+
+    expect(vscode.env.openExternal).toHaveBeenCalledTimes(1);
+    expect(vscode.env.openExternal).toHaveBeenCalledWith(
+      expect.objectContaining({ scheme: 'file' })
+    );
+  });
+
+  it('blocks command URI links from the preview webview', async () => {
+    await handleOpenExternalMessage({
+      type: 'openExternal',
+      href: 'command:workbench.action.reloadWindow',
+    });
+
+    expect(vscode.env.openExternal).not.toHaveBeenCalled();
   });
 });
 

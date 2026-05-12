@@ -22,6 +22,8 @@ const body: any = {
   innerHTML: '',
 };
 
+const postMessageMock = vi.fn();
+
 (globalThis as any).document = {
   body,
   querySelectorAll: () => [],
@@ -50,7 +52,7 @@ const eventListeners: Record<string, Array<(event: any) => void>> = {};
 };
 
 (globalThis as any).acquireVsCodeApi = () => ({
-  postMessage: vi.fn(),
+  postMessage: postMessageMock,
   getState: vi.fn(),
   setState: vi.fn(),
 });
@@ -89,6 +91,7 @@ function dispatchMessage(data: unknown) {
 describe('Message handler unit tests', () => {
   beforeEach(() => {
     body.innerHTML = '<p>original</p>';
+    postMessageMock.mockClear();
   });
 
   /**
@@ -181,5 +184,46 @@ describe('Message handler unit tests', () => {
 
     dispatchMessage({});
     expect(body.innerHTML).toBe('<p>untouched</p>');
+  });
+
+  it('document links post openExternal messages on click', async () => {
+    let clickHandler: ((event: any) => void) | undefined;
+    const attrs: Record<string, string> = {
+      href: 'file:///C:/Users/Public/Documents/Markdown%20Studio/demo_win.md',
+    };
+    const link = {
+      getAttribute: (name: string) => attrs[name] ?? null,
+      setAttribute: (name: string, value: string) => {
+        attrs[name] = value;
+      },
+      addEventListener: (type: string, handler: (event: any) => void) => {
+        if (type === 'click') clickHandler = handler;
+      },
+    };
+
+    const origQuerySelectorAll = (globalThis as any).document.querySelectorAll;
+    (globalThis as any).document.querySelectorAll = (selector: string) => {
+      if (selector === 'a[href]') return [link];
+      return [];
+    };
+
+    dispatchMessage({
+      type: 'update-body',
+      html: '<a href="file:///C:/Users/Public/Documents/Markdown%20Studio/demo_win.md">file:///...</a>',
+      generation: 500,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const preventDefault = vi.fn();
+    clickHandler?.({ preventDefault });
+
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(postMessageMock).toHaveBeenCalledWith({
+      type: 'openExternal',
+      href: 'file:///C:/Users/Public/Documents/Markdown%20Studio/demo_win.md',
+    });
+
+    (globalThis as any).document.querySelectorAll = origQuerySelectorAll;
   });
 });

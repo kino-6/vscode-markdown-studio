@@ -39,9 +39,9 @@ These strings are intentionally Windows-shaped. They should render as plain text
 | Temp path | `%TEMP%\markdown-studio\diagram-output.svg` |
 | File URI | `file:///C:/Users/Public/Documents/Markdown%20Studio/logo.svg` |
 
-Markdown link using a file URI:
+Visible file URI link target:
 
-<a href="file:///C:/Users/Public/Documents/Markdown%20Studio/demo_win.md">Open a Windows-style file URI</a>
+<a href="file:///C:/Users/Public/Documents/Markdown%20Studio/demo_win.md"><code>file:///C:/Users/Public/Documents/Markdown%20Studio/demo_win.md</code></a>
 
 Plain URL-like text should not damage surrounding content:
 

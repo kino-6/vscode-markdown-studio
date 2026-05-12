@@ -175,6 +175,23 @@ function registerTocLinkHandlers() {
   }
 }
 
+function registerDocumentLinkHandlers() {
+  const links = document.querySelectorAll('a[href]');
+  for (const link of links) {
+    if (link.getAttribute('data-ms-link-handler') === 'true') continue;
+    link.setAttribute('data-ms-link-handler', 'true');
+
+    link.addEventListener('click', (event) => {
+      const href = link.getAttribute('href');
+      if (!href || href.startsWith('#')) return;
+      if (!/^[a-z][a-z0-9+\-.]*:/i.test(href)) return;
+
+      event.preventDefault();
+      vscode.postMessage({ type: 'openExternal', href });
+    });
+  }
+}
+
 function showLoadingOverlay() {
   let overlay = document.getElementById('ms-loading-overlay');
   if (!overlay) {
@@ -238,12 +255,14 @@ window.addEventListener('message', (event) => {
     restoreZoomStates(savedZoomStates);
     addCopyButtons();
     registerTocLinkHandlers();
+    registerDocumentLinkHandlers();
   }).catch((error) => {
     console.error('Mermaid rendering failed during update-body', error);
     initZoomPan();
     restoreZoomStates(savedZoomStates);
     addCopyButtons();
     registerTocLinkHandlers();
+    registerDocumentLinkHandlers();
   });
   // innerHTML destroyed the overlay element — showLoadingOverlay() would
   // re-create it, but the render is already done so just ensure it's gone.
@@ -267,6 +286,7 @@ function initPreview() {
 
   addCopyButtons();
   registerTocLinkHandlers();
+  registerDocumentLinkHandlers();
 
   observeThemeChanges((newThemeKind) => {
     // When override is 'light' or 'dark', ignore VS Code theme changes
@@ -610,4 +630,4 @@ function initZoomPan() {
   });
 }
 
-export { THEME_MAP, detectThemeKind, getMermaidTheme, resolveEffectiveThemeKind, applyThemeClass, onThemeChanged, observeThemeChanges, findSourceLine, lastAppliedGeneration, showLoadingOverlay, hideLoadingOverlay, registerTocLinkHandlers, initZoomPan, clamp, handleWheel, handleDblClick, handleMouseDown, handleMouseMove, handleMouseUp, applyTransform, attachZoomPan, MIN_SCALE, MAX_SCALE, ZOOM_SENSITIVITY, createZoomToolbar, resetZoom, isDefaultZoomState, scheduleRerender, getDiagramType, triggerSvgRerender, rerenderMermaid, rerenderPlantUml, handlePlantUmlRerenderResult, RERENDER_DEBOUNCE_MS, saveZoomStates, restoreZoomStates };
+export { THEME_MAP, detectThemeKind, getMermaidTheme, resolveEffectiveThemeKind, applyThemeClass, onThemeChanged, observeThemeChanges, findSourceLine, lastAppliedGeneration, showLoadingOverlay, hideLoadingOverlay, registerTocLinkHandlers, registerDocumentLinkHandlers, initZoomPan, clamp, handleWheel, handleDblClick, handleMouseDown, handleMouseMove, handleMouseUp, applyTransform, attachZoomPan, MIN_SCALE, MAX_SCALE, ZOOM_SENSITIVITY, createZoomToolbar, resetZoom, isDefaultZoomState, scheduleRerender, getDiagramType, triggerSvgRerender, rerenderMermaid, rerenderPlantUml, handlePlantUmlRerenderResult, RERENDER_DEBOUNCE_MS, saveZoomStates, restoreZoomStates };

@@ -161,6 +161,24 @@ export async function handleJumpToLine(
   editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
 }
 
+export async function handleOpenExternalMessage(message: { type?: unknown; href?: unknown }): Promise<void> {
+  if (message.type !== 'openExternal' || typeof message.href !== 'string') return;
+
+  let uri: vscode.Uri;
+  try {
+    uri = vscode.Uri.parse(message.href);
+  } catch {
+    return;
+  }
+
+  // Only user-clicked, navigable URI schemes are handed to VS Code.
+  // `command:` and other executable schemes remain blocked.
+  const scheme = uri.scheme.toLowerCase();
+  if (!['file', 'http', 'https', 'mailto'].includes(scheme)) return;
+
+  await vscode.env.openExternal(uri);
+}
+
 /**
  * Opens a new preview panel or, if one already exists, reveals it and
  * refreshes its content. This prevents panel proliferation (R3).
@@ -185,6 +203,7 @@ export async function openOrRefreshPreview(
     // Register message handler for the new document
     messageSubscription = currentPanel.webview.onDidReceiveMessage(async (msg) => {
       handleJumpToLine(document.uri, msg);
+      await handleOpenExternalMessage(msg);
 
       if (msg.type === 'rerender-plantuml' && typeof msg.source === 'string') {
         const result = await renderPlantUml(msg.source, context);
@@ -318,6 +337,7 @@ export async function openOrRefreshPreview(
   // Register message handler for jump-to-line
   messageSubscription = panel.webview.onDidReceiveMessage(async (msg) => {
     handleJumpToLine(document.uri, msg);
+    await handleOpenExternalMessage(msg);
 
     if (msg.type === 'rerender-plantuml' && typeof msg.source === 'string') {
       const result = await renderPlantUml(msg.source, context);
