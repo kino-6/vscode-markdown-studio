@@ -758,6 +758,68 @@ Pdf --> Ratio
 </details>
 
 <details open>
+<summary>Wide PlantUML timing chart</summary>
+
+```plantuml
+@startuml
+scale 1.25
+concise "Render pipeline" as Pipeline
+concise "PDF output" as PDF
+
+@0
+Pipeline is "MD"
+PDF is empty
+
+@200
+Pipeline is "Parse"
+
+@400
+Pipeline is "PUML"
+
+@600
+Pipeline is "SVG"
+
+@800
+Pipeline is "HTML"
+
+@1000
+Pipeline is "CSS"
+
+@1200
+Pipeline is "Print"
+
+@1400
+Pipeline is "Layout"
+
+@1600
+Pipeline is "Wide"
+
+@1800
+Pipeline is "Scale"
+PDF is fit
+
+@2000
+Pipeline is "Ratio"
+PDF is ratio
+
+@2200
+Pipeline is "Index"
+
+@2400
+Pipeline is "Marks"
+
+@2600
+Pipeline is "Write"
+
+@2800
+Pipeline is Done
+PDF is done
+@enduml
+```
+
+</details>
+
+<details open>
 <summary>Wide SVG with fixed inline dimensions</summary>
 
 ```svg
