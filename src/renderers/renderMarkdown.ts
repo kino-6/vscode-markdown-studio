@@ -1,5 +1,6 @@
 import MarkdownIt from 'markdown-it';
 import * as vscode from 'vscode';
+import { mapWithConcurrency } from '../infra/async';
 import { getConfig } from '../infra/config';
 import { countLineBreaks, detectLineEnding } from '../infra/lineEndings';
 import { RUNTIME_MESSAGES } from '../infra/messages';
@@ -73,26 +74,6 @@ function escapeHtml(text: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-}
-
-async function mapWithConcurrency<T, R>(
-  items: T[],
-  concurrency: number,
-  mapper: (item: T, index: number) => Promise<R>
-): Promise<R[]> {
-  const results = new Array<R>(items.length);
-  let nextIndex = 0;
-
-  async function worker(): Promise<void> {
-    while (nextIndex < items.length) {
-      const currentIndex = nextIndex++;
-      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
-    }
-  }
-
-  const workerCount = Math.min(Math.max(concurrency, 1), items.length);
-  await Promise.all(Array.from({ length: workerCount }, () => worker()));
-  return results;
 }
 
 export async function renderMarkdownDocument(

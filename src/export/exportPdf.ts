@@ -2,7 +2,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as vscode from 'vscode';
+import type { Page } from 'playwright';
 import { dependencyStatus } from '../extension';
+import { mapWithConcurrency } from '../infra/async';
 import { buildPdfOptions, injectPageBreakCss, injectTocPageBreakCss } from './pdfHeaderFooter';
 import { buildPdfIndexHtml, estimateIndexPageCount, HeadingPageEntry } from './pdfIndex';
 import { addBookmarks } from './pdfBookmarks';
@@ -50,6 +52,18 @@ const MIME_TYPES: Record<string, string> = {
   '.ico': 'image/x-icon',
 };
 
+type PdfExportConfig = ReturnType<typeof getConfig>;
+type LocalImageRef = { match: string; before: string; fileUri: string };
+type HtmlReplacement = { match: string; replacement: string };
+type PdfAssets = {
+  previewCss?: string;
+  hljsCss?: string;
+  katexCss?: string;
+  customCss: string;
+  customCssWarnings: string[];
+  previewJsContent?: string;
+};
+
 /**
  * Converts local image file:// URIs in HTML to inline Base64 data URIs.
  *
@@ -58,35 +72,8 @@ const MIME_TYPES: Record<string, string> = {
  * Inlining images as data URIs bypasses all file-access restrictions.
  */
 export async function inlineLocalImages(html: string): Promise<string> {
-  const regex = /<img([^>]*)\bsrc="(file:\/\/[^"]+)"/g;
-  const imageRefs: { match: string; before: string; fileUri: string }[] = [];
-
-  let m: RegExpExecArray | null;
-  while ((m = regex.exec(html)) !== null) {
-    const [fullMatch, before, fileUri] = m;
-    imageRefs.push({ match: fullMatch, before, fileUri });
-  }
-
-  const replacements = await Promise.all(imageRefs.map(async ({ match, before, fileUri }) => {
-    const filePath = filePathFromUri(fileUri);
-    if (!filePath) return undefined;
-
-    const ext = path.extname(filePath).toLowerCase();
-    const mime = MIME_TYPES[ext];
-    if (!mime) return undefined;
-
-    try {
-      const buf = await fs.readFile(filePath);
-      const b64 = buf.toString('base64');
-      return {
-        match,
-        replacement: `<img${before}src="data:${mime};base64,${b64}"`,
-      };
-    } catch {
-      // File not found or unreadable — leave the src as-is (graceful degradation)
-      return undefined;
-    }
-  }));
+  const imageRefs = findLocalImageRefs(html);
+  const replacements = await mapWithConcurrency(imageRefs, 8, buildLocalImageReplacement);
 
   let result = html;
   for (const item of replacements) {
@@ -95,6 +82,40 @@ export async function inlineLocalImages(html: string): Promise<string> {
     result = result.replace(match, replacement);
   }
   return result;
+}
+
+function findLocalImageRefs(html: string): LocalImageRef[] {
+  const regex = /<img([^>]*)\bsrc="(file:\/\/[^"]+)"/g;
+  const refs: LocalImageRef[] = [];
+
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(html)) !== null) {
+    const [fullMatch, before, fileUri] = match;
+    refs.push({ match: fullMatch, before, fileUri });
+  }
+
+  return refs;
+}
+
+async function buildLocalImageReplacement({ match, before, fileUri }: LocalImageRef): Promise<HtmlReplacement | undefined> {
+  const filePath = filePathFromUri(fileUri);
+  if (!filePath) return undefined;
+
+  const ext = path.extname(filePath).toLowerCase();
+  const mime = MIME_TYPES[ext];
+  if (!mime) return undefined;
+
+  try {
+    const buf = await fs.readFile(filePath);
+    const b64 = buf.toString('base64');
+    return {
+      match,
+      replacement: `<img${before}src="data:${mime};base64,${b64}"`,
+    };
+  } catch {
+    // File not found or unreadable — leave the src as-is (graceful degradation)
+    return undefined;
+  }
 }
 
 function filePathFromUri(fileUri: string): string | undefined {
@@ -114,10 +135,125 @@ async function readUtf8IfExists(filePath: string): Promise<string | undefined> {
   }
 }
 
-async function insertPdfIndexIntoRenderedPage(page: { evaluate: (fn: (indexHtml: string) => void, indexHtml: string) => Promise<unknown> }, indexHtml: string): Promise<void> {
+async function loadPdfAssets(context: vscode.ExtensionContext, cfg: PdfExportConfig): Promise<PdfAssets> {
+  const previewCssPath = path.join(context.extensionPath, 'media', 'preview.css');
+  const hljsCssPath = path.join(context.extensionPath, 'media', 'hljs-theme.css');
+  const katexCssPath = path.join(context.extensionPath, 'media', 'katex.min.css');
+  const previewJsPath = path.join(context.extensionPath, 'dist', 'preview.js');
+
+  const [
+    previewCss,
+    hljsCss,
+    katexCss,
+    customCssResult,
+    previewJsContent,
+  ] = await Promise.all([
+    readUtf8IfExists(previewCssPath),
+    readUtf8IfExists(hljsCssPath),
+    readUtf8IfExists(katexCssPath),
+    loadCustomCss(cfg.theme, cfg.customCss, context.extensionPath),
+    readUtf8IfExists(previewJsPath),
+  ]);
+
+  return {
+    previewCss,
+    hljsCss,
+    katexCss,
+    customCss: customCssResult.css,
+    customCssWarnings: customCssResult.warnings,
+    previewJsContent,
+  };
+}
+
+function injectStyle(html: string, css: string, label?: string): string {
+  const prefix = label ? `/* ${label} */\n` : '';
+  return html.replace('</head>', `<style>${prefix}${css}</style>\n</head>`);
+}
+
+function injectPdfAssets(html: string, assets: PdfAssets): string {
+  let result = html;
+  if (assets.previewCss) {
+    result = injectStyle(result, assets.previewCss);
+  }
+  if (assets.hljsCss) {
+    result = injectStyle(result, assets.hljsCss);
+  }
+  if (assets.katexCss) {
+    result = injectStyle(result, assets.katexCss);
+  }
+  if (assets.customCss) {
+    result = injectStyle(result, assets.customCss, 'md-studio-custom-css');
+  }
+  return result;
+}
+
+function preparePdfHtml(html: string, cfg: PdfExportConfig): string {
+  let result = html
+    .replace(/<div id="ms-loading-overlay"[^>]*>.*?<\/div>\s*<\/div>/s, '')
+    .replace(/<details(?![^>]*\bopen\b)/g, '<details open');
+
+  if (cfg.pdfToc.hidden) {
+    result = injectStyle(result, '.ms-toc, .ms-toc-comment { display: none !important; }');
+  }
+  if (cfg.pdfHeaderFooter.pageBreakEnabled) {
+    result = injectPageBreakCss(result);
+  }
+  if (cfg.toc.pageBreak) {
+    result = injectTocPageBreakCss(result);
+  }
+  return result;
+}
+
+async function insertPdfIndexIntoRenderedPage(page: Pick<Page, 'evaluate'>, indexHtml: string): Promise<void> {
   await page.evaluate((html: string) => {
     document.body.insertAdjacentHTML('afterbegin', html);
   }, indexHtml);
+}
+
+async function forceLightMode(page: Pick<Page, 'evaluate'>): Promise<void> {
+  await page.evaluate(`(() => {
+    document.body.classList.remove('vscode-dark', 'vscode-high-contrast');
+    document.body.classList.add('vscode-light');
+  })()`);
+}
+
+async function injectPreviewRuntime(page: Pick<Page, 'addScriptTag'>, previewJsContent: string): Promise<void> {
+  await page.addScriptTag({
+    content: 'if(typeof acquireVsCodeApi==="undefined"){window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){return undefined},setState:function(){}};};}',
+  });
+  await page.addScriptTag({ content: previewJsContent });
+}
+
+async function waitForMermaidDiagrams(
+  page: Pick<Page, 'waitForFunction'>,
+  timeoutMs: number,
+  onTimeout?: (elapsedSeconds: number) => void,
+  onTick?: (elapsedSeconds: number) => void,
+): Promise<void> {
+  const startTime = Date.now();
+  const progressInterval = onTick
+    ? setInterval(() => onTick(Math.round((Date.now() - startTime) / 1000)), 1000)
+    : undefined;
+
+  try {
+    await page.waitForFunction(`(() => {
+      const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
+      if (hosts.length === 0) return true;
+      return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
+    })()`, { timeout: timeoutMs });
+  } catch {
+    onTimeout?.(Math.round((Date.now() - startTime) / 1000));
+  } finally {
+    if (progressInterval) {
+      clearInterval(progressInterval);
+    }
+  }
+}
+
+function countPdfPages(pdfBuffer: Buffer): number {
+  const pdfStr = pdfBuffer.toString('latin1');
+  const pageMatches = pdfStr.match(/\/Type\s*\/Page(?!s)/g);
+  return pageMatches ? pageMatches.length : 1;
 }
 
 export async function exportToPdf(
@@ -127,16 +263,7 @@ export async function exportToPdf(
   cancellation?: CancellationChecker,
 ): Promise<string> {
   const cfg = getConfig();
-  const previewCssPath = path.join(context.extensionPath, 'media', 'preview.css');
-  const hljsCssPath = path.join(context.extensionPath, 'media', 'hljs-theme.css');
-  const katexCssPath = path.join(context.extensionPath, 'media', 'katex.min.css');
-  const previewJsPath = path.join(context.extensionPath, 'dist', 'preview.js');
-
-  const previewCssPromise = readUtf8IfExists(previewCssPath);
-  const hljsCssPromise = readUtf8IfExists(hljsCssPath);
-  const katexCssPromise = readUtf8IfExists(katexCssPath);
-  const previewJsContentPromise = readUtf8IfExists(previewJsPath);
-  const customCssPromise = loadCustomCss(cfg.theme, cfg.customCss, context.extensionPath);
+  const assetsPromise = loadPdfAssets(context, cfg);
 
   // Step 1: Build HTML
   progress?.report(RUNTIME_MESSAGES.exportProgress.buildingHtml, 15);
@@ -148,58 +275,11 @@ export async function exportToPdf(
   progress?.report(RUNTIME_MESSAGES.exportProgress.processingImages, 15);
   html = await inlineLocalImages(html);
 
-  // Inline the preview CSS so tables, code blocks, and other elements are styled in the PDF.
-  // There's no webview in the PDF path, so we read the CSS from disk
-  // and inject it as <style> tags that Playwright can render.
-  const [previewCss, hljsCss, katexCss, { css: customCss, warnings: customCssWarnings }, previewJsContent] = await Promise.all([
-    previewCssPromise,
-    hljsCssPromise,
-    katexCssPromise,
-    customCssPromise,
-    previewJsContentPromise,
-  ]);
-  if (previewCss) {
-    html = html.replace('</head>', `<style>${previewCss}</style>\n</head>`);
-  }
-  if (hljsCss) {
-    html = html.replace('</head>', `<style>${hljsCss}</style>\n</head>`);
-  }
-
-  // Inject KaTeX CSS for math rendering in PDF
-  if (katexCss) {
-    html = html.replace('</head>', `<style>${katexCss}</style>\n</head>`);
-  }
-
-  // Inject custom CSS (theme + inline) if configured
-  for (const w of customCssWarnings) {
+  const assets = await assetsPromise;
+  for (const w of assets.customCssWarnings) {
     console.warn(w);
   }
-  if (customCss) {
-    html = html.replace('</head>', `<style>/* md-studio-custom-css */\n${customCss}</style>\n</head>`);
-  }
-
-  // Read the bundled preview script path for later injection via Playwright.
-  // We inject it after setContent so DOMContentLoaded fires and Mermaid renders.
-  // Remove the loading overlay — it's only needed for the live preview webview
-  html = html.replace(/<div id="ms-loading-overlay"[^>]*>.*?<\/div>\s*<\/div>/s, '');
-
-  // Force all <details> elements open for PDF — collapsed content would be invisible
-  html = html.replace(/<details(?![^>]*\bopen\b)/g, '<details open');
-
-  // When pdfToc.hidden is true, hide inline TOC (both [toc] marker and <!-- TOC --> comment marker)
-  if (cfg.pdfToc.hidden) {
-    html = html.replace('</head>', '<style>.ms-toc, .ms-toc-comment { display: none !important; }</style>\n</head>');
-  }
-
-  // Inject page-break CSS if enabled
-  if (cfg.pdfHeaderFooter.pageBreakEnabled) {
-    html = injectPageBreakCss(html);
-  }
-
-  // Inject TOC-specific page-break CSS if enabled
-  if (cfg.toc.pageBreak) {
-    html = injectTocPageBreakCss(html);
-  }
+  html = preparePdfHtml(injectPdfAssets(html, assets), cfg);
 
   checkCancellation(cancellation);
 
@@ -240,12 +320,7 @@ export async function exportToPdf(
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle' });
-
-    // Force light mode for PDF output — remove dark/high-contrast classes
-    await page.evaluate(`(() => {
-      document.body.classList.remove('vscode-dark', 'vscode-high-contrast');
-      document.body.classList.add('vscode-light');
-    })()`);
+    await forceLightMode(page);
 
     // Step 4: Mermaid rendering
     progress?.report(RUNTIME_MESSAGES.exportProgress.renderingDiagrams, 15);
@@ -253,34 +328,15 @@ export async function exportToPdf(
     // Inject the bundled preview script (contains Mermaid) into the Playwright page.
     // We use addScriptTag after setContent so the DOM is ready.
     // First, stub acquireVsCodeApi which only exists in VS Code webviews.
-    if (previewJsContent) {
-      await page.addScriptTag({
-        content: 'if(typeof acquireVsCodeApi==="undefined"){window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){return undefined},setState:function(){}};};}',
-      });
-      await page.addScriptTag({ content: previewJsContent });
-
-      // Wait for Mermaid diagrams to render with progress counter.
-      // timeout=0 means no limit (poll indefinitely until all diagrams are ready).
+    if (assets.previewJsContent) {
+      await injectPreviewRuntime(page, assets.previewJsContent);
       const diagramTimeoutMs = cfg.diagramTimeout > 0 ? cfg.diagramTimeout * 1000 : 0;
-      const startTime = Date.now();
-      const progressInterval = setInterval(() => {
-        const elapsed = Math.round((Date.now() - startTime) / 1000);
-        progress?.report(RUNTIME_MESSAGES.exportProgress.renderingDiagramsElapsed(elapsed));
-      }, 1000);
-
-      try {
-        await page.waitForFunction(`(() => {
-          const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
-          if (hosts.length === 0) return true;
-          return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
-        })()`, { timeout: diagramTimeoutMs });
-      } catch {
-        // Timeout — proceed with PDF generation; some diagrams may be missing
-        const elapsed = Math.round((Date.now() - startTime) / 1000);
-        progress?.report(RUNTIME_MESSAGES.exportProgress.diagramTimeoutProceeding(elapsed));
-      } finally {
-        clearInterval(progressInterval);
-      }
+      await waitForMermaidDiagrams(
+        page,
+        diagramTimeoutMs,
+        (elapsed) => progress?.report(RUNTIME_MESSAGES.exportProgress.diagramTimeoutProceeding(elapsed)),
+        (elapsed) => progress?.report(RUNTIME_MESSAGES.exportProgress.renderingDiagramsElapsed(elapsed)),
+      );
     }
 
     await page.setViewportSize({ width: 980, height: 1400 });
@@ -307,11 +363,7 @@ export async function exportToPdf(
         margin: pdfOptions.margin,
       });
 
-      // Count pages from PDF binary: each page object contains "/Type /Page"
-      // but we need to exclude "/Type /Pages" (the page tree root)
-      const pdfStr = tempPdfBuffer.toString('latin1');
-      const pageMatches = pdfStr.match(/\/Type\s*\/Page(?!s)/g);
-      const totalPages = pageMatches ? pageMatches.length : 1;
+      const totalPages = countPdfPages(tempPdfBuffer);
 
       // Get heading positions and total document height from the DOM
       const domData: { headings: { level: number; text: string; anchorId: string; offsetTop: number }[]; scrollHeight: number } = await page.evaluate(
@@ -364,9 +416,7 @@ export async function exportToPdf(
         margin: pdfOptions.margin,
       });
 
-      const pdfStr = tempPdfBuffer.toString('latin1');
-      const pageMatches = pdfStr.match(/\/Type\s*\/Page(?!s)/g);
-      const totalPages = pageMatches ? pageMatches.length : 1;
+      const totalPages = countPdfPages(tempPdfBuffer);
 
       const domData: { headings: { level: number; text: string; offsetTop: number }[]; scrollHeight: number } = await page.evaluate(
         `(function() {
