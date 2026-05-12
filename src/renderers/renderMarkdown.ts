@@ -54,12 +54,20 @@ function installHeadingIdRule(parser: MarkdownIt, anchors: AnchorMapping[]): () 
   };
 }
 
+function detectLineEnding(text: string): string {
+  return text.match(/\r\n|\n|\r/)?.[0] ?? '\n';
+}
+
+function countLineBreaks(text: string): number {
+  return text.match(/\r\n|\n|\r/g)?.length ?? 0;
+}
+
 function padToLineCount(replacement: string, sourceFence: string): string {
-  const sourceNewlines = (sourceFence.match(/\n/g) || []).length;
-  const replacementNewlines = (replacement.match(/\n/g) || []).length;
+  const sourceNewlines = countLineBreaks(sourceFence);
+  const replacementNewlines = countLineBreaks(replacement);
   const diff = sourceNewlines - replacementNewlines;
   if (diff > 0) {
-    return replacement + '\n'.repeat(diff);
+    return replacement + detectLineEnding(sourceFence).repeat(diff);
   }
   return replacement;
 }
@@ -83,9 +91,9 @@ export async function renderMarkdownDocument(
   const errors: RenderedMarkdown['errors'] = [];
   const fencedBlocks = scanFencedBlocks(markdown);
 
-  let transformed = markdown;
+  const replacements: Array<{ startOffset: number; endOffset: number; text: string }> = [];
   for (const block of fencedBlocks) {
-    const sourceFence = `\`\`\`${block.kind}\n${block.content}\n\`\`\``;
+    const sourceFence = block.raw;
     let replacement = sourceFence;
 
     if (block.kind === 'mermaid') {
@@ -121,7 +129,19 @@ export async function renderMarkdownDocument(
     }
 
     replacement = padToLineCount(replacement, sourceFence);
-    transformed = transformed.replace(sourceFence, replacement);
+    replacements.push({
+      startOffset: block.startOffset,
+      endOffset: block.endOffset,
+      text: replacement,
+    });
+  }
+
+  let transformed = markdown;
+  for (const replacement of replacements.reverse()) {
+    transformed =
+      transformed.slice(0, replacement.startOffset)
+      + replacement.text
+      + transformed.slice(replacement.endOffset);
   }
 
   // --- TOC generation pipeline ---

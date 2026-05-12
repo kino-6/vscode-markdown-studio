@@ -168,6 +168,68 @@ describe('TOC auto-update on save', () => {
     expect(waitUntil).not.toHaveBeenCalled();
   });
 
+  it('skips edit for unchanged TOC content in a CRLF document', () => {
+    expect(onWillSaveCallback).toBeDefined();
+
+    const tocContent = '- [Title](#title)\r\n  - [New](#new)';
+    const markdown = `# Title\r\n<!-- TOC -->\r\n${tocContent}\r\n<!-- /TOC -->\r\n## New\r\n`;
+    mockFindTocCommentMarkers.mockReturnValue({
+      startLine: 1,
+      endLine: 4,
+      content: tocContent,
+    });
+    mockExtractHeadings.mockReturnValue([
+      { level: 1, text: 'Title', line: 0 },
+      { level: 2, text: 'New', line: 5 },
+    ]);
+    mockResolveAnchors.mockReturnValue([
+      { heading: { level: 1, text: 'Title', line: 0 }, anchorId: 'title' },
+      { heading: { level: 2, text: 'New', line: 5 }, anchorId: 'new' },
+    ]);
+    mockBuildTocMarkdown.mockReturnValue('- [Title](#title)\n  - [New](#new)');
+
+    const waitUntil = vi.fn();
+    const event = {
+      document: { languageId: 'markdown', getText: () => markdown },
+      waitUntil,
+    };
+
+    onWillSaveCallback!(event);
+
+    expect(waitUntil).not.toHaveBeenCalled();
+  });
+
+  it('uses CRLF when auto-updating TOC content in a CRLF document', async () => {
+    expect(onWillSaveCallback).toBeDefined();
+
+    const markdown = '# Title\r\n<!-- TOC -->\r\n- [Old](#old)\r\n<!-- /TOC -->\r\n## New\r\n';
+    mockFindTocCommentMarkers.mockReturnValue({
+      startLine: 1,
+      endLine: 3,
+      content: '- [Old](#old)',
+    });
+    mockExtractHeadings.mockReturnValue([
+      { level: 1, text: 'Title', line: 0 },
+      { level: 2, text: 'New', line: 4 },
+    ]);
+    mockResolveAnchors.mockReturnValue([
+      { heading: { level: 1, text: 'Title', line: 0 }, anchorId: 'title' },
+      { heading: { level: 2, text: 'New', line: 4 }, anchorId: 'new' },
+    ]);
+    mockBuildTocMarkdown.mockReturnValue('- [Title](#title)\n  - [New](#new)');
+
+    const waitUntil = vi.fn();
+    const event = {
+      document: { languageId: 'markdown', getText: () => markdown },
+      waitUntil,
+    };
+
+    onWillSaveCallback!(event);
+
+    const edits = await waitUntil.mock.calls[0][0];
+    expect(edits[0].newText).toBe('- [Title](#title)\r\n  - [New](#new)\r\n');
+  });
+
   it('skips processing when no markers present', () => {
     expect(onWillSaveCallback).toBeDefined();
 

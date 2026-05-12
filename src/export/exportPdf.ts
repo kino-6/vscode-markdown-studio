@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as vscode from 'vscode';
 import { dependencyStatus } from '../extension';
 import { buildPdfOptions, injectPageBreakCss, injectTocPageBreakCss } from './pdfHeaderFooter';
@@ -56,12 +57,15 @@ const MIME_TYPES: Record<string, string> = {
  * Inlining images as data URIs bypasses all file-access restrictions.
  */
 export async function inlineLocalImages(html: string): Promise<string> {
-  const regex = /<img([^>]*)\bsrc="file:\/\/([^"]+)"/g;
+  const regex = /<img([^>]*)\bsrc="(file:\/\/[^"]+)"/g;
   const replacements: { match: string; replacement: string }[] = [];
 
   let m: RegExpExecArray | null;
   while ((m = regex.exec(html)) !== null) {
-    const [fullMatch, before, filePath] = m;
+    const [fullMatch, before, fileUri] = m;
+    const filePath = filePathFromUri(fileUri);
+    if (!filePath) continue;
+
     const ext = path.extname(filePath).toLowerCase();
     const mime = MIME_TYPES[ext];
     if (!mime) continue;
@@ -83,6 +87,15 @@ export async function inlineLocalImages(html: string): Promise<string> {
     result = result.replace(match, replacement);
   }
   return result;
+}
+
+function filePathFromUri(fileUri: string): string | undefined {
+  try {
+    const filePath = fileURLToPath(fileUri);
+    return filePath.replace(/^\/([a-zA-Z]:[\\/])/, '$1');
+  } catch {
+    return undefined;
+  }
 }
 
 export async function exportToPdf(

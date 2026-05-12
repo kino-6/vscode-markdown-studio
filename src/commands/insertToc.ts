@@ -7,6 +7,10 @@ import { scanFencedBlocks } from '../parser/scanFencedBlocks';
 import { createMarkdownParser } from '../parser/parseMarkdown';
 import { getConfig } from '../infra/config';
 
+function detectLineEnding(text: string): string {
+  return text.match(/\r\n|\n|\r/)?.[0] ?? '\n';
+}
+
 /**
  * Insert TOC command handler.
  *
@@ -25,6 +29,7 @@ export async function insertTocCommand(): Promise<void> {
 
   const document = editor.document;
   const markdown = document.getText();
+  const lineEnding = detectLineEnding(markdown);
   const tocConfig = getConfig().toc;
 
   const md = createMarkdownParser();
@@ -51,10 +56,10 @@ export async function insertTocCommand(): Promise<void> {
     });
   } else {
     // Insert new TOC at cursor position
-    const wrapped = wrapWithMarkers(tocText);
+    const wrapped = wrapWithMarkers(tocText, lineEnding);
     const position = editor.selection.active;
     await editor.edit((editBuilder) => {
-      editBuilder.insert(position, wrapped + '\n');
+      editBuilder.insert(position, wrapped + lineEnding);
     });
   }
 }

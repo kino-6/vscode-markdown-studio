@@ -54,7 +54,7 @@ import * as buildHtmlModule from '../../src/preview/buildHtml';
 import * as playwrightModule from 'playwright';
 import * as configModule from '../../src/infra/config';
 import * as pdfBookmarksModule from '../../src/export/pdfBookmarks';
-import { exportToPdf } from '../../src/export/exportPdf';
+import { exportToPdf, inlineLocalImages } from '../../src/export/exportPdf';
 
 const accessMock = (fsModule as any).__accessMock as ReturnType<typeof vi.fn>;
 const readFileMock = (fsModule as any).__readFileMock as ReturnType<typeof vi.fn>;
@@ -70,6 +70,31 @@ const waitForFunctionMock = (playwrightModule as any).__waitForFunctionMock as R
 const setViewportSizeMock = (playwrightModule as any).__setViewportSizeMock as ReturnType<typeof vi.fn>;
 const getConfigMock = (configModule as any).__getConfigMock as ReturnType<typeof vi.fn>;
 const addBookmarksMock = (pdfBookmarksModule as any).__addBookmarksMock as ReturnType<typeof vi.fn>;
+
+describe('inlineLocalImages', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('decodes encoded file URIs before reading local SVG images', async () => {
+    readFileMock.mockResolvedValue(Buffer.from('<svg></svg>'));
+
+    const html = '<img alt="diagram" src="file:///tmp/A%20B/diagram.svg">';
+    const result = await inlineLocalImages(html);
+
+    expect(readFileMock).toHaveBeenCalledWith('/tmp/A B/diagram.svg');
+    expect(result).toContain('src="data:image/svg+xml;base64,');
+  });
+
+  it('handles Windows drive-letter file URIs', async () => {
+    readFileMock.mockResolvedValue(Buffer.from('<svg></svg>'));
+
+    const html = '<img src="file:///C:/Users/A%20B/diagram.svg">';
+    await inlineLocalImages(html);
+
+    expect(readFileMock).toHaveBeenCalledWith('C:/Users/A B/diagram.svg');
+  });
+});
 
 /** Default config used by existing tests (pdfBookmarks disabled) */
 function makeDefaultConfig(overrides: Record<string, any> = {}) {

@@ -439,8 +439,9 @@ async function rerenderMermaid(container, state) {
 }
 
 function rerenderPlantUml(container, state) {
-  const source = container.getAttribute('data-plantuml-src');
-  if (!source) return;
+  const encoded = container.getAttribute('data-plantuml-src');
+  if (!encoded) return;
+  const source = safeDecode(encoded);
 
   // Assign dynamic ID to container for response matching
   if (!container.id) {

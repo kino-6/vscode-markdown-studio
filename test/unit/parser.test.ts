@@ -36,4 +36,22 @@ describe('parser and fenced block scanning', () => {
     expect(blocks[1]).toMatchObject({ startLine: 5, endLine: 9 });
     expect(blocks[2]).toMatchObject({ startLine: 10, endLine: 14 });
   });
+
+  it('keeps raw offsets for CRLF fenced blocks', () => {
+    const markdown = [
+      'Intro',
+      '```plantuml',
+      '@startuml',
+      'Alice->Bob:Hi',
+      '@enduml',
+      '```',
+      'After',
+    ].join('\r\n');
+
+    const [block] = scanFencedBlocks(markdown);
+
+    expect(block).toMatchObject({ kind: 'plantuml', startLine: 2, endLine: 6 });
+    expect(block.raw).toBe('```plantuml\r\n@startuml\r\nAlice->Bob:Hi\r\n@enduml\r\n```');
+    expect(markdown.slice(block.startOffset, block.endOffset)).toBe(block.raw);
+  });
 });

@@ -11,6 +11,7 @@ const datasetProxy = new Proxy(dataset, {
 });
 
 const bodyClassList = new Set<string>();
+const postMessageMock = vi.fn();
 
 (globalThis as any).document = {
   body: {
@@ -38,7 +39,7 @@ Object.defineProperty(globalThis, 'navigator', {
 });
 
 (globalThis as any).acquireVsCodeApi = () => ({
-  postMessage: vi.fn(),
+  postMessage: postMessageMock,
   getState: vi.fn(),
   setState: vi.fn(),
 });
@@ -163,6 +164,7 @@ const {
   getDiagramType,
   triggerSvgRerender,
   rerenderMermaid,
+  rerenderPlantUml,
   handlePlantUmlRerenderResult,
   RERENDER_DEBOUNCE_MS,
   scheduleRerender,
@@ -848,6 +850,22 @@ describe('Unit: getDiagramType', () => {
 // **Validates: Requirement 4.6**
 
 describe('Unit: Re-rendering failure fallback', () => {
+  it('PlantUML re-render sends decoded source to the extension host', () => {
+    postMessageMock.mockClear();
+    const container = createMockContainer();
+    const source = '@startuml\nA->B: Hi\n@enduml';
+    container.setAttribute('data-plantuml-src', encodeURIComponent(source));
+
+    const state = { scale: 2.0 };
+    rerenderPlantUml(container, state);
+
+    expect(postMessageMock).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'rerender-plantuml',
+      source,
+      scale: 2.0,
+    }));
+  });
+
   it('Mermaid re-render failure maintains CSS transform', async () => {
     const container = createMockContainer();
     const mermaidHost = makeDomElement('div');

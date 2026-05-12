@@ -130,7 +130,7 @@ describe('insertTocCommand', () => {
 
     await insertTocCommand();
 
-    expect(mockWrapWithMarkers).toHaveBeenCalledWith('- [Hello](#hello)\n  - [World](#world)');
+    expect(mockWrapWithMarkers).toHaveBeenCalledWith('- [Hello](#hello)\n  - [World](#world)', '\n');
     expect(editorEdit).toHaveBeenCalled();
     expect(editBuilderInsert).toHaveBeenCalledWith(
       { line: 1, character: 0 },
@@ -200,10 +200,43 @@ describe('insertTocCommand', () => {
 
     await insertTocCommand();
 
-    expect(mockWrapWithMarkers).toHaveBeenCalledWith('');
+    expect(mockWrapWithMarkers).toHaveBeenCalledWith('', '\n');
     expect(editBuilderInsert).toHaveBeenCalledWith(
       { line: 0, character: 0 },
       '<!-- TOC -->\n<!-- /TOC -->\n',
+    );
+  });
+
+  it('uses CRLF when inserting a new TOC into a CRLF document', async () => {
+    const markdown = '# Hello\r\n\r\n## World\r\n';
+    mockActiveEditor = {
+      document: {
+        languageId: 'markdown',
+        getText: () => markdown,
+        positionAt: (n: number) => ({ line: 0, character: n }),
+      },
+      selection: { active: { line: 1, character: 0 } },
+      edit: editorEdit,
+    };
+
+    mockExtractHeadings.mockReturnValue([
+      { level: 1, text: 'Hello', line: 0 },
+      { level: 2, text: 'World', line: 2 },
+    ]);
+    mockResolveAnchors.mockReturnValue([
+      { heading: { level: 1, text: 'Hello', line: 0 }, anchorId: 'hello' },
+      { heading: { level: 2, text: 'World', line: 2 }, anchorId: 'world' },
+    ]);
+    mockBuildTocMarkdown.mockReturnValue('- [Hello](#hello)\n  - [World](#world)');
+    mockFindTocCommentMarkers.mockReturnValue(undefined);
+    mockWrapWithMarkers.mockReturnValue('<!-- TOC -->\r\n- [Hello](#hello)\r\n  - [World](#world)\r\n<!-- /TOC -->');
+
+    await insertTocCommand();
+
+    expect(mockWrapWithMarkers).toHaveBeenCalledWith('- [Hello](#hello)\n  - [World](#world)', '\r\n');
+    expect(editBuilderInsert).toHaveBeenCalledWith(
+      { line: 1, character: 0 },
+      '<!-- TOC -->\r\n- [Hello](#hello)\r\n  - [World](#world)\r\n<!-- /TOC -->\r\n',
     );
   });
 });

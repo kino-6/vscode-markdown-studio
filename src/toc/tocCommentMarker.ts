@@ -22,6 +22,18 @@ const END_MARKER = '<!-- /TOC -->';
 const START_RE = /^\s*<!--\s*TOC\s*-->\s*$/;
 const END_RE = /^\s*<!--\s*\/TOC\s*-->\s*$/;
 
+function detectLineEnding(text: string): string {
+  return text.match(/\r\n|\n|\r/)?.[0] ?? '\n';
+}
+
+function splitLines(text: string): string[] {
+  return text.split(/\r\n|\n|\r/);
+}
+
+function normalizeLineEndings(text: string, lineEnding: string): string {
+  return splitLines(text).join(lineEnding);
+}
+
 /**
  * Find `<!-- TOC -->` / `<!-- /TOC -->` markers in Markdown source.
  * Markers inside fenced code blocks are excluded.
@@ -34,7 +46,8 @@ export function findTocCommentMarkers(
   markdown: string,
   fencedRanges?: Array<{ startLine: number; endLine: number }>,
 ): TocMarkerRange | undefined {
-  const lines = markdown.split(/\r?\n/);
+  const lineEnding = detectLineEnding(markdown);
+  const lines = splitLines(markdown);
   const ranges = fencedRanges ?? [];
 
   let startLine = -1;
@@ -54,7 +67,7 @@ export function findTocCommentMarkers(
         return {
           startLine,
           endLine: i,
-          content: contentLines.join('\n'),
+          content: contentLines.join(lineEnding),
         };
       }
     }
@@ -66,13 +79,13 @@ export function findTocCommentMarkers(
 /**
  * Wrap TOC text with comment markers.
  *
- * @returns `<!-- TOC -->\n{tocText}\n<!-- /TOC -->` or `<!-- TOC -->\n<!-- /TOC -->` if empty
+ * @returns TOC text wrapped with comment markers using the requested line ending.
  */
-export function wrapWithMarkers(tocText: string): string {
+export function wrapWithMarkers(tocText: string, lineEnding = '\n'): string {
   if (!tocText) {
-    return `${START_MARKER}\n${END_MARKER}`;
+    return `${START_MARKER}${lineEnding}${END_MARKER}`;
   }
-  return `${START_MARKER}\n${tocText}\n${END_MARKER}`;
+  return `${START_MARKER}${lineEnding}${normalizeLineEndings(tocText, lineEnding)}${lineEnding}${END_MARKER}`;
 }
 
 /**
@@ -86,16 +99,17 @@ export function replaceTocContent(
   markerRange: TocMarkerRange,
   newTocText: string,
 ): string {
-  const lines = markdown.split(/\r?\n/);
+  const lineEnding = detectLineEnding(markdown);
+  const lines = splitLines(markdown);
   const before = lines.slice(0, markerRange.startLine + 1);
   const after = lines.slice(markerRange.endLine);
 
   if (!newTocText) {
-    return [...before, ...after].join('\n');
+    return [...before, ...after].join(lineEnding);
   }
 
-  const tocLines = newTocText.split(/\r?\n/);
-  return [...before, ...tocLines, ...after].join('\n');
+  const tocLines = splitLines(newTocText);
+  return [...before, ...tocLines, ...after].join(lineEnding);
 }
 
 function isInsideFenced(

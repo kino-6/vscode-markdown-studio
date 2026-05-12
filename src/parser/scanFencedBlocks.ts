@@ -1,24 +1,45 @@
 import { FencedBlock } from '../types/models';
 
 export function scanFencedBlocks(markdown: string): FencedBlock[] {
-  const lines = markdown.split(/\r?\n/);
   const blocks: FencedBlock[] = [];
 
-  let open: { kind: string; startLine: number; buffer: string[] } | undefined;
+  let open: {
+    kind: string;
+    startLine: number;
+    startOffset: number;
+    buffer: string[];
+  } | undefined;
 
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i];
+  const lineRe = /([^\r\n]*)(\r\n|\n|\r|$)/g;
+  let lineNumber = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = lineRe.exec(markdown)) !== null) {
+    if (match[0] === '' && match.index === markdown.length) {
+      break;
+    }
+
+    const line = match[1];
+    const lineStartOffset = match.index;
+    const lineEndOffset = lineStartOffset + line.length;
     const fenceMatch = line.match(/^```\s*([a-zA-Z0-9_-]+)?\s*$/);
     if (!fenceMatch) {
       if (open) open.buffer.push(line);
+      lineNumber += 1;
       continue;
     }
 
     if (!open) {
       const rawKind = (fenceMatch[1] ?? '').toLowerCase();
       if (['mermaid', 'plantuml', 'puml', 'svg'].includes(rawKind)) {
-        open = { kind: rawKind, startLine: i + 1, buffer: [] };
+        open = {
+          kind: rawKind,
+          startLine: lineNumber + 1,
+          startOffset: lineStartOffset,
+          buffer: [],
+        };
       }
+      lineNumber += 1;
       continue;
     }
 
@@ -27,9 +48,13 @@ export function scanFencedBlocks(markdown: string): FencedBlock[] {
       kind: open.kind as FencedBlock['kind'],
       content: open.buffer.join('\n'),
       startLine: open.startLine,
-      endLine: i + 1
+      endLine: lineNumber + 1,
+      startOffset: open.startOffset,
+      endOffset: lineEndOffset,
+      raw: markdown.slice(open.startOffset, lineEndOffset),
     });
     open = undefined;
+    lineNumber += 1;
   }
 
   return blocks;

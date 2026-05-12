@@ -69,6 +69,19 @@ describe('diagram container wrapping', () => {
     expect(result.htmlBody).toContain(`<div class="diagram-container">${placeholder}</div>`);
   });
 
+  it('wraps Mermaid placeholder when the source document uses CRLF', async () => {
+    const source = 'graph TD\nA-->B';
+    const placeholder = `<div class="mermaid-host" data-mermaid-src="${encodeURIComponent(source)}"></div>`;
+    renderMermaidBlockMock.mockResolvedValue({ ok: true, placeholder });
+
+    const md = ['# Doc', '', '```mermaid', 'graph TD', 'A-->B', '```'].join('\r\n');
+    const result = await renderMarkdownDocument(md, fakeContext);
+
+    expect(renderMermaidBlockMock).toHaveBeenCalledWith(source);
+    expect(result.htmlBody).toContain(`<div class="diagram-container">${placeholder}</div>`);
+    expect(result.htmlBody).not.toContain('<code class="language-mermaid">');
+  });
+
   // Requirement 1.2: PlantUML blocks wrapped in diagram-container
   it('wraps PlantUML SVG output in a diagram-container div', async () => {
     const svg = '<svg xmlns="http://www.w3.org/2000/svg"><rect width="100" height="50"/></svg>';
@@ -80,6 +93,30 @@ describe('diagram container wrapping', () => {
     const source = '@startuml\nA->B:Hi\n@enduml';
     const encodedSrc = encodeURIComponent(source);
     expect(result.htmlBody).toContain(`<div class="diagram-container" data-plantuml-src="${encodedSrc}">${svg}</div>`);
+  });
+
+  it('wraps PlantUML SVG output when the source document uses CRLF', async () => {
+    const svg = '<svg><rect width="100" height="50"/></svg>';
+    renderPlantUmlMock.mockResolvedValue({ ok: true, svg });
+
+    const md = [
+      '# Doc',
+      '',
+      '```plantuml',
+      '@startuml',
+      'A->B:Hi',
+      '@enduml',
+      '```',
+      '',
+      'After',
+    ].join('\r\n');
+    const result = await renderMarkdownDocument(md, fakeContext);
+
+    const source = '@startuml\nA->B:Hi\n@enduml';
+    const encodedSrc = encodeURIComponent(source);
+    expect(renderPlantUmlMock).toHaveBeenCalledWith(source, fakeContext);
+    expect(result.htmlBody).toContain(`<div class="diagram-container" data-plantuml-src="${encodedSrc}">${svg}</div>`);
+    expect(result.htmlBody).not.toContain('<code class="language-plantuml">');
   });
 
   // Requirement 1.2 (puml alias): puml blocks also wrapped
@@ -102,6 +139,15 @@ describe('diagram container wrapping', () => {
     const result = await renderMarkdownDocument(md, fakeContext);
 
     expect(result.htmlBody).toContain(`<div class="diagram-container">${svgContent}</div>`);
+  });
+
+  it('wraps inline SVG content when the source document uses CRLF', async () => {
+    const svgContent = '<svg><rect width="200" height="100"/></svg>';
+    const md = ['Intro', '```svg', svgContent, '```', 'After'].join('\r\n');
+    const result = await renderMarkdownDocument(md, fakeContext);
+
+    expect(result.htmlBody).toContain(`<div class="diagram-container">${svgContent}</div>`);
+    expect(result.htmlBody).not.toContain('<code class="language-svg">');
   });
 
   // Requirement 1.4: Content is preserved inside the wrapper

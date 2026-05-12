@@ -112,6 +112,12 @@ describe('wrapWithMarkers', () => {
     const result = wrapWithMarkers(toc);
     expect(result).toBe('<!-- TOC -->\n- [A](#a)\n- [B](#b)\n<!-- /TOC -->');
   });
+
+  it('wraps text with the requested CRLF line ending', () => {
+    const toc = '- [A](#a)\n- [B](#b)';
+    const result = wrapWithMarkers(toc, '\r\n');
+    expect(result).toBe('<!-- TOC -->\r\n- [A](#a)\r\n- [B](#b)\r\n<!-- /TOC -->');
+  });
 });
 
 // ── replaceTocContent ──────────────────────────────────────────────
@@ -140,6 +146,17 @@ describe('replaceTocContent', () => {
     const newToc = '- [A](#a)\n  - [B](#b)\n- [C](#c)';
     const updated = replaceTocContent(doc, range, newToc);
     expect(updated).toBe('Before\n<!-- TOC -->\n- [A](#a)\n  - [B](#b)\n- [C](#c)\n<!-- /TOC -->\nAfter');
+  });
+
+  it('preserves CRLF line endings when replacing TOC content', () => {
+    const doc = 'Before\r\n<!-- TOC -->\r\n- [Old](#old)\r\n<!-- /TOC -->\r\nAfter';
+    const range = findTocCommentMarkers(doc)!;
+
+    const updated = replaceTocContent(doc, range, '- [A](#a)\n  - [B](#b)');
+
+    expect(updated).toBe('Before\r\n<!-- TOC -->\r\n- [A](#a)\r\n  - [B](#b)\r\n<!-- /TOC -->\r\nAfter');
+    expect(updated).not.toMatch(/(?<!\r)\n/);
+    expect(updated.split('\r\n')).toHaveLength(6);
   });
 
   it('preserves content before and after markers', () => {

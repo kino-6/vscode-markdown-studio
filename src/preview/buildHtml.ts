@@ -172,8 +172,9 @@ export function resolveImagePaths(
         const webviewUri = webview.asWebviewUri(absoluteUri);
         return `<img${before}src="${webviewUri.toString()}"`;
       }
-      // PDF context: use file:// URI so Chromium can load local resources
-      return `<img${before}src="file://${absoluteUri.fsPath}"`;
+      // PDF context: use a proper file URI so Windows drive letters and
+      // spaces are encoded correctly before export inlines the image.
+      return `<img${before}src="${absoluteUri.toString()}"`;
     }
   );
 }

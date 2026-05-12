@@ -18,6 +18,14 @@ import { getConfig } from './infra/config';
 /** Module-level dependency status, accessible by other modules if needed. */
 export let dependencyStatus: DependencyStatus | undefined;
 
+function detectLineEnding(text: string): string {
+  return text.match(/\r\n|\n|\r/)?.[0] ?? '\n';
+}
+
+function normalizeLineEndings(text: string): string {
+  return text.replace(/\r\n|\r/g, '\n');
+}
+
 /**
  * Check whether a required dependency is available.
  * Returns `true` if the dependency is ready, `false` otherwise.
@@ -102,6 +110,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (event.document.languageId !== 'markdown') return;
 
       const markdown = event.document.getText();
+      const lineEnding = detectLineEnding(markdown);
       const fencedBlocks = scanFencedBlocks(markdown);
       const fencedRanges = fencedBlocks.map(b => ({ startLine: b.startLine, endLine: b.endLine }));
       const markers = findTocCommentMarkers(markdown, fencedRanges);
@@ -114,13 +123,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const tocConfig = getConfig().toc;
       const newTocText = buildTocMarkdown(anchors, tocConfig);
 
-      if (markers.content === newTocText) return;
+      if (normalizeLineEndings(markers.content) === newTocText) return;
 
       const startPos = new vscode.Position(markers.startLine + 1, 0);
       const endPos = new vscode.Position(markers.endLine, 0);
       const edit = vscode.TextEdit.replace(
         new vscode.Range(startPos, endPos),
-        newTocText ? newTocText + '\n' : '',
+        newTocText ? newTocText.replace(/\r\n|\n|\r/g, lineEnding) + lineEnding : '',
       );
 
       event.waitUntil(Promise.resolve([edit]));

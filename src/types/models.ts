@@ -8,6 +8,9 @@ export interface FencedBlock {
   content: string;
   startLine: number;
   endLine: number;
+  startOffset: number;
+  endOffset: number;
+  raw: string;
 }
 
 export interface RenderError {
