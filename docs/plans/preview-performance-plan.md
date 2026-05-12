@@ -55,6 +55,7 @@ Notable changes versus baseline:
 - Browser `update-body` is now effectively cache-bound for unchanged Mermaid diagrams: `demo.md` 73ms to 5ms, `demo_win.md` 29ms to 6ms, `demo_load.md` 121ms to 3ms.
 - Browser initial work improved on `demo_win.md` and `demo_load.md`; `demo.md` initial time is roughly flat in this single-run measurement.
 - Shared preview handlers now avoid document-level listener growth across repeated diagram initialization.
+- A developer-only `npm run benchmark:preview` debug command now provides repeatable Preview measurements without adding user-facing VS Code commands.
 
 Implementation commits:
 

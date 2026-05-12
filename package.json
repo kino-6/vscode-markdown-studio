@@ -300,6 +300,7 @@
     "package": "npm run build && rm -f dist/*.vsix && vsce package -o dist/",
     "reinstall": "bash scripts/dev/reinstall.sh",
     "demo": "npx tsx scripts/demo/index.ts",
+    "benchmark:preview": "npm run build && node scripts/benchmark/previewBenchmark.js",
     "benchmark:pdf": "npm run build && node scripts/benchmark/pdfExportBenchmark.js",
     "repro:about-blank-footer": "node scripts/repro/aboutBlankFooter.js"
   },
