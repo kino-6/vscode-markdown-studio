@@ -63,14 +63,14 @@ Measured on `perf/pdf-export-parallel` after PDF export refactoring.
   - [x] Measure initial render before and after the change with `benchmark:preview`.
 
 - [ ] Re-check PDF export after Preview runtime changes
-  - [ ] Run `npm run benchmark:pdf` after Preview JavaScript changes.
+  - [x] Run `npm run benchmark:pdf` after Preview JavaScript changes.
   - [ ] Regenerate demo PDFs when output is intentionally affected.
   - [ ] Confirm wide PlantUML, Mermaid, SVG, highlights, and links still render correctly.
 
-- [ ] Investigate larger incremental rendering improvements
-  - [ ] Profile `renderBody` on larger Markdown documents.
-  - [ ] Evaluate whether section-level or diagram-level incremental rendering is worth the complexity.
-  - [ ] Document the recommendation before implementation.
+- [x] Investigate larger incremental rendering improvements
+  - [x] Profile `renderBody` on larger Markdown documents.
+  - [x] Evaluate whether section-level or diagram-level incremental rendering is worth the complexity.
+  - [x] Document the recommendation before implementation.
 
 ## Results
 
@@ -121,6 +121,20 @@ Min/max ranges after visible-first rendering:
 - `examples/demo.md`: `buildHtml` 5-6ms, `renderBody` 4-6ms, browser initial 523-525ms, update-body 3-6ms.
 - `examples/demo_win.md`: `buildHtml` 2-3ms, `renderBody` 2-2ms, browser initial 442-445ms, update-body 2-4ms.
 - `examples/demo_load.md`: `buildHtml` 2-2ms, `renderBody` 1-2ms, browser initial 531-552ms, update-body 4-9ms.
+
+PDF export smoke benchmark after Preview runtime changes:
+
+- `npm run benchmark:pdf -- --repeat 1 --warmup 0`
+- `examples/demo.md`: 2793ms, output size 0.95MB.
+- `examples/demo_win.md`: 2157ms, output size 0.36MB.
+- `examples/demo_load.md`: 2239ms, output size 0.26MB.
+- Generated PDFs were restored after measurement to avoid mixing an existing uncommitted `examples/demo.pdf` change into this work.
+
+Large-document incremental rendering check:
+
+- `npm run benchmark:preview -- --file examples/demo_load.md --repeat 5 --warmup 1`
+- `examples/demo_load.md`: `buildHtml` avg 2ms, `renderBody` avg 1ms, browser initial avg 524ms, update-body avg 5ms.
+- Recommendation: do not add section-level Markdown diff rendering yet. Current steady-state `renderBody` is below the noise floor for the demo load case, while browser-side diagram/runtime work remains the dominant cost. Revisit only if real-world documents show `renderBody` consistently above roughly 50ms after caches are warm.
 
 Implementation commits:
 
