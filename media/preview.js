@@ -69,6 +69,8 @@ function observeThemeChanges(callback) {
 let mermaidReady = true;
 const MERMAID_SVG_CACHE_LIMIT = 128;
 const mermaidSvgCache = new Map();
+let bodyDelegatedHandlersInstalled = false;
+let zoomDocumentHandlersInstalled = false;
 try {
   mermaid.initialize({
     startOnLoad: false,
@@ -90,6 +92,11 @@ function safeDecode(input) {
   } catch {
     return input;
   }
+}
+
+function closestMatch(target, selector) {
+  if (!target || typeof target.closest !== 'function') return null;
+  return target.closest(selector);
 }
 
 function mermaidCacheKey(source) {
@@ -143,12 +150,81 @@ async function renderMermaidBlocks() {
   }
 }
 
+function copyCodeFromButton(btn, preOverride) {
+  const pre = preOverride ?? btn.closest('.ms-code-wrapper')?.querySelector('pre');
+  if (!pre) return;
+
+  const code = pre.querySelector('code');
+  const text = code ? code.textContent : pre.textContent;
+  navigator.clipboard.writeText(text || '').then(() => {
+    btn.textContent = '✓ Copied';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+  });
+}
+
+function handleTocLinkClick(event, link) {
+  const href = link.getAttribute('href');
+  if (!href || !href.startsWith('#')) return false;
+  const targetId = decodeURIComponent(href.slice(1));
+  const target = document.getElementById(targetId);
+  if (!target) return false;
+
+  event.preventDefault();
+  target.scrollIntoView({ behavior: 'smooth' });
+  return true;
+}
+
+function handleDocumentLinkClick(event, link) {
+  const href = link.getAttribute('href');
+  if (!href || href.startsWith('#')) return false;
+  if (!/^[a-z][a-z0-9+\-.]*:/i.test(href)) return false;
+
+  event.preventDefault();
+  vscode.postMessage({ type: 'openExternal', href });
+  return true;
+}
+
+function handlePreviewClick(event) {
+  const copyButton = closestMatch(event.target, '.ms-copy-btn');
+  if (copyButton) {
+    event.preventDefault();
+    copyCodeFromButton(copyButton);
+    return;
+  }
+
+  const tocLink = closestMatch(event.target, '.ms-toc a');
+  if (tocLink && handleTocLinkClick(event, tocLink)) return;
+
+  const link = closestMatch(event.target, 'a[href]');
+  if (link) handleDocumentLinkClick(event, link);
+}
+
+function handlePreviewDblClick(event) {
+  if (closestMatch(event.target, '.diagram-container')) return;
+  const line = findSourceLine(event.target);
+  if (line !== null) {
+    vscode.postMessage({ type: 'jumpToLine', line });
+  }
+}
+
+function installBodyDelegatedHandlers() {
+  if (bodyDelegatedHandlersInstalled) return true;
+  if (!document.body || typeof document.body.addEventListener !== 'function') return false;
+
+  document.body.addEventListener('click', handlePreviewClick);
+  document.body.addEventListener('dblclick', handlePreviewDblClick);
+  bodyDelegatedHandlersInstalled = true;
+  return true;
+}
+
 function findSourceLine(el) {
   while (el && el !== document.body) {
-    const attr = el.getAttribute('data-source-line');
-    if (attr !== null) {
-      const line = parseInt(attr, 10);
-      if (Number.isFinite(line)) return line;
+    if (typeof el.getAttribute === 'function') {
+      const attr = el.getAttribute('data-source-line');
+      if (attr !== null) {
+        const line = parseInt(attr, 10);
+        if (Number.isFinite(line)) return line;
+      }
     }
     el = el.parentElement;
   }
@@ -156,6 +232,7 @@ function findSourceLine(el) {
 }
 
 function addCopyButtons() {
+  const delegated = installBodyDelegatedHandlers();
   const blocks = document.querySelectorAll('pre');
   for (const pre of blocks) {
     if (pre.querySelector('.ms-copy-btn')) continue;
@@ -180,47 +257,34 @@ function addCopyButtons() {
     const btn = document.createElement('button');
     btn.className = 'ms-copy-btn';
     btn.textContent = 'Copy';
-    btn.addEventListener('click', () => {
-      const code = pre.querySelector('code');
-      const text = code ? code.textContent : pre.textContent;
-      navigator.clipboard.writeText(text || '').then(() => {
-        btn.textContent = '✓ Copied';
-        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
-      });
-    });
+    if (!delegated) {
+      btn.addEventListener('click', () => copyCodeFromButton(btn, pre));
+    }
     wrapper.appendChild(btn);
   }
 }
 
 function registerTocLinkHandlers() {
+  if (installBodyDelegatedHandlers()) return;
+
   const links = document.querySelectorAll('.ms-toc a');
   for (const link of links) {
     link.addEventListener('click', (event) => {
-      const href = link.getAttribute('href');
-      if (!href || !href.startsWith('#')) return;
-      const targetId = decodeURIComponent(href.slice(1));
-      const target = document.getElementById(targetId);
-      if (target) {
-        event.preventDefault();
-        target.scrollIntoView({ behavior: 'smooth' });
-      }
+      handleTocLinkClick(event, link);
     });
   }
 }
 
 function registerDocumentLinkHandlers() {
+  if (installBodyDelegatedHandlers()) return;
+
   const links = document.querySelectorAll('a[href]');
   for (const link of links) {
     if (link.getAttribute('data-ms-link-handler') === 'true') continue;
     link.setAttribute('data-ms-link-handler', 'true');
 
     link.addEventListener('click', (event) => {
-      const href = link.getAttribute('href');
-      if (!href || href.startsWith('#')) return;
-      if (!/^[a-z][a-z0-9+\-.]*:/i.test(href)) return;
-
-      event.preventDefault();
-      vscode.postMessage({ type: 'openExternal', href });
+      handleDocumentLinkClick(event, link);
     });
   }
 }
@@ -327,13 +391,7 @@ function initPreview() {
     onThemeChanged(newThemeKind);
   });
 
-  document.body.addEventListener('dblclick', (event) => {
-    if (event.target.closest('.diagram-container')) return;
-    const line = findSourceLine(event.target);
-    if (line !== null) {
-      vscode.postMessage({ type: 'jumpToLine', line });
-    }
-  });
+  installBodyDelegatedHandlers();
 }
 
 // Support both normal webview loading and late injection (e.g. Playwright PDF export).
@@ -581,6 +639,38 @@ function handleDblClick(container, state) {
   applyTransform(container, state);
 }
 
+function clearZoomFocus(container) {
+  const state = container._zoomState;
+  if (!state || !state.focused) return;
+  state.focused = false;
+  container.classList.remove('diagram-focused');
+}
+
+function handleDocumentZoomMouseDown(event) {
+  document.querySelectorAll('.diagram-container[data-zoom-init]').forEach((container) => {
+    if (container._zoomState?.focused && !container.contains(event.target)) {
+      clearZoomFocus(container);
+    }
+  });
+}
+
+function handleDocumentZoomKeyDown(event) {
+  if (event.key !== 'Escape') return;
+  document.querySelectorAll('.diagram-container[data-zoom-init]').forEach((container) => {
+    clearZoomFocus(container);
+  });
+}
+
+function installZoomDocumentHandlers() {
+  if (zoomDocumentHandlersInstalled) return true;
+  if (typeof document.addEventListener !== 'function') return false;
+
+  document.addEventListener('mousedown', handleDocumentZoomMouseDown);
+  document.addEventListener('keydown', handleDocumentZoomKeyDown);
+  zoomDocumentHandlersInstalled = true;
+  return true;
+}
+
 function attachZoomPan(container) {
   const state = {
     scale: 1.0,
@@ -594,6 +684,7 @@ function attachZoomPan(container) {
   };
   container._zoomState = state;
   container.setAttribute('data-zoom-init', 'true');
+  installZoomDocumentHandlers();
 
   createZoomToolbar(container, state);
 
@@ -611,20 +702,6 @@ function attachZoomPan(container) {
   container.addEventListener('mouseup', () => handleMouseUp(container, state));
   container.addEventListener('mouseleave', () => handleMouseUp(container, state));
   container.addEventListener('dblclick', () => handleDblClick(container, state));
-
-  document.addEventListener('mousedown', (e) => {
-    if (state.focused && !container.contains(e.target)) {
-      state.focused = false;
-      container.classList.remove('diagram-focused');
-    }
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && state.focused) {
-      state.focused = false;
-      container.classList.remove('diagram-focused');
-    }
-  });
 }
 
 function saveZoomStates() {

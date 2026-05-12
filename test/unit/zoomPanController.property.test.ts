@@ -497,6 +497,21 @@ describe('Feature: diagram-zoom-toolbar, Property 1: Hover display round-trip', 
       { numRuns: 100, seed: 42 },
     );
   });
+
+  it('registers shared document zoom handlers at most once across containers', () => {
+    const documentAddEventListener = (globalThis as any).document.addEventListener;
+    const callsBefore = documentAddEventListener.mock.calls.length;
+
+    attachZoomPan(createMockContainer());
+    attachZoomPan(createMockContainer());
+
+    const addedCalls = documentAddEventListener.mock.calls.slice(callsBefore);
+    const addedMouseDown = addedCalls.filter(([type]: [string]) => type === 'mousedown');
+    const addedKeyDown = addedCalls.filter(([type]: [string]) => type === 'keydown');
+
+    expect(addedMouseDown.length).toBeLessThanOrEqual(1);
+    expect(addedKeyDown.length).toBeLessThanOrEqual(1);
+  });
 });
 
 // ── Feature: diagram-zoom-toolbar, Property 2: Zoom percentage display ──
