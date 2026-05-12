@@ -312,7 +312,7 @@ async function main() {
     console.log(`Files: ${options.files.join(', ')}`);
     console.log(`Repeat: ${options.repeat}, Warmup: ${options.warmup}`);
     console.log('');
-    console.log('| File | cold server `buildHtml` avg | warm edit `renderBody` avg | browser initial avg | browser update-body avg |');
+    console.log('| File | server `buildHtml` avg | warm edit `renderBody` avg | browser initial avg | browser update-body avg |');
     console.log('|---|---:|---:|---:|---:|');
 
     for (const markdownPath of options.files) {

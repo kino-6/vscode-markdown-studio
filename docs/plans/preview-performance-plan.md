@@ -44,6 +44,34 @@ Measured on `perf/pdf-export-parallel` after PDF export refactoring.
   - [x] Keep it out of VS Code `contributes.commands` so it does not appear as a user-facing command.
   - [x] Document it as a developer/debug command.
 
+## Phase 2 Work Plan
+
+- [x] Promote repeat-based Preview benchmark results
+  - [x] Run `npm run benchmark:preview` with repeat/warmup settings.
+  - [x] Record avg/min/max results so single-run noise is not treated as signal.
+  - [x] Keep the benchmark as a developer-only npm command.
+
+- [ ] Add browser-level Preview behavior coverage
+  - [ ] Verify copy buttons after initial render and `update-body`.
+  - [ ] Verify TOC anchor navigation and external-link message posting.
+  - [ ] Verify zoom focus, reset, outside-click, and Escape behavior after `update-body`.
+  - [ ] Verify preview theme switching does not reuse stale Mermaid SVGs.
+
+- [ ] Improve Mermaid initial rendering path
+  - [ ] Investigate lazy or visible-first Mermaid rendering for large documents.
+  - [ ] Keep PDF export deterministic by preserving full render before PDF generation.
+  - [ ] Measure initial render before and after the change with `benchmark:preview`.
+
+- [ ] Re-check PDF export after Preview runtime changes
+  - [ ] Run `npm run benchmark:pdf` after Preview JavaScript changes.
+  - [ ] Regenerate demo PDFs when output is intentionally affected.
+  - [ ] Confirm wide PlantUML, Mermaid, SVG, highlights, and links still render correctly.
+
+- [ ] Investigate larger incremental rendering improvements
+  - [ ] Profile `renderBody` on larger Markdown documents.
+  - [ ] Evaluate whether section-level or diagram-level incremental rendering is worth the complexity.
+  - [ ] Document the recommendation before implementation.
+
 ## Results
 
 Measured after the preview performance commits on the same branch. Times are rounded single-run local measurements.
@@ -61,6 +89,22 @@ Notable changes versus baseline:
 - Browser initial work improved on `demo_win.md` and `demo_load.md`; `demo.md` initial time is roughly flat in this single-run measurement.
 - Shared preview handlers now avoid document-level listener growth across repeated diagram initialization.
 - A developer-only `npm run benchmark:preview` debug command now provides repeatable Preview measurements without adding user-facing VS Code commands.
+
+## Phase 2 Results
+
+Measured with `npm run benchmark:preview -- --repeat 3 --warmup 1`. Because warmup runs first, server-side PlantUML/cache-heavy work is measured as steady-state rather than first-run cold start.
+
+| File | server `buildHtml` avg | warm edit `renderBody` avg | browser initial avg | browser update-body avg |
+|---|---:|---:|---:|---:|
+| `examples/demo.md` | 6ms | 5ms | 534ms | 5ms |
+| `examples/demo_win.md` | 3ms | 2ms | 444ms | 2ms |
+| `examples/demo_load.md` | 2ms | 1ms | 535ms | 5ms |
+
+Min/max ranges:
+
+- `examples/demo.md`: `buildHtml` 6-7ms, `renderBody` 4-5ms, browser initial 532-536ms, update-body 3-6ms.
+- `examples/demo_win.md`: `buildHtml` 2-3ms, `renderBody` 2-2ms, browser initial 441-445ms, update-body 2-3ms.
+- `examples/demo_load.md`: `buildHtml` 2-2ms, `renderBody` 1-1ms, browser initial 530-538ms, update-body 5-7ms.
 
 Implementation commits:
 
