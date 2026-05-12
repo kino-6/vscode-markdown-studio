@@ -5,6 +5,7 @@
  * source and provides utilities to wrap TOC text with markers and replace
  * existing TOC content between markers.
  */
+import { detectLineEnding, normalizeLineEndings, splitLines } from '../infra/lineEndings';
 
 /** TOC comment marker detection result */
 export interface TocMarkerRange {
@@ -21,18 +22,6 @@ const END_MARKER = '<!-- /TOC -->';
 
 const START_RE = /^\s*<!--\s*TOC\s*-->\s*$/;
 const END_RE = /^\s*<!--\s*\/TOC\s*-->\s*$/;
-
-function detectLineEnding(text: string): string {
-  return text.match(/\r\n|\n|\r/)?.[0] ?? '\n';
-}
-
-function splitLines(text: string): string[] {
-  return text.split(/\r\n|\n|\r/);
-}
-
-function normalizeLineEndings(text: string, lineEnding: string): string {
-  return splitLines(text).join(lineEnding);
-}
 
 /**
  * Find `<!-- TOC -->` / `<!-- /TOC -->` markers in Markdown source.

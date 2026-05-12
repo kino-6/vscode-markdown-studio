@@ -1,6 +1,7 @@
 import MarkdownIt from 'markdown-it';
 import * as vscode from 'vscode';
 import { getConfig } from '../infra/config';
+import { countLineBreaks, detectLineEnding } from '../infra/lineEndings';
 import { createMarkdownParser } from '../parser/parseMarkdown';
 import { scanFencedBlocks } from '../parser/scanFencedBlocks';
 import { extractHeadings } from '../toc/extractHeadings';
@@ -52,14 +53,6 @@ function installHeadingIdRule(parser: MarkdownIt, anchors: AnchorMapping[]): () 
       delete parser.renderer.rules['heading_open'];
     }
   };
-}
-
-function detectLineEnding(text: string): string {
-  return text.match(/\r\n|\n|\r/)?.[0] ?? '\n';
-}
-
-function countLineBreaks(text: string): number {
-  return text.match(/\r\n|\n|\r/g)?.length ?? 0;
 }
 
 function padToLineCount(replacement: string, sourceFence: string): string {

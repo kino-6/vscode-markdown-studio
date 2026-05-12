@@ -6,10 +6,7 @@ import { findTocCommentMarkers, replaceTocContent, wrapWithMarkers } from '../to
 import { scanFencedBlocks } from '../parser/scanFencedBlocks';
 import { createMarkdownParser } from '../parser/parseMarkdown';
 import { getConfig } from '../infra/config';
-
-function detectLineEnding(text: string): string {
-  return text.match(/\r\n|\n|\r/)?.[0] ?? '\n';
-}
+import { detectLineEnding } from '../infra/lineEndings';
 
 /**
  * Insert TOC command handler.

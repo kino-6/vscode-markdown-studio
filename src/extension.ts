@@ -14,17 +14,10 @@ import { extractHeadings } from './toc/extractHeadings';
 import { resolveAnchors } from './toc/anchorResolver';
 import { buildTocMarkdown } from './toc/buildTocMarkdown';
 import { getConfig } from './infra/config';
+import { detectLineEnding, normalizeLineEndings } from './infra/lineEndings';
 
 /** Module-level dependency status, accessible by other modules if needed. */
 export let dependencyStatus: DependencyStatus | undefined;
-
-function detectLineEnding(text: string): string {
-  return text.match(/\r\n|\n|\r/)?.[0] ?? '\n';
-}
-
-function normalizeLineEndings(text: string): string {
-  return text.replace(/\r\n|\r/g, '\n');
-}
 
 /**
  * Check whether a required dependency is available.
@@ -129,7 +122,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const endPos = new vscode.Position(markers.endLine, 0);
       const edit = vscode.TextEdit.replace(
         new vscode.Range(startPos, endPos),
-        newTocText ? newTocText.replace(/\r\n|\n|\r/g, lineEnding) + lineEnding : '',
+        newTocText ? normalizeLineEndings(newTocText, lineEnding) + lineEnding : '',
       );
 
       event.waitUntil(Promise.resolve([edit]));
