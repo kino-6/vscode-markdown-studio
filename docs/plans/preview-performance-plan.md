@@ -39,6 +39,29 @@ Measured on `perf/pdf-export-parallel` after PDF export refactoring.
    - Compare against the baseline above.
    - Commit benchmark results and implementation together once each stage is validated.
 
+## Results
+
+Measured after the preview performance commits on the same branch. Times are rounded single-run local measurements.
+
+| File | cold server `buildHtml` | warm edit `renderBody` | browser initial Mermaid/controls | browser update-body |
+|---|---:|---:|---:|---:|
+| `examples/demo.md` | 1250ms | 10ms | 559ms | 5ms |
+| `examples/demo_win.md` | 905ms | 7ms | 260ms | 6ms |
+| `examples/demo_load.md` | 863ms | 4ms | 381ms | 3ms |
+
+Notable changes versus baseline:
+
+- PlantUML-heavy `examples/demo.md` cold `buildHtml` improved from 2841ms to 1250ms after batch PlantUML rendering.
+- Browser `update-body` is now effectively cache-bound for unchanged Mermaid diagrams: `demo.md` 73ms to 5ms, `demo_win.md` 29ms to 6ms, `demo_load.md` 121ms to 3ms.
+- Browser initial work improved on `demo_win.md` and `demo_load.md`; `demo.md` initial time is roughly flat in this single-run measurement.
+- Shared preview handlers now avoid document-level listener growth across repeated diagram initialization.
+
+Implementation commits:
+
+- `cdd7da7` Batch PlantUML rendering for preview
+- `93033bc` Cache Mermaid SVGs in preview
+- `3ab1100` Delegate preview event handlers
+
 ## Validation
 
 - `npm run lint`
