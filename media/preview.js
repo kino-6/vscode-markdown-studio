@@ -67,6 +67,8 @@ function observeThemeChanges(callback) {
 }
 
 let mermaidReady = true;
+const MERMAID_SVG_CACHE_LIMIT = 128;
+const mermaidSvgCache = new Map();
 try {
   mermaid.initialize({
     startOnLoad: false,
@@ -90,6 +92,31 @@ function safeDecode(input) {
   }
 }
 
+function mermaidCacheKey(source) {
+  const themeKind = resolveEffectiveThemeKind(currentOverride);
+  return `${getMermaidTheme(themeKind)}\n--\n${source}`;
+}
+
+function getCachedMermaidSvg(source) {
+  const key = mermaidCacheKey(source);
+  const cached = mermaidSvgCache.get(key);
+  if (cached === undefined) return undefined;
+  mermaidSvgCache.delete(key);
+  mermaidSvgCache.set(key, cached);
+  return cached;
+}
+
+function setCachedMermaidSvg(source, svg) {
+  const key = mermaidCacheKey(source);
+  if (mermaidSvgCache.has(key)) {
+    mermaidSvgCache.delete(key);
+  } else if (mermaidSvgCache.size >= MERMAID_SVG_CACHE_LIMIT) {
+    const oldest = mermaidSvgCache.keys().next().value;
+    if (oldest !== undefined) mermaidSvgCache.delete(oldest);
+  }
+  mermaidSvgCache.set(key, svg);
+}
+
 async function renderMermaidBlocks() {
   if (!mermaidReady) {
     console.warn('[Markdown Studio] Skipping Mermaid rendering — initialization failed');
@@ -99,11 +126,17 @@ async function renderMermaidBlocks() {
   for (const [index, block] of blocks.entries()) {
     const encoded = safeText(block.getAttribute('data-mermaid-src'));
     const source = safeDecode(encoded);
+    const cachedSvg = getCachedMermaidSvg(source);
+    if (cachedSvg !== undefined) {
+      block.innerHTML = cachedSvg;
+      continue;
+    }
     try {
       await mermaid.parse(source);
       const id = `ms-mermaid-${index}-${Date.now()}`;
       const result = await mermaid.render(id, source);
       block.innerHTML = result.svg;
+      setCachedMermaidSvg(source, result.svg);
     } catch (error) {
       block.innerHTML = `<div class="ms-error"><div class="ms-error-title">Mermaid render error</div><pre>${String(error)}</pre></div>`;
     }
