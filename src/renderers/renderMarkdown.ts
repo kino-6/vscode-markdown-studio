@@ -13,7 +13,7 @@ import { findTocCommentMarkers } from '../toc/tocCommentMarker';
 import { replaceTocMarker } from '../toc/tocMarker';
 import { AnchorMapping, RenderedMarkdown } from '../types/models';
 import { renderMermaidBlock } from './renderMermaid';
-import { renderPlantUml } from './renderPlantUml';
+import * as plantUmlRenderer from './renderPlantUml';
 import { filterExternalResources } from './resourceFilter';
 
 /**
@@ -85,9 +85,19 @@ export async function renderMarkdownDocument(
 
   const errors: RenderedMarkdown['errors'] = [];
   const fencedBlocks = scanFencedBlocks(markdown);
+  const plantUmlBatchIndexes = new Map<number, number>();
+  const plantUmlSources: string[] = [];
+  for (const [index, block] of fencedBlocks.entries()) {
+    if (block.kind !== 'plantuml' && block.kind !== 'puml') continue;
+    plantUmlBatchIndexes.set(index, plantUmlSources.length);
+    plantUmlSources.push(block.content);
+  }
+  const plantUmlResultsPromise = plantUmlSources.length > 0
+    ? renderPlantUmlSources(plantUmlSources, context)
+    : Promise.resolve([]);
 
   const replacements: Array<{ startOffset: number; endOffset: number; text: string }> = [];
-  const renderedBlocks = await mapWithConcurrency(fencedBlocks, 4, async (block) => {
+  const renderedBlocks = await mapWithConcurrency(fencedBlocks, 4, async (block, index) => {
     const sourceFence = block.raw;
     let replacement = sourceFence;
     const blockErrors: RenderedMarkdown['errors'] = [];
@@ -111,7 +121,10 @@ export async function renderMarkdownDocument(
     }
 
     if (block.kind === 'plantuml' || block.kind === 'puml') {
-      const result = await renderPlantUml(block.content, context);
+      const batchIndex = plantUmlBatchIndexes.get(index);
+      const result = batchIndex === undefined
+        ? { ok: false, error: RUNTIME_MESSAGES.render.unknownPlantUmlIssue }
+        : (await plantUmlResultsPromise)[batchIndex];
       if (result.ok && result.svg) {
         const encodedSrc = encodeURIComponent(block.content);
         replacement = `<div class="diagram-container" data-plantuml-src="${encodedSrc}">${result.svg}</div>`;
@@ -186,4 +199,14 @@ export async function renderMarkdownDocument(
   }
 
   return { htmlBody, errors };
+}
+
+async function renderPlantUmlSources(
+  sources: string[],
+  context: vscode.ExtensionContext,
+) {
+  if (Object.prototype.hasOwnProperty.call(plantUmlRenderer, 'renderPlantUmlBatch')) {
+    return await plantUmlRenderer.renderPlantUmlBatch(sources, context);
+  }
+  return await Promise.all(sources.map((source) => plantUmlRenderer.renderPlantUml(source, context)));
 }

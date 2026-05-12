@@ -34,7 +34,7 @@ import * as runProcessModule from '../../src/infra/runProcess';
 import * as tempFilesModule from '../../src/infra/tempFiles';
 import * as configModule from '../../src/infra/config';
 import * as extensionModule from '../../src/extension';
-import { clearPlantUmlCache, renderPlantUml } from '../../src/renderers/renderPlantUml';
+import { clearPlantUmlCache, renderPlantUml, renderPlantUmlBatch } from '../../src/renderers/renderPlantUml';
 
 const accessMock = (fsModule as any).__accessMock as ReturnType<typeof vi.fn>;
 const readFileMock = (fsModule as any).__readFileMock as ReturnType<typeof vi.fn>;
@@ -123,5 +123,60 @@ describe('renderPlantUml', () => {
     expect(result.ok).toBe(true);
     expect(result.svg).toContain('<rect');
     expect(result.svg).not.toContain('<script');
+  });
+
+  it('renders multiple diagrams with one PlantUML process', async () => {
+    accessMock.mockResolvedValue(undefined);
+    createTempFileMock
+      .mockResolvedValueOnce('/tmp/one.puml')
+      .mockResolvedValueOnce('/tmp/two.puml');
+    runProcessMock.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '', timedOut: false });
+    readFileMock.mockImplementation(async (filePath: string) => {
+      if (filePath === '/tmp/one.svg') return '<svg><text>one</text></svg>';
+      if (filePath === '/tmp/two.svg') return '<svg><text>two</text></svg>';
+      throw new Error('missing');
+    });
+
+    const results = await renderPlantUmlBatch([
+      '@startuml\nA->B: one\n@enduml',
+      '@startuml\nA->B: two\n@enduml',
+    ], context);
+
+    expect(runProcessMock).toHaveBeenCalledTimes(1);
+    expect(runProcessMock).toHaveBeenCalledWith(
+      'java',
+      expect.arrayContaining(['/tmp/one.puml', '/tmp/two.puml']),
+      0,
+    );
+    expect(results).toHaveLength(2);
+    expect(results[0]).toMatchObject({ ok: true, svg: '<svg><text>one</text></svg>' });
+    expect(results[1]).toMatchObject({ ok: true, svg: '<svg><text>two</text></svg>' });
+  });
+
+  it('falls back to individual renders when the batch process fails', async () => {
+    accessMock.mockResolvedValue(undefined);
+    createTempFileMock
+      .mockResolvedValueOnce('/tmp/batch-one.puml')
+      .mockResolvedValueOnce('/tmp/batch-two.puml')
+      .mockResolvedValueOnce('/tmp/single-one.puml')
+      .mockResolvedValueOnce('/tmp/single-two.puml');
+    runProcessMock
+      .mockResolvedValueOnce({ exitCode: 1, stdout: '', stderr: 'batch failed', timedOut: false })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: '', stderr: '', timedOut: false })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: '', stderr: '', timedOut: false });
+    readFileMock.mockImplementation(async (filePath: string) => {
+      if (filePath === '/tmp/single-one.svg') return '<svg><text>one</text></svg>';
+      if (filePath === '/tmp/single-two.svg') return '<svg><text>two</text></svg>';
+      throw new Error('missing');
+    });
+
+    const results = await renderPlantUmlBatch([
+      '@startuml\nA->B: one\n@enduml',
+      '@startuml\nA->B: two\n@enduml',
+    ], context);
+
+    expect(runProcessMock).toHaveBeenCalledTimes(3);
+    expect(results[0]).toMatchObject({ ok: true, svg: '<svg><text>one</text></svg>' });
+    expect(results[1]).toMatchObject({ ok: true, svg: '<svg><text>two</text></svg>' });
   });
 });
