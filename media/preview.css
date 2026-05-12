@@ -675,7 +675,11 @@ dd {
     overflow: visible;
     cursor: default;
   }
-  .diagram-container svg,
+  .diagram-container svg {
+    max-width: 100% !important;
+    height: auto !important;
+    transform: none !important;
+  }
   .diagram-container .mermaid-host {
     transform: none !important;
   }
