@@ -224,7 +224,7 @@ async function measureBrowser(browser, fullHtml, bodyHtml) {
     const initialStart = performance.now();
     await page.setContent(fullHtml, { waitUntil: 'domcontentloaded' });
     await page.addScriptTag({
-      content: 'window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){},setState:function(){}}};',
+      content: 'document.body.dataset.msRenderMode="eager";window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){},setState:function(){}}};',
     });
     await page.addScriptTag({ path: path.join(repoRoot, 'dist/preview.js') });
     await waitForPreviewReady(page);

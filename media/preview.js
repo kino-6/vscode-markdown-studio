@@ -41,7 +41,7 @@ function onThemeChanged(newThemeKind) {
     mermaidReady = false;
     console.error('[Markdown Studio] Mermaid re-init on theme change failed:', err);
   }
-  renderMermaidBlocks().then(() => {
+  renderMermaidBlocks({ reset: true }).then(() => {
     document.querySelectorAll('.diagram-container').forEach((c) => {
       c.removeAttribute('data-zoom-init');
     });
@@ -71,6 +71,8 @@ const MERMAID_SVG_CACHE_LIMIT = 128;
 const mermaidSvgCache = new Map();
 let bodyDelegatedHandlersInstalled = false;
 let zoomDocumentHandlersInstalled = false;
+let mermaidObserver = null;
+let mermaidRenderQueue = Promise.resolve();
 try {
   mermaid.initialize({
     startOnLoad: false,
@@ -124,29 +126,142 @@ function setCachedMermaidSvg(source, svg) {
   mermaidSvgCache.set(key, svg);
 }
 
-async function renderMermaidBlocks() {
+function isEagerMermaidRender() {
+  const mode = document.body?.dataset?.msRenderMode;
+  return mode === 'eager' || mode === 'pdf';
+}
+
+function isMermaidBlockNearViewport(block) {
+  if (typeof block.getBoundingClientRect !== 'function') return true;
+  const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 0;
+  if (!viewportHeight) return true;
+
+  const rect = block.getBoundingClientRect();
+  const preloadMargin = viewportHeight;
+  return rect.top <= viewportHeight + preloadMargin && rect.bottom >= -preloadMargin;
+}
+
+function getMermaidBlockState(block) {
+  if (typeof block.getAttribute === 'function') {
+    return block.getAttribute('data-mermaid-render-state') || '';
+  }
+  return block._mermaidRenderState || '';
+}
+
+function setMermaidBlockState(block, state) {
+  if (typeof block.setAttribute === 'function') {
+    block.setAttribute('data-mermaid-render-state', state);
+  } else {
+    block._mermaidRenderState = state;
+  }
+}
+
+function resetMermaidBlock(block) {
+  block.innerHTML = '';
+  if (typeof block.removeAttribute === 'function') {
+    block.removeAttribute('data-mermaid-render-state');
+  } else {
+    block._mermaidRenderState = '';
+  }
+}
+
+function disconnectMermaidObserver() {
+  if (mermaidObserver) {
+    mermaidObserver.disconnect();
+    mermaidObserver = null;
+  }
+}
+
+async function renderMermaidBlock(block, index) {
+  const state = getMermaidBlockState(block);
+  if (state === 'rendering' || state === 'rendered') return;
+  setMermaidBlockState(block, 'rendering');
+
+  const encoded = safeText(block.getAttribute('data-mermaid-src'));
+  const source = safeDecode(encoded);
+  const cachedSvg = getCachedMermaidSvg(source);
+  if (cachedSvg !== undefined) {
+    block.innerHTML = cachedSvg;
+    setMermaidBlockState(block, 'rendered');
+    return;
+  }
+
+  try {
+    await mermaid.parse(source);
+    const id = `ms-mermaid-${index}-${Date.now()}`;
+    const result = await mermaid.render(id, source);
+    block.innerHTML = result.svg;
+    setCachedMermaidSvg(source, result.svg);
+    setMermaidBlockState(block, 'rendered');
+  } catch (error) {
+    block.innerHTML = `<div class="ms-error"><div class="ms-error-title">Mermaid render error</div><pre>${String(error)}</pre></div>`;
+    setMermaidBlockState(block, 'rendered');
+  }
+}
+
+function enqueueMermaidBlockRender(block, index) {
+  const state = getMermaidBlockState(block);
+  if (state === 'queued' || state === 'rendering' || state === 'rendered') return mermaidRenderQueue;
+
+  setMermaidBlockState(block, 'queued');
+  mermaidRenderQueue = mermaidRenderQueue.then(() => {
+    if (!document.body.contains(block)) return undefined;
+    return renderMermaidBlock(block, index);
+  });
+  return mermaidRenderQueue;
+}
+
+async function renderMermaidBlocks(options = {}) {
   if (!mermaidReady) {
     console.warn('[Markdown Studio] Skipping Mermaid rendering — initialization failed');
     return;
   }
+  disconnectMermaidObserver();
+
   const blocks = Array.from(document.querySelectorAll('.mermaid-host[data-mermaid-src]'));
+  if (options.reset) {
+    for (const block of blocks) {
+      resetMermaidBlock(block);
+    }
+  }
+
+  if (isEagerMermaidRender() || typeof IntersectionObserver === 'undefined') {
+    for (const [index, block] of blocks.entries()) {
+      await renderMermaidBlock(block, index);
+    }
+    return;
+  }
+
+  const visibleBlocks = [];
+  const deferredBlocks = [];
   for (const [index, block] of blocks.entries()) {
-    const encoded = safeText(block.getAttribute('data-mermaid-src'));
-    const source = safeDecode(encoded);
-    const cachedSvg = getCachedMermaidSvg(source);
-    if (cachedSvg !== undefined) {
-      block.innerHTML = cachedSvg;
-      continue;
+    if (getMermaidBlockState(block) === 'rendered') continue;
+    const entry = { block, index };
+    if (isMermaidBlockNearViewport(block)) {
+      visibleBlocks.push(entry);
+    } else {
+      deferredBlocks.push(entry);
     }
-    try {
-      await mermaid.parse(source);
-      const id = `ms-mermaid-${index}-${Date.now()}`;
-      const result = await mermaid.render(id, source);
-      block.innerHTML = result.svg;
-      setCachedMermaidSvg(source, result.svg);
-    } catch (error) {
-      block.innerHTML = `<div class="ms-error"><div class="ms-error-title">Mermaid render error</div><pre>${String(error)}</pre></div>`;
+  }
+
+  for (const { block, index } of visibleBlocks) {
+    await renderMermaidBlock(block, index);
+  }
+
+  if (deferredBlocks.length === 0) return;
+
+  const indexByBlock = new WeakMap(deferredBlocks.map(({ block, index }) => [block, index]));
+  mermaidObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      mermaidObserver?.unobserve(entry.target);
+      enqueueMermaidBlockRender(entry.target, indexByBlock.get(entry.target) ?? 0);
     }
+  }, { rootMargin: '100% 0px' });
+
+  for (const { block } of deferredBlocks) {
+    setMermaidBlockState(block, 'pending');
+    mermaidObserver.observe(block);
   }
 }
 

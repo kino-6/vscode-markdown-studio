@@ -8,7 +8,14 @@ const previewScriptPath = path.join(repoRoot, 'dist/preview.js');
 const mermaidSource = 'graph TD; A[Light] --> B[Dark]';
 const encodedMermaidSource = encodeURIComponent(mermaidSource);
 
-function previewBody(codeText) {
+function previewBody(codeText, options = {}) {
+  const offscreenMermaid = options.includeOffscreenMermaid
+    ? `
+<div id="offscreen-mermaid" class="diagram-container" style="margin-top: 2600px">
+  <div class="mermaid-host" data-mermaid-src="${encodeURIComponent('graph TD; Lazy --> Rendered')}"></div>
+</div>`
+    : '';
+
   return `
 <button id="outside">outside</button>
 <nav class="ms-toc"><a id="toc-link" href="#target-heading">Target</a></nav>
@@ -23,7 +30,8 @@ function previewBody(codeText) {
 </div>
 <div id="mermaid-diagram" class="diagram-container">
   <div class="mermaid-host" data-mermaid-src="${encodedMermaidSource}"></div>
-</div>`;
+</div>
+${offscreenMermaid}`;
 }
 
 async function installPreviewRuntime(page) {
@@ -53,16 +61,24 @@ Element.prototype.scrollIntoView = function(options) {
   await page.addScriptTag({ path: previewScriptPath });
 }
 
-async function waitForPreviewReady(page) {
-  await page.waitForFunction(() => {
+async function waitForPreviewReady(page, options = {}) {
+  await page.waitForFunction((waitForAllMermaid) => {
     const diagrams = Array.from(document.querySelectorAll('.diagram-container'));
     const mermaidHosts = Array.from(document.querySelectorAll('.mermaid-host'));
     const copyButtons = Array.from(document.querySelectorAll('.ms-copy-btn'));
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    const hostsToWaitFor = waitForAllMermaid
+      ? mermaidHosts
+      : mermaidHosts.filter((host) => {
+        if (!viewportHeight) return true;
+        const rect = host.getBoundingClientRect();
+        return rect.top <= viewportHeight * 2 && rect.bottom >= -viewportHeight;
+      });
     return diagrams.length >= 2 &&
       diagrams.every((diagram) => diagram.hasAttribute('data-zoom-init')) &&
-      mermaidHosts.every((host) => Boolean(host.querySelector('svg') || host.querySelector('.ms-error'))) &&
+      hostsToWaitFor.every((host) => Boolean(host.querySelector('svg') || host.querySelector('.ms-error'))) &&
       copyButtons.length >= 1;
-  }, null, { timeout: 15000 });
+  }, Boolean(options.allMermaid), { timeout: 15000 });
 }
 
 async function assertCopyTocAndExternalLink(page, expectedCopyText) {
@@ -120,6 +136,18 @@ async function assertThemeSwitchRerendersMermaid(page) {
   assert.notEqual(after, before, 'Mermaid SVG should be re-rendered after switching theme');
 }
 
+async function assertLazyMermaidRendering(page) {
+  const offscreenHost = page.locator('#offscreen-mermaid .mermaid-host');
+  assert.equal(await offscreenHost.locator('svg').count(), 0);
+  assert.equal(await offscreenHost.locator('.ms-error').count(), 0);
+
+  await page.locator('#offscreen-mermaid').scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => {
+    const host = document.querySelector('#offscreen-mermaid .mermaid-host');
+    return Boolean(host?.querySelector('svg') || host?.querySelector('.ms-error'));
+  }, null, { timeout: 15000 });
+}
+
 async function main() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
@@ -136,11 +164,12 @@ async function main() {
 
     await page.evaluate((html) => {
       window.postMessage({ type: 'update-body', html, generation: Date.now() }, '*');
-    }, previewBody('updated copy'));
+    }, previewBody('updated copy', { includeOffscreenMermaid: true }));
     await waitForPreviewReady(page);
 
     await assertCopyTocAndExternalLink(page, 'updated copy');
     await assertZoomBehavior(page);
+    await assertLazyMermaidRendering(page);
 
     console.log('Preview runtime browser check passed');
   } finally {

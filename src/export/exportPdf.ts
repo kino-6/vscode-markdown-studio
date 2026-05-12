@@ -224,7 +224,7 @@ async function forceLightMode(page: Pick<Page, 'evaluate'>): Promise<void> {
 
 async function injectPreviewRuntime(page: Pick<Page, 'addScriptTag'>, previewJsContent: string): Promise<void> {
   await page.addScriptTag({
-    content: 'if(typeof acquireVsCodeApi==="undefined"){window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){return undefined},setState:function(){}};};}',
+    content: 'document.body.dataset.msRenderMode="pdf";if(typeof acquireVsCodeApi==="undefined"){window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){return undefined},setState:function(){}};};}',
   });
   await page.addScriptTag({ content: previewJsContent });
 }

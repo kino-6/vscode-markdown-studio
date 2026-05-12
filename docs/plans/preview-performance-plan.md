@@ -57,10 +57,10 @@ Measured on `perf/pdf-export-parallel` after PDF export refactoring.
   - [x] Verify zoom focus, reset, outside-click, and Escape behavior after `update-body`.
   - [x] Verify preview theme switching does not reuse stale Mermaid SVGs.
 
-- [ ] Improve Mermaid initial rendering path
-  - [ ] Investigate lazy or visible-first Mermaid rendering for large documents.
-  - [ ] Keep PDF export deterministic by preserving full render before PDF generation.
-  - [ ] Measure initial render before and after the change with `benchmark:preview`.
+- [x] Improve Mermaid initial rendering path
+  - [x] Investigate lazy or visible-first Mermaid rendering for large documents.
+  - [x] Keep PDF export deterministic by preserving full render before PDF generation.
+  - [x] Measure initial render before and after the change with `benchmark:preview`.
 
 - [ ] Re-check PDF export after Preview runtime changes
   - [ ] Run `npm run benchmark:pdf` after Preview JavaScript changes.
@@ -105,6 +105,22 @@ Min/max ranges:
 - `examples/demo.md`: `buildHtml` 6-7ms, `renderBody` 4-5ms, browser initial 532-536ms, update-body 3-6ms.
 - `examples/demo_win.md`: `buildHtml` 2-3ms, `renderBody` 2-2ms, browser initial 441-445ms, update-body 2-3ms.
 - `examples/demo_load.md`: `buildHtml` 2-2ms, `renderBody` 1-1ms, browser initial 530-538ms, update-body 5-7ms.
+
+After visible-first Mermaid rendering, Preview renders near-viewport Mermaid diagrams first and defers far offscreen diagrams with `IntersectionObserver`. PDF export and `benchmark:preview` set eager mode so all Mermaid diagrams still render deterministically before measurement/export.
+
+Measured with `npm run benchmark:preview -- --repeat 3 --warmup 1` after visible-first rendering:
+
+| File | server `buildHtml` avg | warm edit `renderBody` avg | browser initial avg | browser update-body avg |
+|---|---:|---:|---:|---:|
+| `examples/demo.md` | 6ms | 5ms | 524ms | 4ms |
+| `examples/demo_win.md` | 3ms | 2ms | 443ms | 3ms |
+| `examples/demo_load.md` | 2ms | 1ms | 539ms | 7ms |
+
+Min/max ranges after visible-first rendering:
+
+- `examples/demo.md`: `buildHtml` 5-6ms, `renderBody` 4-6ms, browser initial 523-525ms, update-body 3-6ms.
+- `examples/demo_win.md`: `buildHtml` 2-3ms, `renderBody` 2-2ms, browser initial 442-445ms, update-body 2-4ms.
+- `examples/demo_load.md`: `buildHtml` 2-2ms, `renderBody` 1-2ms, browser initial 531-552ms, update-body 4-9ms.
 
 Implementation commits:
 
