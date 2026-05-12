@@ -163,7 +163,7 @@ li {
 
 a {
   color: #0366d6;
-  text-decoration: none;
+  text-decoration: underline;
 }
 
 a:hover {
@@ -199,7 +199,7 @@ hr {
 
 .ms-toc a {
   color: #0366d6;
-  text-decoration: none;
+  text-decoration: underline;
 }
 
 .ms-toc a:hover {
@@ -326,7 +326,7 @@ body.vscode-dark .ms-toc a {
   }
 
   a {
-    color: #000;
+    color: #0366d6;
     text-decoration: underline;
   }
 

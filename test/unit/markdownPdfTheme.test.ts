@@ -450,8 +450,8 @@ describe('Requirement 5: Link styles', () => {
     expect(extractCssProperty(css, 'a', 'color')).toBe('#0366d6');
   });
 
-  it('a has text-decoration none', () => {
-    expect(extractCssProperty(css, 'a', 'text-decoration')).toBe('none');
+  it('a has text-decoration underline', () => {
+    expect(extractCssProperty(css, 'a', 'text-decoration')).toBe('underline');
   });
 
   it('a:hover has text-decoration underline', () => {
@@ -630,8 +630,8 @@ describe('Requirement 8: Print / PDF output styles (@media print)', () => {
     ).toBe('avoid');
   });
 
-  it('a has color #000', () => {
-    expect(extractMediaProperty(css, 'print', 'a', 'color')).toBe('#000');
+  it('a has color #0366d6', () => {
+    expect(extractMediaProperty(css, 'print', 'a', 'color')).toBe('#0366d6');
   });
 
   it('a has text-decoration underline', () => {
