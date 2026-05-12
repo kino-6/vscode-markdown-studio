@@ -154,6 +154,7 @@ See [docs/troubleshooting.md](./docs/troubleshooting.md) for dependency setup, p
 | PDF export progress + cancellation, code block blank line fix | v0.6.0 |
 | PDF Index, filename customization, theme auto-switch, bookmarks, diagram zoom/pan | v0.7.0 |
 | Manifest localization, configuration cleanup, docs split, glossary | v0.8.4 |
+| PDF diagram aspect ratio, link styling, Windows highlight and inline code fixes | v0.8.5 |
 
 ### v0.9.0 — Productivity
 

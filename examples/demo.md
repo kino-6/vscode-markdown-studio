@@ -29,6 +29,7 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
     - [Security Summary](#security-summary)
   - [7. Theme Adaptability](#7-theme-adaptability)
   - [8. Diagram Type Catalog](#8-diagram-type-catalog)
+    - [Wide Diagrams for PDF Aspect Ratio](#wide-diagrams-for-pdf-aspect-ratio)
   - [9. Custom CSS](#9-custom-css)
     - [Bundled Themes](#bundled-themes)
     - [Setup](#setup)
@@ -707,6 +708,149 @@ xychart-beta
   <text x="330" y="137" fill="#4CAF50" font-size="10">Rendering 60%</text>
   <rect x="20" y="145" width="150" height="15" rx="3" fill="#2196F3"/>
   <text x="180" y="157" fill="#2196F3" font-size="10">Security 30%</text>
+</svg>
+```
+
+</details>
+
+### Wide Diagrams for PDF Aspect Ratio
+
+These examples are intentionally wider than the printable page. They verify that PDF export scales diagrams down without squashing their aspect ratio.
+
+<details open>
+<summary>Wide Mermaid flowchart</summary>
+
+```mermaid
+flowchart LR
+    A[Markdown Source] --> B[Parser]
+    B --> C[Mermaid]
+    C --> D[PlantUML]
+    D --> E[Inline SVG]
+    E --> F[Preview HTML]
+    F --> G[Playwright Chromium]
+    G --> H[PDF Output]
+    H --> I[Aspect Ratio Preserved]
+```
+
+</details>
+
+<details open>
+<summary>Wide PlantUML component chain</summary>
+
+```plantuml
+@startuml
+left to right direction
+skinparam componentStyle rectangle
+component "Markdown Source" as Source
+component "Parser" as Parser
+component "Diagram Renderer" as Renderer
+component "Preview HTML" as Html
+component "Chromium PDF" as Pdf
+component "Aspect Ratio Preserved" as Ratio
+Source --> Parser
+Parser --> Renderer
+Renderer --> Html
+Html --> Pdf
+Pdf --> Ratio
+@enduml
+```
+
+</details>
+
+<details open>
+<summary>Wide PlantUML timing chart</summary>
+
+```plantuml
+@startuml
+scale 1.25
+concise "Render pipeline" as Pipeline
+concise "PDF output" as PDF
+
+@0
+Pipeline is "MD"
+PDF is empty
+
+@200
+Pipeline is "Parse"
+
+@400
+Pipeline is "PUML"
+
+@600
+Pipeline is "SVG"
+
+@800
+Pipeline is "HTML"
+
+@1000
+Pipeline is "CSS"
+
+@1200
+Pipeline is "Print"
+
+@1400
+Pipeline is "Layout"
+
+@1600
+Pipeline is "Wide"
+
+@1800
+Pipeline is "Scale"
+PDF is fit
+
+@2000
+Pipeline is "Ratio"
+PDF is ratio
+
+@2200
+Pipeline is "Index"
+
+@2400
+Pipeline is "Marks"
+
+@2600
+Pipeline is "Write"
+
+@2800
+Pipeline is Done
+PDF is done
+@enduml
+```
+
+</details>
+
+<details open>
+<summary>Wide SVG with fixed inline dimensions</summary>
+
+```svg
+<svg viewBox="0 0 1600 180" xmlns="http://www.w3.org/2000/svg" width="1600px" height="180px" preserveAspectRatio="none" style="width:1600px;height:180px;background:#fff">
+  <rect x="0" y="0" width="1600" height="180" rx="16" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2"/>
+  <g font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="20" font-weight="600">
+    <rect x="30" y="55" width="190" height="70" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+    <text x="125" y="98" text-anchor="middle" fill="#1d4ed8">Markdown</text>
+    <rect x="280" y="55" width="190" height="70" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+    <text x="375" y="98" text-anchor="middle" fill="#15803d">Parse</text>
+    <rect x="530" y="55" width="190" height="70" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+    <text x="625" y="98" text-anchor="middle" fill="#b45309">Render</text>
+    <rect x="780" y="55" width="190" height="70" rx="10" fill="#fce7f3" stroke="#db2777" stroke-width="2"/>
+    <text x="875" y="98" text-anchor="middle" fill="#be185d">Preview</text>
+    <rect x="1030" y="55" width="190" height="70" rx="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+    <text x="1125" y="98" text-anchor="middle" fill="#6d28d9">PDF</text>
+    <rect x="1280" y="55" width="290" height="70" rx="10" fill="#ecfeff" stroke="#0891b2" stroke-width="2"/>
+    <text x="1425" y="98" text-anchor="middle" fill="#0e7490">No Squashing</text>
+  </g>
+  <g stroke="#6b7280" stroke-width="3" fill="none" marker-end="url(#arrow)">
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#6b7280"/>
+      </marker>
+    </defs>
+    <path d="M220 90 H280"/>
+    <path d="M470 90 H530"/>
+    <path d="M720 90 H780"/>
+    <path d="M970 90 H1030"/>
+    <path d="M1220 90 H1280"/>
+  </g>
 </svg>
 ```
 

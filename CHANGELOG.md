@@ -2,6 +2,20 @@
 
 All notable changes to Markdown Studio will be documented in this file.
 
+## [0.8.5] - 2026-05-13
+
+### Fixed
+
+- Preserved aspect ratio for wide PlantUML, Mermaid, and inline SVG diagrams in PDF export.
+- Restored default PDF link styling to blue text with underline.
+- Fixed syntax highlighting colors for Windows-oriented code samples in PDF output.
+- Changed inline code in PDF output to a neutral text color so Windows paths no longer look like highlighted string errors.
+
+### Added
+
+- Added wide diagram examples, including a PlantUML timing chart, to the demo PDF.
+- Added regression tests for PDF-critical print styles.
+
 ## [0.8.4] - 2026-05-12
 
 ### Changed

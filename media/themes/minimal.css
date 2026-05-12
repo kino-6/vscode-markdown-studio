@@ -72,7 +72,7 @@ blockquote {
 
 /* ── Links ───────────────────────────────────────────── */
 
-a { color: #0070f3; text-decoration: none; }
+a { color: #0070f3; text-decoration: underline; }
 a:hover { text-decoration: underline; }
 
 /* ── Images ──────────────────────────────────────────── */
@@ -118,7 +118,7 @@ body.vscode-dark .ms-toc a { color: #3b82f6; }
   pre code { white-space: pre-wrap; }
   table { display: table; page-break-inside: avoid; }
   img { page-break-inside: avoid; }
-  a { color: #000; }
+  a { color: #0070f3; text-decoration: underline; }
   a::after { content: ""; }
   .ms-copy-btn { display: none; }
 }
