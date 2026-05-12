@@ -51,11 +51,11 @@ Measured on `perf/pdf-export-parallel` after PDF export refactoring.
   - [x] Record avg/min/max results so single-run noise is not treated as signal.
   - [x] Keep the benchmark as a developer-only npm command.
 
-- [ ] Add browser-level Preview behavior coverage
-  - [ ] Verify copy buttons after initial render and `update-body`.
-  - [ ] Verify TOC anchor navigation and external-link message posting.
-  - [ ] Verify zoom focus, reset, outside-click, and Escape behavior after `update-body`.
-  - [ ] Verify preview theme switching does not reuse stale Mermaid SVGs.
+- [x] Add browser-level Preview behavior coverage
+  - [x] Verify copy buttons after initial render and `update-body`.
+  - [x] Verify TOC anchor navigation and external-link message posting.
+  - [x] Verify zoom focus, reset, outside-click, and Escape behavior after `update-body`.
+  - [x] Verify preview theme switching does not reuse stale Mermaid SVGs.
 
 - [ ] Improve Mermaid initial rendering path
   - [ ] Investigate lazy or visible-first Mermaid rendering for large documents.
@@ -115,6 +115,7 @@ Implementation commits:
 ## Validation
 
 - `npm run lint`
+- `npm run test:preview-runtime`
 - `npm run test:unit -- renderPlantUml plantumlSvgPipeline diagramTypes mermaidPipeline zoomPanController webviewPanel`
 - `npm run test:integration -- renderMarkdown.integration.test.ts incrementalUpdate.integration.test.ts buildHtml.integration.test.ts`
 - Browser-backed preview benchmark for initial render and update-body.

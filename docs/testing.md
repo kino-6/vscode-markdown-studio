@@ -15,6 +15,7 @@ npm run test:unit
 npm run test:integration
 npm test
 npm run test:ci
+npm run test:preview-runtime
 npm run benchmark:preview
 npm run benchmark:pdf
 ```
@@ -22,6 +23,7 @@ npm run benchmark:pdf
 - `test:unit`: parser, sanitizer, renderer helpers, and environment validation logic with mocks.
 - `test:integration`: preview composition and export smoke tests, plus renderer pipeline composition tests.
 - `test:ci`: lint + unit + integration (CI-friendly entrypoint).
+- `test:preview-runtime`: developer-only browser runtime check for Preview copy, TOC, external links, zoom, theme switching, and `update-body` behavior. This is intentionally not part of `test:ci`.
 - `benchmark:preview`: developer-only Preview benchmark for `examples/demo.md`, `examples/demo_win.md`, and `examples/demo_load.md`. This is intentionally an npm debug command, not a contributed VS Code command.
 - `benchmark:pdf`: developer-only PDF export benchmark for `examples/demo.md`, `examples/demo_win.md`, and `examples/demo_load.md`.
 

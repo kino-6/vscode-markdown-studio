@@ -1,0 +1,154 @@
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const { chromium } = require('playwright');
+
+const repoRoot = path.resolve(__dirname, '../..');
+const previewCssPath = path.join(repoRoot, 'media/preview.css');
+const previewScriptPath = path.join(repoRoot, 'dist/preview.js');
+const mermaidSource = 'graph TD; A[Light] --> B[Dark]';
+const encodedMermaidSource = encodeURIComponent(mermaidSource);
+
+function previewBody(codeText) {
+  return `
+<button id="outside">outside</button>
+<nav class="ms-toc"><a id="toc-link" href="#target-heading">Target</a></nav>
+<a id="external-link" href="https://example.com/docs">External</a>
+<pre><code>${codeText}</code></pre>
+<h2 id="target-heading" data-source-line="12">Target heading</h2>
+<div id="svg-diagram" class="diagram-container">
+  <svg width="240" height="80" viewBox="0 0 240 80" xmlns="http://www.w3.org/2000/svg">
+    <rect width="240" height="80" fill="#eee"></rect>
+    <text x="20" y="45">SVG diagram</text>
+  </svg>
+</div>
+<div id="mermaid-diagram" class="diagram-container">
+  <div class="mermaid-host" data-mermaid-src="${encodedMermaidSource}"></div>
+</div>`;
+}
+
+async function installPreviewRuntime(page) {
+  await page.addStyleTag({ path: previewCssPath });
+  await page.addScriptTag({
+    content: `
+Object.defineProperty(navigator, 'clipboard', {
+  value: { writeText: async (text) => { window.__clipboardText = text; } },
+  configurable: true
+});
+window.__messages = [];
+window.__scrolledTo = null;
+window.__scrollOptions = null;
+window.acquireVsCodeApi = function() {
+  return {
+    postMessage(message) { window.__messages.push(message); },
+    getState() { return undefined; },
+    setState() {}
+  };
+};
+Element.prototype.scrollIntoView = function(options) {
+  window.__scrolledTo = this.id;
+  window.__scrollOptions = options || null;
+};
+`,
+  });
+  await page.addScriptTag({ path: previewScriptPath });
+}
+
+async function waitForPreviewReady(page) {
+  await page.waitForFunction(() => {
+    const diagrams = Array.from(document.querySelectorAll('.diagram-container'));
+    const mermaidHosts = Array.from(document.querySelectorAll('.mermaid-host'));
+    const copyButtons = Array.from(document.querySelectorAll('.ms-copy-btn'));
+    return diagrams.length >= 2 &&
+      diagrams.every((diagram) => diagram.hasAttribute('data-zoom-init')) &&
+      mermaidHosts.every((host) => Boolean(host.querySelector('svg') || host.querySelector('.ms-error'))) &&
+      copyButtons.length >= 1;
+  }, null, { timeout: 15000 });
+}
+
+async function assertCopyTocAndExternalLink(page, expectedCopyText) {
+  await page.locator('.ms-copy-btn').first().click();
+  await page.waitForFunction((text) => window.__clipboardText === text, expectedCopyText);
+
+  await page.locator('#toc-link').click();
+  const scrollState = await page.evaluate(() => ({
+    target: window.__scrolledTo,
+    behavior: window.__scrollOptions?.behavior,
+  }));
+  assert.deepEqual(scrollState, { target: 'target-heading', behavior: 'smooth' });
+
+  await page.locator('#external-link').click();
+  const lastMessage = await page.evaluate(() => window.__messages.at(-1));
+  assert.deepEqual(lastMessage, {
+    type: 'openExternal',
+    href: 'https://example.com/docs',
+  });
+}
+
+async function assertZoomBehavior(page) {
+  const svgDiagram = page.locator('#svg-diagram');
+  await svgDiagram.dispatchEvent('mousedown', { button: 0, clientX: 40, clientY: 40 });
+  assert.equal(await svgDiagram.evaluate((el) => el.classList.contains('diagram-focused')), true);
+
+  await svgDiagram.dispatchEvent('wheel', { deltaY: -250, clientX: 50, clientY: 50 });
+  await page.waitForFunction(() => {
+    const level = document.querySelector('#svg-diagram .zoom-toolbar-level');
+    return level && level.textContent !== '100%';
+  });
+
+  await page.locator('#svg-diagram .zoom-toolbar-reset').click();
+  await page.waitForFunction(() => document.querySelector('#svg-diagram .zoom-toolbar-level')?.textContent === '100%');
+
+  await svgDiagram.dispatchEvent('mousedown', { button: 0, clientX: 40, clientY: 40 });
+  assert.equal(await svgDiagram.evaluate((el) => el.classList.contains('diagram-focused')), true);
+  await page.locator('#outside').click();
+  assert.equal(await svgDiagram.evaluate((el) => el.classList.contains('diagram-focused')), false);
+
+  await svgDiagram.dispatchEvent('mousedown', { button: 0, clientX: 40, clientY: 40 });
+  assert.equal(await svgDiagram.evaluate((el) => el.classList.contains('diagram-focused')), true);
+  await page.keyboard.press('Escape');
+  assert.equal(await svgDiagram.evaluate((el) => el.classList.contains('diagram-focused')), false);
+}
+
+async function assertThemeSwitchRerendersMermaid(page) {
+  const before = await page.locator('#mermaid-diagram .mermaid-host').innerHTML();
+  await page.evaluate(() => window.postMessage({ type: 'theme-override', value: 'dark' }, '*'));
+  await page.waitForFunction(() => document.body.classList.contains('vscode-dark'));
+  await waitForPreviewReady(page);
+  const after = await page.locator('#mermaid-diagram .mermaid-host').innerHTML();
+
+  assert.match(after, /<svg[\s>]/);
+  assert.notEqual(after, before, 'Mermaid SVG should be re-rendered after switching theme');
+}
+
+async function main() {
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage();
+  try {
+    await page.setContent(`<!doctype html><html><body data-theme-override="light">${previewBody('initial copy')}</body></html>`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await installPreviewRuntime(page);
+    await waitForPreviewReady(page);
+
+    await assertCopyTocAndExternalLink(page, 'initial copy');
+    await assertZoomBehavior(page);
+    await assertThemeSwitchRerendersMermaid(page);
+
+    await page.evaluate((html) => {
+      window.postMessage({ type: 'update-body', html, generation: Date.now() }, '*');
+    }, previewBody('updated copy'));
+    await waitForPreviewReady(page);
+
+    await assertCopyTocAndExternalLink(page, 'updated copy');
+    await assertZoomBehavior(page);
+
+    console.log('Preview runtime browser check passed');
+  } finally {
+    await browser.close();
+  }
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
