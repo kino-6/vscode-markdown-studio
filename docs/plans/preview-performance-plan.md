@@ -62,10 +62,10 @@ Measured on `perf/pdf-export-parallel` after PDF export refactoring.
   - [x] Keep PDF export deterministic by preserving full render before PDF generation.
   - [x] Measure initial render before and after the change with `benchmark:preview`.
 
-- [ ] Re-check PDF export after Preview runtime changes
+- [x] Re-check PDF export after Preview runtime changes
   - [x] Run `npm run benchmark:pdf` after Preview JavaScript changes.
-  - [ ] Regenerate demo PDFs when output is intentionally affected.
-  - [ ] Confirm wide PlantUML, Mermaid, SVG, highlights, and links still render correctly.
+  - [x] Regenerate demo PDFs when output is intentionally affected.
+  - [x] Confirm wide PlantUML, Mermaid, SVG, highlights, and links still render correctly.
 
 - [x] Investigate larger incremental rendering improvements
   - [x] Profile `renderBody` on larger Markdown documents.
@@ -128,7 +128,7 @@ PDF export smoke benchmark after Preview runtime changes:
 - `examples/demo.md`: 2793ms, output size 0.95MB.
 - `examples/demo_win.md`: 2157ms, output size 0.36MB.
 - `examples/demo_load.md`: 2239ms, output size 0.26MB.
-- Generated PDFs were restored after measurement to avoid mixing an existing uncommitted `examples/demo.pdf` change into this work.
+- `examples/demo.pdf` is kept as the updated demo artifact for this branch. The generated PDF has 14 pages and 36 link annotations, and the smoke check covered wide PlantUML, Mermaid, SVG, highlight, and link rendering.
 
 Large-document incremental rendering check:
 
