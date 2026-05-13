@@ -2,7 +2,7 @@
 
 All notable changes to Markdown Studio will be documented in this file.
 
-## [1.0.0] - Unreleased
+## [1.0.0] - 2026-05-13
 
 ### Release Focus
 

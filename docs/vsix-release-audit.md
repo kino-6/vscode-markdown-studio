@@ -2,7 +2,7 @@
 
 Date: 2026-05-13
 Branch: `v1.0-release-notes`
-Audited artifact: `dist/markdown-studio-0.9.0.vsix`
+Audited artifact: `dist/markdown-studio-1.0.0.vsix`
 
 ## Summary
 
@@ -53,12 +53,14 @@ npm run package
 
 Result:
 
-- Package: `dist/markdown-studio-0.9.0.vsix`
+- Package: `dist/markdown-studio-1.0.0.vsix`
 - Size: 22.29 MB
 - File count: 52
 - `vsce` file-count/size warning: not observed
 - `node_modules`: not included
 - Source maps: not included
+- Clean-profile install: `kino6.markdown-studio@1.0.0` verified with isolated VS Code user-data and extensions directories.
+- Packaged-extension smoke: E2E suite passed against the VSIX-extracted extension directory.
 - Runtime bundles:
   - `extension/dist/extension.js`
   - `extension/dist/preview.js`
@@ -70,7 +72,7 @@ Result:
 | Item | Status | Notes |
 | --- | --- | --- |
 | `name` | Pass | `markdown-studio`, lowercase and no spaces. |
-| `version` | Pass | `0.9.0`; must become `1.0.0` before the v1.0 tag. |
+| `version` | Pass | `1.0.0`. |
 | `publisher` | Pass | `kino6`, matching the created Marketplace publisher. |
 | `engines.vscode` | Pass | `^1.92.0`, not `*`. |
 | `license` | Pass | `MIT`; root `LICENSE` is included in VSIX as `LICENSE.txt`. |
@@ -137,8 +139,7 @@ Decision for v1.0:
 
 ## Release Blockers
 
-- Bump `version` to `1.0.0` only at the final v1.0 release step.
-- Run clean-profile VSIX install QA before tagging v1.0.
+- No technical packaging blockers remain for v1.0.
 
 ## Non-Blockers
 
