@@ -49,6 +49,18 @@ Markdown Studio is a **local-first** VS Code extension for Markdown preview and 
 - Definition lists: `term` + `: definition` syntax
 - Superscript / subscript: `^sup^` and `~sub~`
 
+### Markdown Compatibility And Known Limits
+
+Markdown Studio targets CommonMark/GitHub-flavored Markdown plus the extensions listed above. The local corpus currently covers Preview/PDF export for common tables, task lists, footnotes, math, diagrams, CJK text, raw HTML, local assets, page breaks, TOC/index/bookmarks, long documents, and security-sensitive links/resources.
+
+Some documentation-tool dialects are intentionally treated as plain Markdown/HTML unless a dedicated parser is added:
+
+- Obsidian-style wiki links and embeds, such as `[[Page]]` and `![[image.png]]`, are not resolved as workspace links.
+- GitHub alert blocks, such as `> [!NOTE]`, render as ordinary blockquotes.
+- MDX/JSX-like tags are passed through as raw HTML-like content; component semantics are not evaluated.
+- YAML front matter is rendered as Markdown text rather than parsed as document metadata.
+- Automatic visual-diff regression testing is not included; local corpus screenshots are available for manual visual review.
+
 ### Style Presets
 
 Five built-in presets with per-setting overrides:
