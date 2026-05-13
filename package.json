@@ -320,6 +320,7 @@
     "test:e2e": "vscode-test --config config/vscode-test.mjs",
     "test:ci": "npm run lint && npm run test:unit && npm run test:integration",
     "test:preview-runtime": "npm run build && node scripts/test/previewRuntimeCheck.js",
+    "test:demo-render": "npm run build && node scripts/test/demoRenderCheck.js",
     "package": "npm run build && rm -f dist/*.vsix && vsce package -o dist/",
     "reinstall": "bash scripts/dev/reinstall.sh",
     "demo": "npx tsx scripts/demo/index.ts",

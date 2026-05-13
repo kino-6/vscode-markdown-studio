@@ -30,6 +30,10 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
   - [7. Theme Adaptability](#7-theme-adaptability)
   - [8. Diagram Type Catalog](#8-diagram-type-catalog)
     - [WaveDrom Timing Diagram](#wavedrom-timing-diagram)
+      - [Basic Handshake](#basic-handshake)
+      - [Grouped Signals via wavejson Alias](#grouped-signals-via-wavejson-alias)
+      - [Strict JSON via wavedrom-json Alias](#strict-json-via-wavedrom-json-alias)
+      - [Wide WaveDrom Bus](#wide-wavedrom-bus)
     - [Wide Diagrams for PDF Aspect Ratio](#wide-diagrams-for-pdf-aspect-ratio)
   - [9. Custom CSS](#9-custom-css)
     - [Bundled Themes](#bundled-themes)
@@ -722,6 +726,8 @@ xychart-beta
 
 ### WaveDrom Timing Diagram
 
+#### Basic Handshake
+
 ```wavedrom
 { signal: [
   { name: "clk", wave: "p......" },
@@ -729,6 +735,43 @@ xychart-beta
   { name: "ack", wave: "0..1.0." },
   { name: "bus", wave: "x.34.5x", data: ["addr", "read", "data"] }
 ]}
+```
+
+#### Grouped Signals via wavejson Alias
+
+```wavejson
+{ signal: [
+  ["Control",
+    { name: "enable", wave: "0.1...." },
+    { name: "ready", wave: "0...1.." }
+  ],
+  ["Data",
+    { name: "data", wave: "x.345.x", data: ["A0", "A1", "B0", "B1"] }
+  ]
+]}
+```
+
+#### Strict JSON via wavedrom-json Alias
+
+```wavedrom-json
+{
+  "signal": [
+    { "name": "clk", "wave": "P......" },
+    { "name": "valid", "wave": "0.1.0.." },
+    { "name": "payload", "wave": "x.=.x..", "data": ["packet"] }
+  ]
+}
+```
+
+#### Wide WaveDrom Bus
+
+```wavedrom
+{ signal: [
+  { name: "clk", wave: "p...............", period: 1 },
+  { name: "addr", wave: "x.3456789abcdefx", data: ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "AA", "AB"] },
+  { name: "data", wave: "x...3456789abc.x", data: ["D0", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9"] },
+  { name: "valid", wave: "0.1...........0." }
+], config: { hscale: 2 }}
 ```
 
 ### Wide Diagrams for PDF Aspect Ratio

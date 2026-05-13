@@ -219,9 +219,11 @@ async function waitForPreviewReady(page) {
   await page.waitForFunction(() => {
     const diagrams = Array.from(document.querySelectorAll('.diagram-container'));
     const mermaidHosts = Array.from(document.querySelectorAll('.mermaid-host'));
+    const waveDromHosts = Array.from(document.querySelectorAll('.wavedrom-host'));
     const diagramsReady = diagrams.every((diagram) => diagram.hasAttribute('data-zoom-init'));
     const mermaidReady = mermaidHosts.every((host) => Boolean(host.querySelector('svg') || host.querySelector('.ms-error')));
-    return diagramsReady && mermaidReady;
+    const waveDromReady = waveDromHosts.every((host) => Boolean(host.querySelector('svg') || host.querySelector('.ms-error')));
+    return diagramsReady && mermaidReady && waveDromReady;
   }, null, { timeout: 15000 });
 }
 
@@ -250,9 +252,11 @@ async function measureBrowser(browser, fullHtml, bodyHtml, screenshotPath) {
         function check() {
           const diagrams = Array.from(document.querySelectorAll('.diagram-container'));
           const mermaidHosts = Array.from(document.querySelectorAll('.mermaid-host'));
+          const waveDromHosts = Array.from(document.querySelectorAll('.wavedrom-host'));
           const diagramsReady = diagrams.every((diagram) => diagram.hasAttribute('data-zoom-init'));
           const mermaidReady = mermaidHosts.every((host) => Boolean(host.querySelector('svg') || host.querySelector('.ms-error')));
-          if (diagramsReady && mermaidReady) {
+          const waveDromReady = waveDromHosts.every((host) => Boolean(host.querySelector('svg') || host.querySelector('.ms-error')));
+          if (diagramsReady && mermaidReady && waveDromReady) {
             resolve();
             return;
           }
