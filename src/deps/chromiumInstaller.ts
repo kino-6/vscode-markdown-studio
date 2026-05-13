@@ -2,7 +2,6 @@ import * as fs from "fs";
 import * as path from "path";
 import type { InstallerResult } from "./types";
 import type { NetworkConfig } from "../infra/networkConfig";
-import { runProcess } from "../infra/runProcess";
 import { RUNTIME_MESSAGES } from "../infra/messages";
 import {
   appendTlsCertificateSettingsHint,
@@ -61,47 +60,18 @@ interface ChromiumInstallAttempt {
 }
 
 async function installChromiumOnce(): Promise<ChromiumInstallAttempt> {
+  // Use the bundled playwright-core server API so the VSIX does not need to
+  // ship the higher-level Playwright test runner package or CLI tree.
   try {
-    // Try programmatic install first
     const server = await import("playwright-core/lib/server");
-    await server.installBrowsersForNpmPackages(["playwright"]);
+    await server.installBrowsersForNpmInstall(["chromium", "chromium-headless-shell"]);
     return { ok: true };
-  } catch (programmaticErr) {
-    if (isTlsCertificateError(programmaticErr)) {
-      return {
-        ok: false,
-        error: RUNTIME_MESSAGES.dependencies.chromiumInstallationFailed(
-          programmaticErr instanceof Error ? programmaticErr.message : String(programmaticErr)
-        ),
-        tlsCertificateError: true,
-      };
-    }
-
-    // Fallback: CLI-based install via playwright-core/cli.js
-    try {
-      const pkgPath = require.resolve("playwright-core/package.json");
-      const cliPath = path.join(path.dirname(pkgPath), "cli.js");
-      const result = await runProcess(
-        process.execPath,
-        [cliPath, "install", "chromium"],
-        120_000
-      );
-      if (result.exitCode !== 0) {
-        const detail = result.stderr || result.stdout;
-        return {
-          ok: false,
-          error: RUNTIME_MESSAGES.dependencies.chromiumInstallFailed(detail),
-          tlsCertificateError: isTlsCertificateError(detail),
-        };
-      }
-      return { ok: true };
-    } catch (cliErr) {
-      return {
-        ok: false,
-        error: RUNTIME_MESSAGES.dependencies.chromiumInstallationFailed(cliErr instanceof Error ? cliErr.message : String(cliErr)),
-        tlsCertificateError: isTlsCertificateError(cliErr),
-      };
-    }
+  } catch (installErr) {
+    return {
+      ok: false,
+      error: RUNTIME_MESSAGES.dependencies.chromiumInstallationFailed(installErr instanceof Error ? installErr.message : String(installErr)),
+      tlsCertificateError: isTlsCertificateError(installErr),
+    };
   }
 }
 
@@ -169,7 +139,7 @@ export const chromiumInstaller = {
       // Verify installation
       progress(RUNTIME_MESSAGES.dependencyProgress.verifyingChromium, 5);
       try {
-        const { chromium } = await import("playwright");
+        const { chromium } = await import("playwright-core");
         const browser = await chromium.launch({ headless: true });
         await browser.close();
         return { ok: true, path: browsersDir };
@@ -197,7 +167,7 @@ export const chromiumInstaller = {
     const restoreEnv = applyNetworkEnv(networkConfig);
 
     try {
-      const { chromium } = await import("playwright");
+      const { chromium } = await import("playwright-core");
       const browser = await chromium.launch({ headless: true });
       await browser.close();
       return { ok: true, path: browsersDir };

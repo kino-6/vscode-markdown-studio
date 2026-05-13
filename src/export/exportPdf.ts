@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as vscode from 'vscode';
-import type { Page } from 'playwright';
+import type { Page } from 'playwright-core';
 import { dependencyStatus } from '../extension';
 import { mapWithConcurrency } from '../infra/async';
 import { buildPdfOptions, injectPageBreakCss, injectTocPageBreakCss } from './pdfHeaderFooter';
@@ -471,9 +471,9 @@ export async function exportToPdf(
     process.env.PLAYWRIGHT_BROWSERS_PATH = dependencyStatus.browserPath;
   }
 
-  // Playwright is external (not bundled) and shipped in the VSIX's node_modules.
-  // Dynamic import keeps it out of the activation path.
-  const { chromium } = await import('playwright');
+  // Playwright Core is bundled into the extension, but dynamic import keeps it
+  // out of the activation path until PDF export is requested.
+  const { chromium } = await import('playwright-core');
 
   let browser;
   try {

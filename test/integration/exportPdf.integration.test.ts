@@ -11,7 +11,7 @@ vi.mock('../../src/preview/buildHtml', () => {
   return { buildHtml: buildHtmlMock, buildLoadingHtml: vi.fn(() => '<html>loading</html>'), __buildHtmlMock: buildHtmlMock };
 });
 
-vi.mock('playwright', () => {
+vi.mock('playwright-core', () => {
   const setContentMock = vi.fn();
   const pdfMock = vi.fn();
   const closeMock = vi.fn();
@@ -51,7 +51,7 @@ vi.mock('../../src/infra/customCssLoader', () => ({
 
 import * as fsModule from 'node:fs/promises';
 import * as buildHtmlModule from '../../src/preview/buildHtml';
-import * as playwrightModule from 'playwright';
+import * as playwrightModule from 'playwright-core';
 import * as configModule from '../../src/infra/config';
 import * as pdfBookmarksModule from '../../src/export/pdfBookmarks';
 import { exportToPdf, inlineLocalImages } from '../../src/export/exportPdf';

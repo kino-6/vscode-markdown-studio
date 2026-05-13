@@ -71,6 +71,9 @@ THE SOFTWARE.
 - Homepage: https://github.com/microsoft/playwright
 - License: Apache-2.0
 - Usage: Headless browser PDF export.
+- Distribution:
+  - `playwright-core` is bundled into `dist/extension.js` for runtime PDF export and Chromium setup.
+  - The higher-level `playwright` package is used by tests/developer scripts only and is not shipped in the VSIX.
 
 ## PlantUML (Bundled Binary)
 - Project: PlantUML

@@ -1,5 +1,5 @@
 declare module "playwright-core/lib/server" {
-  export function installBrowsersForNpmPackages(
-    packages: string[]
+  export function installBrowsersForNpmInstall(
+    browsers: string[]
   ): Promise<void>;
 }

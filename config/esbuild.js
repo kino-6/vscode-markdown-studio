@@ -1,14 +1,36 @@
 const esbuild = require('esbuild');
+const fs = require('fs');
 
 const watch = process.argv.includes('--watch');
+
+const playwrightCoreBundleShim = {
+  name: 'playwright-core-bundle-shim',
+  setup(build) {
+    build.onLoad({ filter: /playwright-core[/\\]lib[/\\]server[/\\]utils[/\\]nodePlatform\.js$/ }, async (args) => {
+      const source = await fs.promises.readFile(args.path, 'utf8');
+      return {
+        contents: source.replace(
+          'const coreDir = import_path.default.dirname(require.resolve("../../../package.json"));',
+          'const coreDir = import_path.default.dirname(__filename);'
+        ),
+        loader: 'js'
+      };
+    });
+  }
+};
 
 const extensionConfig = {
   entryPoints: ['src/extension.ts'],
   bundle: true,
   platform: 'node',
-  external: ['vscode', 'playwright', 'playwright-core'],
+  external: ['vscode', 'chromium-bidi/*'],
   format: 'cjs',
   sourcemap: true,
+  logOverride: {
+    // Playwright Core contains require.resolve calls for optional/non-PDF paths.
+    'require-resolve-not-external': 'silent'
+  },
+  plugins: [playwrightCoreBundleShim],
   outfile: 'dist/extension.js'
 };
 

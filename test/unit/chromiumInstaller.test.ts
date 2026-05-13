@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as path from "path";
-import Module from "module";
 
 // Mock fs
 vi.mock("fs", async () => {
@@ -14,24 +13,24 @@ vi.mock("fs", async () => {
   };
 });
 
-// Mock playwright
+// Mock playwright-core
 const mockBrowserClose = vi.fn().mockResolvedValue(undefined);
 const mockChromiumLaunch = vi.fn().mockResolvedValue({ close: mockBrowserClose });
-vi.mock("playwright", () => ({
+vi.mock("playwright-core", () => ({
   chromium: { launch: (...args: unknown[]) => mockChromiumLaunch(...args) },
 }));
 
-// Mock playwright-core/lib/server
+// Mock playwright-core browser installer
 const mockInstallBrowsers = vi.fn().mockResolvedValue(undefined);
 vi.mock("playwright-core/lib/server", () => ({
-  installBrowsersForNpmPackages: (...args: unknown[]) => mockInstallBrowsers(...args),
+  installBrowsersForNpmInstall: (...args: unknown[]) => mockInstallBrowsers(...args),
 }));
 
-// Mock runProcess
-const mockRunProcess = vi.fn();
-vi.mock("../../src/infra/runProcess", () => ({
-  runProcess: (...args: unknown[]) => mockRunProcess(...args),
-}));
+function resetPlaywrightMocks(): void {
+  mockBrowserClose.mockResolvedValue(undefined);
+  mockChromiumLaunch.mockResolvedValue({ close: mockBrowserClose });
+  mockInstallBrowsers.mockResolvedValue(undefined);
+}
 
 import { chromiumInstaller } from "../../src/deps/chromiumInstaller";
 
@@ -41,6 +40,7 @@ describe("chromiumInstaller", () => {
   beforeEach(() => {
     savedEnv = process.env.PLAYWRIGHT_BROWSERS_PATH;
     vi.clearAllMocks();
+    resetPlaywrightMocks();
   });
 
   afterEach(() => {
@@ -69,15 +69,10 @@ describe("chromiumInstaller", () => {
       );
     });
 
-    it("returns ok:true with path on successful programmatic install", async () => {
+    it("returns ok:true with path on successful browser install", async () => {
       const result = await chromiumInstaller.install(storageDir, progress);
       expect(result.ok).toBe(true);
       expect(result.path).toBe(path.join(storageDir, "chromium"));
-    });
-
-    it("calls programmatic install API with playwright package", async () => {
-      await chromiumInstaller.install(storageDir, progress);
-      expect(mockInstallBrowsers).toHaveBeenCalledWith(["playwright"]);
     });
 
     it("reports progress during install and verification", async () => {
@@ -86,64 +81,20 @@ describe("chromiumInstaller", () => {
       expect(progress).toHaveBeenCalledWith("Verifying Chromium installation...", 5);
     });
 
-    it("returns ok:false when both programmatic and CLI fallback fail", async () => {
-      mockInstallBrowsers.mockRejectedValueOnce(new Error("API unavailable"));
-      // require.resolve("playwright/cli") throws in this env, so the
-      // outer catch returns an installation-failed error.
-      const result = await chromiumInstaller.install(storageDir, progress);
-      expect(result.ok).toBe(false);
-      expect(result.error).toContain("Chromium installation failed");
-    });
-
-    it("falls back to CLI when programmatic install fails and CLI path resolves", async () => {
-      mockInstallBrowsers.mockRejectedValueOnce(new Error("API unavailable"));
-
-      mockRunProcess.mockResolvedValueOnce({
-        exitCode: 0,
-        stdout: "",
-        stderr: "",
-        timedOut: false,
-      });
-
+    it("uses playwright-core server API to install Chromium and the headless shell", async () => {
       const result = await chromiumInstaller.install(storageDir, progress);
 
-      // The implementation uses require.resolve("playwright-core/package.json")
-      // to find the CLI path, so we just verify the shape of the call
-      expect(mockRunProcess).toHaveBeenCalledWith(
-        process.execPath,
-        expect.arrayContaining(["install", "chromium"]),
-        120_000
-      );
-      // The first arg after execPath should end with cli.js
-      const args = mockRunProcess.mock.calls[0][1] as string[];
-      expect(args[0]).toMatch(/cli\.js$/);
+      expect(mockInstallBrowsers).toHaveBeenCalledWith(["chromium", "chromium-headless-shell"]);
       expect(result.ok).toBe(true);
     });
 
-    it("returns ok:false when CLI fallback exits with non-zero code", async () => {
-      mockInstallBrowsers.mockRejectedValueOnce(new Error("API unavailable"));
+    it("returns ok:false when browser installation fails", async () => {
+      mockInstallBrowsers.mockRejectedValueOnce(new Error("download failed"));
 
-      const origResolve = (Module as any)._resolveFilename;
-      (Module as any)._resolveFilename = function (request: string, ...rest: unknown[]) {
-        if (request === "playwright/cli") return "/fake/playwright/cli.js";
-        return origResolve.call(this, request, ...rest);
-      };
-
-      mockRunProcess.mockResolvedValueOnce({
-        exitCode: 1,
-        stdout: "",
-        stderr: "download failed",
-        timedOut: false,
-      });
-
-      try {
-        const result = await chromiumInstaller.install(storageDir, progress);
-        expect(result.ok).toBe(false);
-        expect(result.error).toContain("Chromium install failed");
-        expect(result.error).toContain("download failed");
-      } finally {
-        (Module as any)._resolveFilename = origResolve;
-      }
+      const result = await chromiumInstaller.install(storageDir, progress);
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("Chromium installation failed");
+      expect(result.error).toContain("download failed");
     });
 
     it("returns ok:false when verification launch fails", async () => {
@@ -185,9 +136,7 @@ describe("chromiumInstaller", () => {
     });
 
     it("adds VS Code network setting hints when certificate retry still fails", async () => {
-      mockInstallBrowsers
-        .mockRejectedValueOnce(new Error("UNABLE_TO_GET_ISSUER_CERT_LOCALLY"))
-        .mockRejectedValueOnce(new Error("UNABLE_TO_GET_ISSUER_CERT_LOCALLY"));
+      mockInstallBrowsers.mockRejectedValue(new Error("UNABLE_TO_GET_ISSUER_CERT_LOCALLY"));
 
       const result = await chromiumInstaller.install(storageDir, progress);
 
@@ -248,6 +197,7 @@ describe("chromiumInstaller with NetworkConfig", () => {
       NODE_TLS_REJECT_UNAUTHORIZED: process.env.NODE_TLS_REJECT_UNAUTHORIZED,
     };
     vi.clearAllMocks();
+    resetPlaywrightMocks();
   });
 
   afterEach(() => {
