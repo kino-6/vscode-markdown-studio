@@ -202,16 +202,17 @@ See [docs/troubleshooting.md](./docs/troubleshooting.md) for dependency setup, p
 - Japanese localization for commands, settings, and extension metadata.
 - Clean first-run dependency setup for managed Corretto, bundled PlantUML, and local Playwright Chromium.
 
-### Competitive Landscape
+### Positioning
 
-| Extension | Installs | Key Strength | Markdown Studio Advantage |
-|-----------|----------|-------------|--------------------------|
-| Markdown PDF (yzane) | 3M+ | Established | Diagrams, TOC, bookmarks, active development |
-| RenderMark | New | DOCX, slides, agent-aware | Local-first, no cloud dependency |
-| vscode-pandoc | 200K+ | Pandoc ecosystem | No external tool install needed |
-| SnapMD / xmarkdown2pdf | Small | Simple Mermaid PDF | Full PlantUML + SVG + security |
+Markdown Studio v1.0 focuses on technical Markdown documents that need dependable Preview and PDF output without leaving VS Code. It is built for local rendering, diagram-heavy README/spec documents, and export workflows where security settings, PDF navigation, and repeatable output matter.
 
-Differentiators: local-first architecture, integrated Mermaid + PlantUML + SVG, PDF bookmarks/TOC/index, enterprise security (CSP, proxy, CA certs).
+Key differences:
+
+- Preview and PDF export share the same rendering stack, so diagrams, math, code highlighting, local assets, and custom CSS stay consistent.
+- Mermaid, PlantUML, WaveDrom, and inline SVG are integrated without requiring a remote diagram service.
+- PDF output includes document-oriented features such as indexes, bookmarks, page breaks, headers/footers, and filename templates.
+- External resources are controlled by policy: GitHub assets are allowlisted by default, and strict LocalOnly mode is available with `block-all`.
+- First-run setup installs only the managed dependencies needed for local rendering: Corretto for PlantUML and Playwright Chromium for PDF export.
 
 ## Build and Run
 
