@@ -2,6 +2,30 @@
 
 All notable changes to Markdown Studio will be documented in this file.
 
+## [1.0.0] - Unreleased
+
+### Release Focus
+
+- Public release polish for the local-first Markdown preview and PDF export workflow.
+- Clear first-run documentation for Preview, PDF export, PlantUML, and dependency setup.
+- Marketplace-ready README copy, extension description, keywords, and release positioning.
+
+### Highlights Since v0.8
+
+- Added current-tab and full-width Preview commands with configurable preview width.
+- Added local WaveDrom timing diagram rendering for Preview and PDF export.
+- Expanded demo coverage and committed a generated demo PDF artifact.
+- Improved PDF output quality for wide diagrams, link styling, syntax highlighting, inline code, and header/footer visibility.
+- Added local corpus and demo-render validation flows for broader Markdown compatibility checks.
+- Clarified strict LocalOnly behavior and external-resource policy documentation.
+
+### Known Limits
+
+- Obsidian wiki links and embeds are not resolved as workspace links.
+- GitHub alert blocks render as ordinary blockquotes.
+- MDX/JSX component semantics are not evaluated.
+- YAML front matter is rendered as Markdown text rather than parsed as document metadata.
+
 ## [0.9.0] - 2026-05-13
 
 ### Added
