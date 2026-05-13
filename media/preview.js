@@ -1,5 +1,6 @@
 import mermaid from 'mermaid';
 import wavedrom from 'wavedrom';
+import JSON5 from 'json5';
 
 const THEME_MAP = {
   'vscode-dark': 'dark',
@@ -249,8 +250,8 @@ function parseWaveDromSource(source) {
     value = JSON.parse(source);
   } catch {
     // WaveDrom examples use WaveJSON object literals with unquoted keys.
-    // Keep this local to webview rendering and avoid raw <script> execution.
-    value = Function('"use strict"; return (' + source + ');')();
+    // JSON5 accepts that syntax without evaluating Markdown as JavaScript.
+    value = JSON5.parse(source);
   }
   if (value === null || typeof value !== 'object') {
     throw new Error('WaveDrom source must evaluate to an object');

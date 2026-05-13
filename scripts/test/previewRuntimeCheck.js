@@ -9,6 +9,8 @@ const mermaidSource = 'graph TD; A[Light] --> B[Dark]';
 const encodedMermaidSource = encodeURIComponent(mermaidSource);
 const waveDromSource = '{ signal: [{ name: "clk", wave: "p......" }, { name: "bus", wave: "x.34.5x", data: ["head", "body", "tail"] }] }';
 const encodedWaveDromSource = encodeURIComponent(waveDromSource);
+const unsafeWaveDromSource = '{ signal: [], head: { text: (window.__waveDromSideEffect = true, "unsafe") } }';
+const encodedUnsafeWaveDromSource = encodeURIComponent(unsafeWaveDromSource);
 
 function previewBody(codeText, options = {}) {
   const offscreenMermaid = options.includeOffscreenMermaid
@@ -38,6 +40,9 @@ function previewBody(codeText, options = {}) {
 </div>
 <div id="wavedrom-invalid" class="diagram-container">
   <div class="wavedrom-host" data-wavedrom-src="${encodeURIComponent('{ signal: [')}"></div>
+</div>
+<div id="wavedrom-unsafe" class="diagram-container">
+  <div class="wavedrom-host" data-wavedrom-src="${encodedUnsafeWaveDromSource}"></div>
 </div>
 ${offscreenMermaid}`;
 }
@@ -164,6 +169,13 @@ async function assertInvalidWaveDromError(page) {
   assert.equal(await error.textContent(), 'WaveDrom render error');
 }
 
+async function assertUnsafeWaveDromIsNotEvaluated(page) {
+  const error = page.locator('#wavedrom-unsafe .ms-error-title');
+  await error.waitFor({ timeout: 15000 });
+  assert.equal(await error.textContent(), 'WaveDrom render error');
+  assert.equal(await page.evaluate(() => window.__waveDromSideEffect), undefined);
+}
+
 async function assertLazyMermaidRendering(page) {
   const offscreenHost = page.locator('#offscreen-mermaid .mermaid-host');
   assert.equal(await offscreenHost.locator('svg').count(), 0);
@@ -191,6 +203,7 @@ async function main() {
     await assertThemeSwitchRerendersMermaid(page);
     await assertWaveDromRendering(page);
     await assertInvalidWaveDromError(page);
+    await assertUnsafeWaveDromIsNotEvaluated(page);
 
     await page.evaluate((html) => {
       window.postMessage({ type: 'update-body', html, generation: Date.now() }, '*');
@@ -201,6 +214,7 @@ async function main() {
     await assertZoomBehavior(page);
     await assertWaveDromRendering(page);
     await assertInvalidWaveDromError(page);
+    await assertUnsafeWaveDromIsNotEvaluated(page);
     await assertLazyMermaidRendering(page);
 
     console.log('Preview runtime browser check passed');

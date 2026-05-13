@@ -16,7 +16,7 @@
   "configuration.security.blockExternalLinks.deprecationMessage": "Deprecated: use markdownStudio.security.externalResources.mode instead.",
   "configuration.security.externalResources.mode.description": "External resource control mode for preview and export.",
   "configuration.security.externalResources.mode.enum.blockAll": "Block all external resources.",
-  "configuration.security.externalResources.mode.enum.whitelist": "Allow only whitelisted domains.",
+  "configuration.security.externalResources.mode.enum.whitelist": "Allow only allowlisted domains.",
   "configuration.security.externalResources.mode.enum.allowAll": "Allow all external resources.",
   "configuration.security.externalResources.allowedDomains.description": "Domains allowed when external resource mode is set to whitelist.",
   "configuration.export.header.enabled.description": "Enable a PDF header with the document title on each page.",

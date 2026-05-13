@@ -25,6 +25,8 @@
   - `tspan` 0.4.0 — MIT
   - `estraverse` 5.3.0 — BSD-2-Clause
   - `sax` 1.6.0 — BlueOak-1.0.0
+- WaveJSON parsing dependency:
+  - `json5` 2.2.3 — MIT. Used to parse WaveJSON object-literal syntax without evaluating Markdown as JavaScript.
 
 MIT license notice for WaveDrom:
 

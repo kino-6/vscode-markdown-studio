@@ -2,7 +2,7 @@
 
 Markdown Studio is a **local-first** VS Code extension for Markdown preview and PDF export with integrated diagram rendering.
 
-> All rendering happens on your machine. No data leaves your environment.
+> Core Markdown, diagram rendering, and PDF export run on your machine. Remote images and links are controlled by the external-resource policy and can be fully blocked for strict LocalOnly use.
 
 <!-- TODO: Add screenshot/GIF here before Marketplace publish -->
 <!-- ![Markdown Studio Preview](docs/images/preview-screenshot.png) -->
@@ -77,8 +77,8 @@ Five built-in presets with per-setting overrides:
 ### Security
 
 - CSP policy: `default-src 'none'` by default
-- External resource control: block-all / whitelist / allow-all
-- Domain whitelist for selective access (GitHub domains included by default)
+- External resource control: `block-all` / `whitelist` / `allow-all`
+- Domain allowlist for selective access (the setting value remains `whitelist`; GitHub domains are included by default)
 - SVG sanitization via sanitize-html
 
 ### Automatic Dependency Management
@@ -98,6 +98,7 @@ Five built-in presets with per-setting overrides:
 | WaveDrom           | None                           | Bundled in webview script, rendered client-side                       |
 | SVG                | None                           | Passed through directly, no external references                       |
 | Syntax Highlighting| None                           | Bundled highlight.js with registered languages                        |
+| External resources | Configurable                   | Remote images and links are blocked, allowlisted, or allowed by policy |
 | Initial Setup      | Corretto + Chromium download   | One-time only, via `Setup Dependencies` command                       |
 
 ## Commands
@@ -129,7 +130,7 @@ Common settings:
 | `markdownStudio.style.customCss` | `""` | Final CSS override layer. |
 | `markdownStudio.export.pageFormat` | `A4` | PDF page size. |
 | `markdownStudio.export.outputFilename` | `${filename}` | PDF filename template. |
-| `markdownStudio.security.externalResources.mode` | `whitelist` | External resource policy. |
+| `markdownStudio.security.externalResources.mode` | `whitelist` | External resource policy. Use `block-all` for strict LocalOnly documents. |
 | `markdownStudio.network.caCertificates` | `[]` | Extra CA certificates for proxy/SSL inspection environments. |
 
 The same CSS stack applies to both preview and PDF export. Preview width is controlled separately by `markdownStudio.preview.contentWidth` and does not change PDF page size.
@@ -147,7 +148,7 @@ WaveDrom timing diagrams are rendered locally in Preview and PDF export from fen
 ```
 ````
 
-Aliases `wavejson` and `wavedrom-json` are also supported. Raw `<script type="WaveDrom">` blocks are intentionally not executed.
+Aliases `wavejson` and `wavedrom-json` are also supported. JSON is parsed directly; WaveJSON object-literal examples are parsed with bundled JSON5 inside the webview. Raw `<script type="WaveDrom">` blocks are intentionally not executed.
 
 Distribution note: WaveDrom is an MIT-licensed npm dependency pinned in `package-lock.json` and bundled into the webview script by esbuild. The upstream package is not manually modified or vendored under `third_party/`; license and copyright details are listed in [third-party-notices.md](./docs/third-party-notices.md).
 

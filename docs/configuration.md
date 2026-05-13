@@ -26,8 +26,8 @@ For term definitions such as TOC, PDF Index, and bookmarks, see [glossary.md](./
 | `markdownStudio.preview.theme` | enum | `auto` | Preview theme mode: auto, light, dark. |
 | `markdownStudio.preview.contentWidth` | enum | `a4` | Preview content width: a4, full. |
 | `markdownStudio.preview.sourceJump.enabled` | boolean | `false` | Double-click preview to jump to source line. |
-| `markdownStudio.security.externalResources.mode` | enum | `whitelist` | External resource control: block-all, whitelist, allow-all. |
-| `markdownStudio.security.externalResources.allowedDomains` | array | GitHub domains | Domains allowed in whitelist mode. |
+| `markdownStudio.security.externalResources.mode` | enum | `whitelist` | External resource policy: `block-all`, `whitelist`, or `allow-all`. |
+| `markdownStudio.security.externalResources.allowedDomains` | array | GitHub domains | Domains allowed when mode is `whitelist`. |
 | `markdownStudio.security.blockExternalLinks` | boolean | `true` | Deprecated legacy setting. Use `security.externalResources.mode`. |
 | `markdownStudio.style.preset` | enum | `markdown-pdf` | Base typography preset. |
 | `markdownStudio.style.fontFamily` | string | system sans-serif | Override preset font family. |
@@ -74,6 +74,16 @@ code { background: #f0f0f0; color: #d63384; }
 ```
 
 Theme samples are available in `examples/custom-styles/`.
+
+## LocalOnly Posture
+
+Preview, PDF export, Mermaid, PlantUML, WaveDrom, SVG handling, syntax highlighting, and math rendering run locally. External Markdown resources are handled separately by `markdownStudio.security.externalResources.mode`:
+
+- `block-all`: strict LocalOnly. Remote images and links are replaced with blocked-resource notices.
+- `whitelist`: default. Local resources are preserved, and only configured remote domains are allowed.
+- `allow-all`: disables external-resource filtering.
+
+The default mode is `whitelist` so common GitHub-hosted README assets keep working. Use `block-all` for offline, confidential, or reproducibility-focused documents.
 
 ## TOC In PDF Export
 
