@@ -43,6 +43,11 @@ describe('getDefaultHeaderTemplate', () => {
     const result = getDefaultHeaderTemplate('Title');
     expect(result).toContain('width:100%');
   });
+
+  it('sets an explicit visible text color', () => {
+    const result = getDefaultHeaderTemplate('Title');
+    expect(result).toContain('color:#000');
+  });
 });
 
 describe('getDefaultFooterTemplate', () => {
@@ -65,6 +70,11 @@ describe('getDefaultFooterTemplate', () => {
   it('contains font-size style', () => {
     const result = getDefaultFooterTemplate();
     expect(result).toContain('font-size');
+  });
+
+  it('sets an explicit visible text color', () => {
+    const result = getDefaultFooterTemplate();
+    expect(result).toContain('color:#000');
   });
 });
 

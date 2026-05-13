@@ -1,5 +1,7 @@
 import { PdfHeaderFooterConfig, PdfTemplateOptions } from '../types/models';
 
+const DEFAULT_TEMPLATE_STYLE = 'font-size:10px;width:100%;text-align:center;color:#000;';
+
 /**
  * Escapes HTML special characters in a string to prevent injection.
  * IMPORTANT: `&` is escaped first to avoid double-escaping.
@@ -22,7 +24,7 @@ function escapeHtml(text: string): string {
  */
 export function getDefaultHeaderTemplate(documentTitle: string): string {
   const escaped = escapeHtml(documentTitle);
-  return `<div style="font-size:10px;width:100%;text-align:center;"><span class="url" style="display:none;"></span><span>${escaped}</span></div>`;
+  return `<div style="${DEFAULT_TEMPLATE_STYLE}"><span class="url" style="display:none;"></span><span>${escaped}</span></div>`;
 }
 
 /**
@@ -34,7 +36,7 @@ export function getDefaultHeaderTemplate(documentTitle: string): string {
  * when the page is loaded via setContent() instead of a real URL.
  */
 export function getDefaultFooterTemplate(): string {
-  return '<div style="font-size:10px;width:100%;text-align:center;"><span class="url" style="display:none;"></span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>';
+  return `<div style="${DEFAULT_TEMPLATE_STYLE}"><span class="url" style="display:none;"></span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>`;
 }
 
 const EMPTY_TEMPLATE = '<span></span>';
