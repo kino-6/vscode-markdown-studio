@@ -2,7 +2,7 @@
 
 Local-first Markdown preview and PDF export for technical documents.
 
-Markdown Studio renders Markdown, diagrams, math, code, local assets, TOCs, PDF indexes, and PDF bookmarks from one VS Code workflow. Core Markdown, diagram rendering, and PDF export run on your machine. Remote images and links are controlled by the external-resource policy and can be fully blocked for strict LocalOnly use.
+Markdown Studio renders Markdown, diagrams, math, code, local assets, TOCs, PDF indexes, and PDF bookmarks from one VS Code workflow. Core Markdown, diagram rendering, and PDF export run on your machine. External resources use `whitelist` mode by default with GitHub domains allowlisted; switch to `block-all` for strict LocalOnly documents.
 
 ## Quick Start
 
@@ -16,7 +16,7 @@ For PlantUML and PDF export dependencies, run `Markdown Studio: Setup Dependenci
 
 - Local-first by default: Markdown, diagrams, syntax highlighting, math, and PDF export run on your machine.
 - Technical-document ready: Mermaid, PlantUML, WaveDrom, SVG, code highlighting, KaTeX, TOC, PDF index, and bookmarks are integrated.
-- Security-aware: external resources can be blocked, allowlisted, or allowed explicitly.
+- Security-aware: external resources default to a GitHub allowlist and can be blocked or allowed explicitly.
 - Practical PDF output: page formats, margins, headers/footers, filenames, TOC handling, page breaks, and bookmarks are configurable.
 
 ## Features
@@ -90,7 +90,8 @@ Five built-in presets with per-setting overrides:
 
 - CSP policy: `default-src 'none'` by default
 - External resource control: `block-all` / `whitelist` / `allow-all`
-- Domain allowlist for selective access (the setting value remains `whitelist`; GitHub domains are included by default)
+- Default external-resource mode is `whitelist`; GitHub domains are included by default for common README assets
+- Use `block-all` for strict LocalOnly documents
 - SVG sanitization via sanitize-html
 
 ### Automatic Dependency Management
@@ -110,7 +111,7 @@ Five built-in presets with per-setting overrides:
 | WaveDrom           | None                           | Bundled in webview script, rendered client-side                       |
 | SVG                | None                           | Passed through directly, no external references                       |
 | Syntax Highlighting| None                           | Bundled highlight.js with registered languages                        |
-| External resources | Configurable                   | Remote images and links are blocked, allowlisted, or allowed by policy |
+| External resources | GitHub allowlist by default    | Remote images/resources are allowlisted by domain, or fully blocked with `block-all` |
 | Initial Setup      | Corretto + Chromium download   | One-time only, via `Setup Dependencies` command                       |
 
 ## Commands

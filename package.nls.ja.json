@@ -2,7 +2,7 @@
   "command.openPreview.title": "Markdown Studio: プレビュー",
   "command.openPreviewInCurrentTab.title": "Markdown Studio: 現在のタブでプレビュー",
   "command.openPreviewFullWidth.title": "Markdown Studio: 幅制限なしでプレビュー",
-  "extension.description": "Markdown プレビューと PDF エクスポートをローカルで実行し、Mermaid、PlantUML、WaveDrom、数式、SVG、TOC、ブックマーク、リソース制御に対応します。",
+  "extension.description": "ローカル優先の Markdown プレビューと PDF エクスポート。図、数式、ブックマークに対応し、外部リソースは既定で GitHub 許可リストを使用します。",
   "command.exportPdf.title": "Markdown Studio: PDF をエクスポート",
   "command.validateEnvironment.title": "Markdown Studio: ローカル環境を検証",
   "command.reloadPreview.title": "Markdown Studio: プレビューを再読み込み（キャッシュをクリア）",

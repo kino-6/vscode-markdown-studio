@@ -17,7 +17,7 @@ All notable changes to Markdown Studio will be documented in this file.
 - Expanded demo coverage and committed a generated demo PDF artifact.
 - Improved PDF output quality for wide diagrams, link styling, syntax highlighting, inline code, and header/footer visibility.
 - Added local corpus and demo-render validation flows for broader Markdown compatibility checks.
-- Clarified strict LocalOnly behavior and external-resource policy documentation.
+- Clarified local-first behavior, the default GitHub external-resource allowlist, and strict LocalOnly configuration.
 
 ### Known Limits
 
