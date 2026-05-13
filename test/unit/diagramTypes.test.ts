@@ -6,7 +6,7 @@ import * as os from 'os';
 
 const JAVA_PATH = path.join(
   os.homedir(),
-  'Library/Application Support/Code/User/globalStorage/local.markdown-studio/corretto/amazon-corretto-21.jdk/Contents/Home/bin/java'
+  'Library/Application Support/Code/User/globalStorage/kino6.markdown-studio-local/corretto/amazon-corretto-21.jdk/Contents/Home/bin/java'
 );
 const JAR_PATH = path.join(process.cwd(), 'third_party/plantuml/plantuml.jar');
 const HAS_JAVA = fs.existsSync(JAVA_PATH);

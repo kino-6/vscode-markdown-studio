@@ -122,13 +122,13 @@ function defaultStorageManifestPath() {
   }
 
   if (process.platform === 'darwin') {
-    return path.join(os.homedir(), 'Library/Application Support/Code/User/globalStorage/local.markdown-studio/manifest.json');
+    return path.join(os.homedir(), 'Library/Application Support/Code/User/globalStorage/kino6.markdown-studio-local/manifest.json');
   }
   if (process.platform === 'win32') {
     const appData = process.env.APPDATA ?? path.join(os.homedir(), 'AppData/Roaming');
-    return path.join(appData, 'Code/User/globalStorage/local.markdown-studio/manifest.json');
+    return path.join(appData, 'Code/User/globalStorage/kino6.markdown-studio-local/manifest.json');
   }
-  return path.join(os.homedir(), '.config/Code/User/globalStorage/local.markdown-studio/manifest.json');
+  return path.join(os.homedir(), '.config/Code/User/globalStorage/kino6.markdown-studio-local/manifest.json');
 }
 
 async function loadManagedDependencyStatus() {

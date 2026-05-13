@@ -1,8 +1,8 @@
 # VSIX Release Audit
 
-Date: 2026-05-13
+Date: 2026-05-14
 Branch: `v1.0-release-notes`
-Audited artifact: `dist/markdown-studio-1.0.0.vsix`
+Audited artifact: `dist/markdown-studio-local-1.0.0.vsix`
 
 ## Summary
 
@@ -53,13 +53,13 @@ npm run package
 
 Result:
 
-- Package: `dist/markdown-studio-1.0.0.vsix`
+- Package: `dist/markdown-studio-local-1.0.0.vsix`
 - Size: 22.48 MB
 - File count: 53
 - `vsce` file-count/size warning: not observed
 - `node_modules`: not included
 - Source maps: not included
-- Clean-profile install: `kino6.markdown-studio@1.0.0` verified with isolated VS Code user-data and extensions directories.
+- Clean-profile install: `kino6.markdown-studio-local@1.0.0` verified with isolated VS Code user-data and extensions directories.
 - Packaged-extension smoke: E2E suite passed against the VSIX-extracted extension directory.
 - Runtime bundles:
   - `extension/dist/extension.js`
@@ -72,7 +72,7 @@ Result:
 
 | Item | Status | Notes |
 | --- | --- | --- |
-| `name` | Pass | `markdown-studio`, lowercase and no spaces. |
+| `name` | Pass | `markdown-studio-local`, lowercase, no spaces, and unique for Marketplace publication. |
 | `version` | Pass | `1.0.0`. |
 | `publisher` | Pass | `kino6`, matching the created Marketplace publisher. |
 | `engines.vscode` | Pass | `^1.92.0`, not `*`. |
