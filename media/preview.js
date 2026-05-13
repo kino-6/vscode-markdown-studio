@@ -465,7 +465,6 @@ function handlePreviewClick(event) {
 }
 
 function handlePreviewDblClick(event) {
-  if (closestMatch(event.target, '.diagram-container')) return;
   const line = findSourceLine(event.target);
   if (line !== null) {
     vscode.postMessage({ type: 'jumpToLine', line });
@@ -970,7 +969,6 @@ function attachZoomPan(container) {
   container.addEventListener('mousemove', (e) => handleMouseMove(e, container, state));
   container.addEventListener('mouseup', () => handleMouseUp(container, state));
   container.addEventListener('mouseleave', () => handleMouseUp(container, state));
-  container.addEventListener('dblclick', () => handleDblClick(container, state));
 }
 
 function saveZoomStates() {

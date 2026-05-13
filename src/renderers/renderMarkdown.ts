@@ -11,7 +11,7 @@ import { resolveAnchors } from '../toc/anchorResolver';
 import { buildTocHtml } from '../toc/buildToc';
 import { findTocCommentMarkers } from '../toc/tocCommentMarker';
 import { replaceTocMarker } from '../toc/tocMarker';
-import { AnchorMapping, RenderedMarkdown } from '../types/models';
+import { AnchorMapping, FencedBlock, RenderedMarkdown } from '../types/models';
 import { renderMermaidBlock } from './renderMermaid';
 import * as plantUmlRenderer from './renderPlantUml';
 import { renderWaveDromBlock } from './renderWaveDrom';
@@ -77,6 +77,19 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#39;');
 }
 
+function renderDiagramContainer(block: FencedBlock, content: string, extraAttributes = ''): string {
+  const attributes = [
+    'class="diagram-container"',
+    `data-source-line="${block.startLine}"`,
+    extraAttributes,
+  ].filter(Boolean).join(' ');
+  return `<div ${attributes}>${content}</div>`;
+}
+
+function renderDiagramError(block: FencedBlock, title: string, detail: string): string {
+  return `<div class="ms-error" data-source-line="${block.startLine}"><div class="ms-error-title">${title}</div><pre>${escapeHtml(detail)}</pre></div>`;
+}
+
 export async function renderMarkdownDocument(
   markdown: string,
   context: vscode.ExtensionContext
@@ -106,32 +119,34 @@ export async function renderMarkdownDocument(
     if (block.kind === 'mermaid') {
       const result = await renderMermaidBlock(block.content);
       if (result.ok && result.placeholder) {
-        replacement = `<div class="diagram-container">${result.placeholder}</div>`;
+        replacement = renderDiagramContainer(block, result.placeholder);
       } else {
+        const detail = result.error ?? RUNTIME_MESSAGES.render.unknownMermaidIssue;
         blockErrors.push({
           title: RUNTIME_MESSAGES.render.mermaidErrorTitle,
-          detail: result.error ?? RUNTIME_MESSAGES.render.unknownMermaidIssue,
+          detail,
         });
-        replacement = `<div class="ms-error"><div class="ms-error-title">${RUNTIME_MESSAGES.render.mermaidErrorTitle}</div><pre>${escapeHtml(result.error ?? RUNTIME_MESSAGES.render.unknownError)}</pre></div>`;
+        replacement = renderDiagramError(block, RUNTIME_MESSAGES.render.mermaidErrorTitle, detail);
       }
     }
 
     if (block.kind === 'svg') {
       // SVG is user-authored local content — pass through directly
-      replacement = `<div class="diagram-container">${block.content}</div>`;
+      replacement = renderDiagramContainer(block, block.content);
     }
 
     if (block.kind === 'wavedrom') {
       const result = await renderWaveDromBlock(block.content);
       if (result.ok && result.placeholder) {
-        replacement = `<div class="diagram-container">${result.placeholder}</div>`;
+        replacement = renderDiagramContainer(block, result.placeholder);
       } else {
         const title = 'WaveDrom render error';
+        const detail = result.error ?? RUNTIME_MESSAGES.render.unknownError;
         blockErrors.push({
           title,
-          detail: result.error ?? RUNTIME_MESSAGES.render.unknownError,
+          detail,
         });
-        replacement = `<div class="ms-error"><div class="ms-error-title">${title}</div><pre>${escapeHtml(result.error ?? RUNTIME_MESSAGES.render.unknownError)}</pre></div>`;
+        replacement = renderDiagramError(block, title, detail);
       }
     }
 
@@ -142,13 +157,14 @@ export async function renderMarkdownDocument(
         : (await plantUmlResultsPromise)[batchIndex];
       if (result.ok && result.svg) {
         const encodedSrc = encodeURIComponent(block.content);
-        replacement = `<div class="diagram-container" data-plantuml-src="${encodedSrc}">${result.svg}</div>`;
+        replacement = renderDiagramContainer(block, result.svg, `data-plantuml-src="${encodedSrc}"`);
       } else {
+        const detail = result.error ?? RUNTIME_MESSAGES.render.unknownPlantUmlIssue;
         blockErrors.push({
           title: RUNTIME_MESSAGES.render.plantUmlErrorTitle,
-          detail: result.error ?? RUNTIME_MESSAGES.render.unknownPlantUmlIssue,
+          detail,
         });
-        replacement = `<div class="ms-error"><div class="ms-error-title">${RUNTIME_MESSAGES.render.plantUmlErrorTitle}</div><pre>${escapeHtml(result.error ?? RUNTIME_MESSAGES.render.unknownError)}</pre></div>`;
+        replacement = renderDiagramError(block, RUNTIME_MESSAGES.render.plantUmlErrorTitle, detail);
       }
     }
 

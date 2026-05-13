@@ -13,6 +13,7 @@ All notable changes to Markdown Studio will be documented in this file.
 ### Highlights Since v0.8
 
 - Added current-tab and full-width Preview commands with configurable preview width.
+- Enabled Preview source jump by default, including rendered diagram blocks.
 - Added local WaveDrom timing diagram rendering for Preview and PDF export.
 - Expanded demo coverage and committed a generated demo PDF artifact.
 - Improved PDF output quality for wide diagrams, link styling, syntax highlighting, inline code, and header/footer visibility.

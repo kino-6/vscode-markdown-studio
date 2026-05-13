@@ -35,7 +35,7 @@ For PlantUML and PDF export dependencies, run `Markdown Studio: Setup Dependenci
 - **PlantUML** — bundled JAR with Smetana layout engine, no Graphviz or remote server needed
 - **WaveDrom** — local timing diagrams from `wavedrom`, `wavejson`, and `wavedrom-json` fenced blocks
 - **Inline SVG** — rendered directly, sanitized for security
-- Interactive zoom & pan — scroll-wheel zoom (cursor-centered, 0.25×–4×), mouse-drag pan, double-click reset
+- Interactive zoom & pan — scroll-wheel zoom (cursor-centered, 0.25×–4×), mouse-drag pan, toolbar reset
 
 ### PDF Export
 
