@@ -2,7 +2,7 @@
   "command.openPreview.title": "Markdown Studio: Preview",
   "command.openPreviewInCurrentTab.title": "Markdown Studio: Preview in Current Tab",
   "command.openPreviewFullWidth.title": "Markdown Studio: Preview Full Width",
-  "extension.description": "Local-first Markdown authoring studio with integrated diagram rendering (Mermaid, PlantUML, WaveDrom), SVG support, and secure PDF export.",
+  "extension.description": "Preview Markdown and export polished PDFs locally, with Mermaid, PlantUML, WaveDrom, math, SVG, TOC, bookmarks, and resource controls.",
   "command.exportPdf.title": "Markdown Studio: Export PDF",
   "command.validateEnvironment.title": "Markdown Studio: Validate Local Environment",
   "command.reloadPreview.title": "Markdown Studio: Reload Preview (Clear Cache)",

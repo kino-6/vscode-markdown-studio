@@ -19,11 +19,14 @@
   ],
   "keywords": [
     "markdown",
+    "preview",
     "pdf",
     "mermaid",
     "plantuml",
     "wavedrom",
-    "preview"
+    "svg",
+    "math",
+    "toc"
   ],
   "activationEvents": [
     "onLanguage:markdown"

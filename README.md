@@ -1,11 +1,23 @@
 # Markdown Studio
 
-Markdown Studio is a **local-first** VS Code extension for Markdown preview and PDF export with integrated diagram rendering.
+Local-first Markdown preview and PDF export for technical documents.
 
-> Core Markdown, diagram rendering, and PDF export run on your machine. Remote images and links are controlled by the external-resource policy and can be fully blocked for strict LocalOnly use.
+Markdown Studio renders Markdown, diagrams, math, code, local assets, TOCs, PDF indexes, and PDF bookmarks from one VS Code workflow. Core Markdown, diagram rendering, and PDF export run on your machine. Remote images and links are controlled by the external-resource policy and can be fully blocked for strict LocalOnly use.
 
-<!-- TODO: Add screenshot/GIF here before Marketplace publish -->
-<!-- ![Markdown Studio Preview](docs/images/preview-screenshot.png) -->
+## Quick Start
+
+1. Open a Markdown file.
+2. Run `Markdown Studio: Preview`.
+3. Run `Markdown Studio: Export PDF` when the document is ready.
+
+For PlantUML and PDF export dependencies, run `Markdown Studio: Setup Dependencies` if prompted.
+
+## Why Markdown Studio?
+
+- Local-first by default: Markdown, diagrams, syntax highlighting, math, and PDF export run on your machine.
+- Technical-document ready: Mermaid, PlantUML, WaveDrom, SVG, code highlighting, KaTeX, TOC, PDF index, and bookmarks are integrated.
+- Security-aware: external resources can be blocked, allowlisted, or allowed explicitly.
+- Practical PDF output: page formats, margins, headers/footers, filenames, TOC handling, page breaks, and bookmarks are configurable.
 
 ## Features
 
