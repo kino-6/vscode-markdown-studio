@@ -202,22 +202,6 @@ See [docs/troubleshooting.md](./docs/troubleshooting.md) for dependency setup, p
 - Japanese localization for commands, settings, and extension metadata.
 - Clean first-run dependency setup for managed Corretto, bundled PlantUML, and local Playwright Chromium.
 
-See [v1.0 Release Plan](./docs/plans/v1.0-release-plan.md) for the current release-readiness checklist and copy drafts.
-
-### Future (post-1.0)
-
-- Side-by-side preview in same editor tab
-- Agent-aware file watching (auto-refresh on external edits)
-- Export presets (save/recall named configurations)
-- Auto-export on save
-- DOCX export via optional Pandoc integration
-- Multi-file merge export
-- Presentation mode
-- Bidirectional scroll sync
-- Copy as formatted HTML
-- Markdown validation diagnostics
-- PlantUML C4 model / Mermaid Timeline support
-
 ### Competitive Landscape
 
 | Extension | Installs | Key Strength | Markdown Studio Advantage |
