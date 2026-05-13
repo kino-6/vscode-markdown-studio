@@ -14,6 +14,7 @@ import { replaceTocMarker } from '../toc/tocMarker';
 import { AnchorMapping, RenderedMarkdown } from '../types/models';
 import { renderMermaidBlock } from './renderMermaid';
 import * as plantUmlRenderer from './renderPlantUml';
+import { renderWaveDromBlock } from './renderWaveDrom';
 import { filterExternalResources } from './resourceFilter';
 
 /**
@@ -118,6 +119,20 @@ export async function renderMarkdownDocument(
     if (block.kind === 'svg') {
       // SVG is user-authored local content — pass through directly
       replacement = `<div class="diagram-container">${block.content}</div>`;
+    }
+
+    if (block.kind === 'wavedrom') {
+      const result = await renderWaveDromBlock(block.content);
+      if (result.ok && result.placeholder) {
+        replacement = `<div class="diagram-container">${result.placeholder}</div>`;
+      } else {
+        const title = 'WaveDrom render error';
+        blockErrors.push({
+          title,
+          detail: result.error ?? RUNTIME_MESSAGES.render.unknownError,
+        });
+        replacement = `<div class="ms-error"><div class="ms-error-title">${title}</div><pre>${escapeHtml(result.error ?? RUNTIME_MESSAGES.render.unknownError)}</pre></div>`;
+      }
     }
 
     if (block.kind === 'plantuml' || block.kind === 'puml') {

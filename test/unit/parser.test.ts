@@ -11,7 +11,7 @@ describe('parser and fenced block scanning', () => {
     expect(html).toContain('<strong>bold</strong>');
   });
 
-  it('finds mermaid, plantuml and puml fenced blocks with line ranges', () => {
+  it('finds mermaid, plantuml, puml, svg, and wavedrom fenced blocks with line ranges', () => {
     const markdown = [
       'Intro',
       '```mermaid',
@@ -26,15 +26,41 @@ describe('parser and fenced block scanning', () => {
       '@startuml',
       'Bob->Alice:Yo',
       '@enduml',
-      '```'
+      '```',
+      '```svg',
+      '<svg></svg>',
+      '```',
+      '```wavejson',
+      '{ signal: [] }',
+      '```',
     ].join('\n');
 
     const blocks = scanFencedBlocks(markdown);
 
-    expect(blocks.map((b) => b.kind)).toEqual(['mermaid', 'plantuml', 'puml']);
+    expect(blocks.map((b) => b.kind)).toEqual(['mermaid', 'plantuml', 'puml', 'svg', 'wavedrom']);
     expect(blocks[0]).toMatchObject({ startLine: 2, endLine: 4 });
     expect(blocks[1]).toMatchObject({ startLine: 5, endLine: 9 });
     expect(blocks[2]).toMatchObject({ startLine: 10, endLine: 14 });
+    expect(blocks[3]).toMatchObject({ startLine: 15, endLine: 17 });
+    expect(blocks[4]).toMatchObject({ startLine: 18, endLine: 20 });
+  });
+
+  it('normalizes WaveDrom fence aliases', () => {
+    const markdown = [
+      '```wavedrom',
+      '{ signal: [] }',
+      '```',
+      '```wavejson',
+      '{ signal: [] }',
+      '```',
+      '```wavedrom-json',
+      '{ signal: [] }',
+      '```',
+    ].join('\n');
+
+    const blocks = scanFencedBlocks(markdown);
+
+    expect(blocks.map((b) => b.kind)).toEqual(['wavedrom', 'wavedrom', 'wavedrom']);
   });
 
   it('keeps raw offsets for CRLF fenced blocks', () => {
