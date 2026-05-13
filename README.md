@@ -218,6 +218,8 @@ See [docs/troubleshooting.md](./docs/troubleshooting.md) for dependency setup, p
 - Performance: large file handling (10k+ lines)
 - Accessibility: keyboard navigation in preview
 
+See [v1.0 Release Plan](./docs/plans/v1.0-release-plan.md) for the current release-readiness checklist and copy drafts.
+
 ### Future (post-1.0)
 
 - Side-by-side preview in same editor tab
