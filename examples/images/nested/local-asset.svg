@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="160" viewBox="0 0 480 160">
+  <rect width="480" height="160" fill="#fff8c5"/>
+  <path d="M40 120 L120 40 L200 120 Z" fill="#2da44e"/>
+  <circle cx="330" cy="80" r="48" fill="#bf8700"/>
+  <text x="36" y="146" font-family="Arial, sans-serif" font-size="20" fill="#24292f">Nested relative SVG asset</text>
+</svg>

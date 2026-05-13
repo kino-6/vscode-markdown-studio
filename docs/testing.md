@@ -18,6 +18,7 @@ npm run test:ci
 npm run test:preview-runtime
 npm run benchmark:preview
 npm run benchmark:pdf
+npm run corpus:check
 ```
 
 - `test:unit`: parser, sanitizer, renderer helpers, and environment validation logic with mocks.
@@ -26,6 +27,7 @@ npm run benchmark:pdf
 - `test:preview-runtime`: developer-only browser runtime check for Preview copy, TOC, external links, zoom, theme switching, and `update-body` behavior. This is intentionally not part of `test:ci`.
 - `benchmark:preview`: developer-only Preview benchmark for `examples/demo.md`, `examples/demo_win.md`, and `examples/demo_load.md`. This is intentionally an npm debug command, not a contributed VS Code command.
 - `benchmark:pdf`: developer-only PDF export benchmark for `examples/demo.md`, `examples/demo_win.md`, and `examples/demo_load.md`.
+- `corpus:check`: developer-only local Markdown corpus runner. It reads `ignore/markdown-corpus/manifest.json`, runs Preview/PDF benchmark checks, and writes local-only reports under `ignore/markdown-corpus/reports/`.
 
 ## Notes
 
@@ -34,4 +36,5 @@ npm run benchmark:pdf
 - Renderer tests include graceful degradation checks (syntax errors and Java-missing behavior).
 - The Preview benchmark measures server-side `buildHtml`, warm `renderBody`, browser initial rendering, and browser `update-body` time with repeat/min/max summaries.
 - The PDF benchmark exports demo PDFs next to their Markdown files so visual output can be reviewed and committed with the demo sources.
+- The corpus runner can capture Preview screenshots with `npm run corpus:check -- --mode both --screenshots --repeat 1 --warmup 0`. Corpus inputs and generated outputs stay under `ignore/` and are not committed.
 - All property-based tests (fast-check) use a fixed `seed: 42` for deterministic reproducibility. This prevents flaky failures from random input generation. If a property test needs to explore new input space, temporarily remove the seed, run with higher `numRuns`, and re-fix the seed once stable.
