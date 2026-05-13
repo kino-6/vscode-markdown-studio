@@ -229,7 +229,7 @@ async function injectPreviewRuntime(page: Pick<Page, 'addScriptTag'>, previewJsC
   await page.addScriptTag({ content: previewJsContent });
 }
 
-async function waitForMermaidDiagrams(
+async function waitForClientRenderedDiagrams(
   page: Pick<Page, 'waitForFunction'>,
   timeoutMs: number,
   onTimeout?: (elapsedSeconds: number) => void,
@@ -242,7 +242,7 @@ async function waitForMermaidDiagrams(
 
   try {
     await page.waitForFunction(`(() => {
-      const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
+      const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src], .wavedrom-host[data-wavedrom-src]');
       if (hosts.length === 0) return true;
       return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
     })()`, { timeout: timeoutMs });
@@ -494,16 +494,16 @@ export async function exportToPdf(
     await page.setContent(html, { waitUntil: 'networkidle' });
     await forceLightMode(page);
 
-    // Step 4: Mermaid rendering
+    // Step 4: client-side diagram rendering
     progress?.report(RUNTIME_MESSAGES.exportProgress.renderingDiagrams, 15);
 
-    // Inject the bundled preview script (contains Mermaid) into the Playwright page.
+    // Inject the bundled preview script (contains client-side diagram renderers) into the Playwright page.
     // We use addScriptTag after setContent so the DOM is ready.
     // First, stub acquireVsCodeApi which only exists in VS Code webviews.
     if (assets.previewJsContent) {
       await injectPreviewRuntime(page, assets.previewJsContent);
       const diagramTimeoutMs = cfg.diagramTimeout > 0 ? cfg.diagramTimeout * 1000 : 0;
-      await waitForMermaidDiagrams(
+      await waitForClientRenderedDiagrams(
         page,
         diagramTimeoutMs,
         (elapsed) => progress?.report(RUNTIME_MESSAGES.exportProgress.diagramTimeoutProceeding(elapsed)),

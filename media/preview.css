@@ -133,6 +133,28 @@ body.vscode-high-contrast svg polygon:not([fill]) {
   margin: 1rem 0;
 }
 
+.wavedrom-host {
+  display: inline-block;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1rem 0;
+  padding: 0.5rem;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #111111;
+}
+
+.wavedrom-host svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+body.vscode-dark .wavedrom-host svg[xmlns] text,
+body.vscode-high-contrast .wavedrom-host svg[xmlns] text {
+  fill: #111111;
+}
+
 .ms-code-wrapper {
   position: relative;
 }
@@ -610,7 +632,8 @@ dd {
 }
 
 .diagram-container svg,
-.diagram-container .mermaid-host {
+.diagram-container .mermaid-host,
+.diagram-container .wavedrom-host {
   will-change: transform;
   transform-origin: 0 0;
 }
@@ -683,7 +706,8 @@ dd {
     height: auto !important;
     transform: none !important;
   }
-  .diagram-container .mermaid-host {
+  .diagram-container .mermaid-host,
+  .diagram-container .wavedrom-host {
     transform: none !important;
   }
   .zoom-toolbar {

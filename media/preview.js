@@ -1,4 +1,5 @@
 import mermaid from 'mermaid';
+import wavedrom from 'wavedrom';
 
 const THEME_MAP = {
   'vscode-dark': 'dark',
@@ -41,13 +42,13 @@ function onThemeChanged(newThemeKind) {
     mermaidReady = false;
     console.error('[Markdown Studio] Mermaid re-init on theme change failed:', err);
   }
-  renderMermaidBlocks({ reset: true }).then(() => {
+  renderClientDiagrams({ reset: true }).then(() => {
     document.querySelectorAll('.diagram-container').forEach((c) => {
       c.removeAttribute('data-zoom-init');
     });
     initZoomPan();
   }).catch((error) => {
-    console.error('Mermaid re-rendering failed after theme change', error);
+    console.error('Diagram re-rendering failed after theme change', error);
   });
 }
 
@@ -69,6 +70,8 @@ function observeThemeChanges(callback) {
 let mermaidReady = true;
 const MERMAID_SVG_CACHE_LIMIT = 128;
 const mermaidSvgCache = new Map();
+const WAVEDROM_SVG_CACHE_LIMIT = 128;
+const waveDromSvgCache = new Map();
 let bodyDelegatedHandlersInstalled = false;
 let zoomDocumentHandlersInstalled = false;
 let mermaidObserver = null;
@@ -94,6 +97,15 @@ function safeDecode(input) {
   } catch {
     return input;
   }
+}
+
+function escapeErrorHtml(input) {
+  return String(input)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function closestMatch(target, selector) {
@@ -124,6 +136,30 @@ function setCachedMermaidSvg(source, svg) {
     if (oldest !== undefined) mermaidSvgCache.delete(oldest);
   }
   mermaidSvgCache.set(key, svg);
+}
+
+function waveDromCacheKey(index, source) {
+  return `${index}\n--\n${source}`;
+}
+
+function getCachedWaveDromSvg(index, source) {
+  const key = waveDromCacheKey(index, source);
+  const cached = waveDromSvgCache.get(key);
+  if (cached === undefined) return undefined;
+  waveDromSvgCache.delete(key);
+  waveDromSvgCache.set(key, cached);
+  return cached;
+}
+
+function setCachedWaveDromSvg(index, source, svg) {
+  const key = waveDromCacheKey(index, source);
+  if (waveDromSvgCache.has(key)) {
+    waveDromSvgCache.delete(key);
+  } else if (waveDromSvgCache.size >= WAVEDROM_SVG_CACHE_LIMIT) {
+    const oldest = waveDromSvgCache.keys().next().value;
+    if (oldest !== undefined) waveDromSvgCache.delete(oldest);
+  }
+  waveDromSvgCache.set(key, svg);
 }
 
 function isEagerMermaidRender() {
@@ -165,6 +201,30 @@ function resetMermaidBlock(block) {
   }
 }
 
+function getWaveDromBlockState(block) {
+  if (typeof block.getAttribute === 'function') {
+    return block.getAttribute('data-wavedrom-render-state') || '';
+  }
+  return block._waveDromRenderState || '';
+}
+
+function setWaveDromBlockState(block, state) {
+  if (typeof block.setAttribute === 'function') {
+    block.setAttribute('data-wavedrom-render-state', state);
+  } else {
+    block._waveDromRenderState = state;
+  }
+}
+
+function resetWaveDromBlock(block) {
+  block.innerHTML = '';
+  if (typeof block.removeAttribute === 'function') {
+    block.removeAttribute('data-wavedrom-render-state');
+  } else {
+    block._waveDromRenderState = '';
+  }
+}
+
 function disconnectMermaidObserver() {
   if (mermaidObserver) {
     mermaidObserver.disconnect();
@@ -174,6 +234,37 @@ function disconnectMermaidObserver() {
 
 function getMermaidBlocks() {
   return Array.from(document.querySelectorAll('.mermaid-host[data-mermaid-src]'));
+}
+
+function getWaveDromBlocks() {
+  return Array.from(document.querySelectorAll('.wavedrom-host[data-wavedrom-src]'));
+}
+
+function parseWaveDromSource(source) {
+  let value;
+  try {
+    value = JSON.parse(source);
+  } catch {
+    // WaveDrom examples use WaveJSON object literals with unquoted keys.
+    // Keep this local to webview rendering and avoid raw <script> execution.
+    value = Function('"use strict"; return (' + source + ');')();
+  }
+  if (value === null || typeof value !== 'object') {
+    throw new Error('WaveDrom source must evaluate to an object');
+  }
+  return value;
+}
+
+function renderWaveDromSource(index, source) {
+  const cachedSvg = getCachedWaveDromSvg(index, source);
+  if (cachedSvg !== undefined) return cachedSvg;
+
+  const api = wavedrom?.default ?? wavedrom;
+  const spec = parseWaveDromSource(source);
+  const onml = api.renderAny(index, spec, api.waveSkin);
+  const svg = api.onml.stringify(onml);
+  setCachedWaveDromSvg(index, source, svg);
+  return svg;
 }
 
 async function renderMermaidBlock(block, index) {
@@ -284,6 +375,40 @@ async function renderMermaidBlocks(options = {}) {
   const { visibleBlocks, deferredBlocks } = splitMermaidBlocksByVisibility(blocks);
   await renderVisibleMermaidBlocks(visibleBlocks);
   observeDeferredMermaidBlocks(deferredBlocks);
+}
+
+async function renderWaveDromBlock(block, index) {
+  const state = getWaveDromBlockState(block);
+  if (state === 'rendering' || state === 'rendered') return;
+  setWaveDromBlockState(block, 'rendering');
+
+  const encoded = safeText(block.getAttribute('data-wavedrom-src'));
+  const source = safeDecode(encoded);
+
+  try {
+    block.innerHTML = renderWaveDromSource(index, source);
+    setWaveDromBlockState(block, 'rendered');
+  } catch (error) {
+    block.innerHTML = `<div class="ms-error"><div class="ms-error-title">WaveDrom render error</div><pre>${escapeErrorHtml(error)}</pre></div>`;
+    setWaveDromBlockState(block, 'rendered');
+  }
+}
+
+async function renderWaveDromBlocks(options = {}) {
+  const blocks = getWaveDromBlocks();
+  if (options.reset) {
+    for (const block of blocks) {
+      resetWaveDromBlock(block);
+    }
+  }
+  for (const [index, block] of blocks.entries()) {
+    await renderWaveDromBlock(block, index);
+  }
+}
+
+async function renderClientDiagrams(options = {}) {
+  await renderMermaidBlocks(options);
+  await renderWaveDromBlocks(options);
 }
 
 function copyCodeFromButton(btn, preOverride) {
@@ -493,10 +618,10 @@ window.addEventListener('message', (event) => {
 
   lastAppliedGeneration = message.generation;
   document.body.innerHTML = message.html;
-  renderMermaidBlocks().then(() => {
+  renderClientDiagrams().then(() => {
     applyPreviewEnhancements(savedZoomStates);
   }).catch((error) => {
-    console.error('Mermaid rendering failed during update-body', error);
+    console.error('Diagram rendering failed during update-body', error);
     applyPreviewEnhancements(savedZoomStates);
   });
   // innerHTML destroyed the overlay element — showLoadingOverlay() would
@@ -511,11 +636,11 @@ function initPreview() {
   currentOverride = document.body.getAttribute('data-theme-override') || 'auto';
   applyThemeClass(resolveEffectiveThemeKind(currentOverride));
 
-  renderMermaidBlocks().then(() => {
+  renderClientDiagrams().then(() => {
     initZoomPan();
     hideLoadingOverlay();
   }).catch((error) => {
-    console.error('Mermaid rendering failed', error);
+    console.error('Diagram rendering failed', error);
     hideLoadingOverlay();
   });
 
@@ -560,7 +685,7 @@ function isDefaultZoomState(state) {
 }
 
 function applyTransform(container, state) {
-  const inner = container.querySelector('svg, .mermaid-host');
+  const inner = container.querySelector('svg, .mermaid-host, .wavedrom-host');
   if (!inner) return;
   inner.style.transform = `translate(${state.translateX}px, ${state.translateY}px) scale(${state.scale})`;
   inner.style.transformOrigin = '0 0';
@@ -630,6 +755,8 @@ function scheduleRerender(container, state) {
 function getDiagramType(container) {
   const mermaidHost = container.querySelector('.mermaid-host');
   if (mermaidHost) return 'mermaid';
+  const waveDromHost = container.querySelector('.wavedrom-host');
+  if (waveDromHost) return 'wavedrom';
   if (container.hasAttribute('data-plantuml-src')) return 'plantuml';
   return 'svg';
 }

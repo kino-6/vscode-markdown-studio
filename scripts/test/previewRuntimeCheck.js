@@ -7,6 +7,8 @@ const previewCssPath = path.join(repoRoot, 'media/preview.css');
 const previewScriptPath = path.join(repoRoot, 'dist/preview.js');
 const mermaidSource = 'graph TD; A[Light] --> B[Dark]';
 const encodedMermaidSource = encodeURIComponent(mermaidSource);
+const waveDromSource = '{ signal: [{ name: "clk", wave: "p......" }, { name: "bus", wave: "x.34.5x", data: ["head", "body", "tail"] }] }';
+const encodedWaveDromSource = encodeURIComponent(waveDromSource);
 
 function previewBody(codeText, options = {}) {
   const offscreenMermaid = options.includeOffscreenMermaid
@@ -30,6 +32,12 @@ function previewBody(codeText, options = {}) {
 </div>
 <div id="mermaid-diagram" class="diagram-container">
   <div class="mermaid-host" data-mermaid-src="${encodedMermaidSource}"></div>
+</div>
+<div id="wavedrom-diagram" class="diagram-container">
+  <div class="wavedrom-host" data-wavedrom-src="${encodedWaveDromSource}"></div>
+</div>
+<div id="wavedrom-invalid" class="diagram-container">
+  <div class="wavedrom-host" data-wavedrom-src="${encodeURIComponent('{ signal: [')}"></div>
 </div>
 ${offscreenMermaid}`;
 }
@@ -65,6 +73,7 @@ async function waitForPreviewReady(page, options = {}) {
   await page.waitForFunction((waitForAllMermaid) => {
     const diagrams = Array.from(document.querySelectorAll('.diagram-container'));
     const mermaidHosts = Array.from(document.querySelectorAll('.mermaid-host'));
+    const waveDromHosts = Array.from(document.querySelectorAll('.wavedrom-host'));
     const copyButtons = Array.from(document.querySelectorAll('.ms-copy-btn'));
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
     const hostsToWaitFor = waitForAllMermaid
@@ -74,9 +83,10 @@ async function waitForPreviewReady(page, options = {}) {
         const rect = host.getBoundingClientRect();
         return rect.top <= viewportHeight * 2 && rect.bottom >= -viewportHeight;
       });
-    return diagrams.length >= 2 &&
+    return diagrams.length >= 4 &&
       diagrams.every((diagram) => diagram.hasAttribute('data-zoom-init')) &&
       hostsToWaitFor.every((host) => Boolean(host.querySelector('svg') || host.querySelector('.ms-error'))) &&
+      waveDromHosts.every((host) => Boolean(host.querySelector('svg') || host.querySelector('.ms-error'))) &&
       copyButtons.length >= 1;
   }, Boolean(options.allMermaid), { timeout: 15000 });
 }
@@ -136,6 +146,24 @@ async function assertThemeSwitchRerendersMermaid(page) {
   assert.notEqual(after, before, 'Mermaid SVG should be re-rendered after switching theme');
 }
 
+async function assertWaveDromRendering(page) {
+  const host = page.locator('#wavedrom-diagram .wavedrom-host');
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#wavedrom-diagram .wavedrom-host');
+    return Boolean(el?.querySelector('svg') || el?.querySelector('.ms-error'));
+  });
+  assert.equal(await host.locator('.ms-error').count(), 0);
+  assert.equal(await host.locator('svg.WaveDrom').count(), 1);
+  const firstTextFill = await host.locator('svg text').first().evaluate((el) => getComputedStyle(el).fill);
+  assert.notEqual(firstTextFill, 'rgb(212, 212, 212)', 'WaveDrom text should remain readable on its light surface');
+}
+
+async function assertInvalidWaveDromError(page) {
+  const error = page.locator('#wavedrom-invalid .ms-error-title');
+  await error.waitFor({ timeout: 15000 });
+  assert.equal(await error.textContent(), 'WaveDrom render error');
+}
+
 async function assertLazyMermaidRendering(page) {
   const offscreenHost = page.locator('#offscreen-mermaid .mermaid-host');
   assert.equal(await offscreenHost.locator('svg').count(), 0);
@@ -161,6 +189,8 @@ async function main() {
     await assertCopyTocAndExternalLink(page, 'initial copy');
     await assertZoomBehavior(page);
     await assertThemeSwitchRerendersMermaid(page);
+    await assertWaveDromRendering(page);
+    await assertInvalidWaveDromError(page);
 
     await page.evaluate((html) => {
       window.postMessage({ type: 'update-body', html, generation: Date.now() }, '*');
@@ -169,6 +199,8 @@ async function main() {
 
     await assertCopyTocAndExternalLink(page, 'updated copy');
     await assertZoomBehavior(page);
+    await assertWaveDromRendering(page);
+    await assertInvalidWaveDromError(page);
     await assertLazyMermaidRendering(page);
 
     console.log('Preview runtime browser check passed');
