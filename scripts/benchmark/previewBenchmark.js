@@ -148,6 +148,7 @@ function parseArgs(argv) {
     warmup: 1,
     files: [...defaultFiles],
     config: {},
+    screenshotPath: undefined,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -161,6 +162,8 @@ function parseArgs(argv) {
     } else if (arg === '--config') {
       const [key, ...valueParts] = String(argv[++i] ?? '').split('=');
       options.config[key] = valueParts.join('=');
+    } else if (arg === '--screenshot') {
+      options.screenshotPath = argv[++i];
     } else if (arg === '--help' || arg === '-h') {
       console.log(`Usage: npm run benchmark:preview -- [options]
 
@@ -169,6 +172,7 @@ Options:
   --warmup <n>          Warmup runs per file. Default: 1
   --file <path>         Benchmark one Markdown file instead of the default demos.
   --config key=value    Override a markdownStudio configuration key, such as java.path=/path/to/java.
+  --screenshot <path>   Save a full-page screenshot after initial Preview rendering. Use with a single --file.
 `);
       process.exit(0);
     } else {
@@ -181,6 +185,9 @@ Options:
   }
   if (!Number.isInteger(options.warmup) || options.warmup < 0) {
     throw new Error('--warmup must be a non-negative integer');
+  }
+  if (options.screenshotPath && options.files.length !== 1) {
+    throw new Error('--screenshot requires exactly one --file');
   }
 
   return options;
@@ -218,7 +225,7 @@ async function waitForPreviewReady(page) {
   }, null, { timeout: 15000 });
 }
 
-async function measureBrowser(browser, fullHtml, bodyHtml) {
+async function measureBrowser(browser, fullHtml, bodyHtml, screenshotPath) {
   const page = await browser.newPage();
   try {
     const initialStart = performance.now();
@@ -228,6 +235,10 @@ async function measureBrowser(browser, fullHtml, bodyHtml) {
     });
     await page.addScriptTag({ path: path.join(repoRoot, 'dist/preview.js') });
     await waitForPreviewReady(page);
+    if (screenshotPath) {
+      await fs.mkdir(path.dirname(path.resolve(repoRoot, screenshotPath)), { recursive: true });
+      await page.screenshot({ path: path.resolve(repoRoot, screenshotPath), fullPage: true });
+    }
     const initialMs = performance.now() - initialStart;
 
     const updateMs = await page.evaluate(async (html) => {
@@ -262,7 +273,7 @@ async function measureBrowser(browser, fullHtml, bodyHtml) {
   }
 }
 
-async function runOne(browser, previewModule, context, markdownPath) {
+async function runOne(browser, previewModule, context, markdownPath, screenshotPath) {
   const absolutePath = path.resolve(repoRoot, markdownPath);
   const markdown = await fs.readFile(absolutePath, 'utf8');
   const documentUri = MockUri.file(absolutePath);
@@ -276,7 +287,7 @@ async function runOne(browser, previewModule, context, markdownPath) {
   const bodyHtml = await previewModule.renderBody(editedMarkdown, context, documentUri);
   const renderBodyMs = performance.now() - bodyStart;
 
-  const browserResult = await measureBrowser(browser, html, bodyHtml);
+  const browserResult = await measureBrowser(browser, html, bodyHtml, screenshotPath);
   return {
     buildHtmlMs,
     renderBodyMs,
@@ -322,7 +333,8 @@ async function main() {
 
       const runs = [];
       for (let i = 0; i < options.repeat; i++) {
-        const result = await runOne(browser, previewModule, context, markdownPath);
+        const screenshotPath = i === 0 ? options.screenshotPath : undefined;
+        const result = await runOne(browser, previewModule, context, markdownPath, screenshotPath);
         runs.push(result);
         console.log(
           `${markdownPath} run ${i + 1}/${options.repeat}: buildHtml=${formatMs(result.buildHtmlMs)} renderBody=${formatMs(result.renderBodyMs)} browserInitial=${formatMs(result.browserInitialMs)} updateBody=${formatMs(result.browserUpdateMs)}`

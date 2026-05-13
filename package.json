@@ -303,6 +303,7 @@
     "demo": "npx tsx scripts/demo/index.ts",
     "benchmark:preview": "npm run build && node scripts/benchmark/previewBenchmark.js",
     "benchmark:pdf": "npm run build && node scripts/benchmark/pdfExportBenchmark.js",
+    "corpus:check": "node scripts/corpus/runCorpusChecks.js",
     "repro:about-blank-footer": "node scripts/repro/aboutBlankFooter.js"
   },
   "dependencies": {
