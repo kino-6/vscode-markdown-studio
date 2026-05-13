@@ -56,7 +56,7 @@ export const CONFIG_DEFAULTS = {
   exportPdfBookmarksEnabled: true,
   previewTheme: 'auto' as PreviewThemeMode,
   previewContentWidth: 'a4' as PreviewContentWidth,
-  previewSourceJumpEnabled: false,
+  previewSourceJumpEnabled: true,
   stylePreset: 'markdown-pdf',
   styleFontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
   styleFontSize: 14,

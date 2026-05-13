@@ -5,7 +5,7 @@ import { validateEnvironment } from '../commands/validateEnvironmentCore';
 import { renderPlantUml } from '../renderers/renderPlantUml';
 import { dependencyStatus } from '../extension';
 import { getConfig } from '../infra/config';
-import { CONFIG_KEYS, configurationPath } from '../infra/configurationRegistry';
+import { CONFIG_DEFAULTS, CONFIG_KEYS, configurationPath } from '../infra/configurationRegistry';
 import { resolveThemePath } from '../infra/customCssLoader';
 import { createMarkdownParser } from '../parser/parseMarkdown';
 import { extractHeadings } from '../toc/extractHeadings';
@@ -164,7 +164,7 @@ export async function handleJumpToLine(
   if (message.type !== 'jumpToLine' || typeof message.line !== 'number') return;
 
   const cfg = vscode.workspace.getConfiguration('markdownStudio');
-  if (!cfg.get<boolean>('preview.sourceJump.enabled', false)) return;
+  if (!cfg.get<boolean>(CONFIG_KEYS.previewSourceJumpEnabled, CONFIG_DEFAULTS.previewSourceJumpEnabled)) return;
 
   const line = Math.max(0, Math.floor(message.line));
   if (!Number.isFinite(line)) return;

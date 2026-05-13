@@ -213,7 +213,7 @@
         },
         "markdownStudio.preview.sourceJump.enabled": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "%configuration.preview.sourceJump.enabled.description%"
         },
         "markdownStudio.style.preset": {

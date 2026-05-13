@@ -82,6 +82,13 @@ describe('getConfig().previewContentWidth', () => {
   });
 });
 
+describe('getConfig().sourceJumpEnabled', () => {
+  it('returns true as the default source jump setting', () => {
+    const config = getConfig();
+    expect(config.sourceJumpEnabled).toBe(true);
+  });
+});
+
 describe('getConfig().customCss', () => {
   it('returns empty string as default customCss', () => {
     const config = getConfig();

@@ -25,7 +25,7 @@ For term definitions such as TOC, PDF Index, and bookmarks, see [glossary.md](./
 | `markdownStudio.export.diagramTimeout` | number | `0` | Diagram render timeout in seconds. `0` means no timeout. |
 | `markdownStudio.preview.theme` | enum | `auto` | Preview theme mode: auto, light, dark. |
 | `markdownStudio.preview.contentWidth` | enum | `a4` | Preview content width: a4, full. |
-| `markdownStudio.preview.sourceJump.enabled` | boolean | `false` | Double-click preview to jump to source line. |
+| `markdownStudio.preview.sourceJump.enabled` | boolean | `true` | Double-click preview to jump to source line. |
 | `markdownStudio.security.externalResources.mode` | enum | `whitelist` | External resource policy: `block-all`, `whitelist`, or `allow-all`. |
 | `markdownStudio.security.externalResources.allowedDomains` | array | GitHub domains | Domains allowed when mode is `whitelist`. |
 | `markdownStudio.security.blockExternalLinks` | boolean | `true` | Deprecated legacy setting. Use `security.externalResources.mode`. |
