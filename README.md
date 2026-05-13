@@ -149,6 +149,8 @@ WaveDrom timing diagrams are rendered locally in Preview and PDF export from fen
 
 Aliases `wavejson` and `wavedrom-json` are also supported. Raw `<script type="WaveDrom">` blocks are intentionally not executed.
 
+Distribution note: WaveDrom is an MIT-licensed npm dependency pinned in `package-lock.json` and bundled into the webview script by esbuild. The upstream package is not manually modified or vendored under `third_party/`; license and copyright details are listed in [third-party-notices.md](./docs/third-party-notices.md).
+
 ## PlantUML
 
 PlantUML v1.2024.8 is bundled at `third_party/plantuml/plantuml.jar` (GPLv2).
