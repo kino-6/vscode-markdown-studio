@@ -50,7 +50,7 @@ const manifestArb: fc.Arbitrary<DependencyManifest> = fc
       m.chromium = {
         installedAt: new Date().toISOString(),
         browserPath: "/storage/chromium/chrome",
-        playwrightVersion: "1.53.0",
+        playwrightVersion: "1.59.1",
       };
     }
     return m;
@@ -189,7 +189,7 @@ describe("DependencyManager property tests", () => {
           m.chromium = {
             installedAt: new Date().toISOString(),
             browserPath,
-            playwrightVersion: "1.53.0",
+            playwrightVersion: "1.59.1",
           };
         }
         return m;

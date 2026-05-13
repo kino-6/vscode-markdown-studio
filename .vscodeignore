@@ -16,6 +16,7 @@ scripts/**
 *.ts
 dist/**
 !dist/extension.js
+!dist/oopDownloadBrowserMain.js
 !dist/preview.js
 *.map
 dist/*.map

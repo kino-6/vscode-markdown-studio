@@ -34,6 +34,15 @@ const extensionConfig = {
   outfile: 'dist/extension.js'
 };
 
+const playwrightDownloaderConfig = {
+  entryPoints: ['node_modules/playwright-core/lib/server/registry/oopDownloadBrowserMain.js'],
+  bundle: true,
+  platform: 'node',
+  format: 'cjs',
+  sourcemap: false,
+  outfile: 'dist/oopDownloadBrowserMain.js'
+};
+
 const webviewConfig = {
   entryPoints: ['media/preview.js'],
   bundle: true,
@@ -52,7 +61,11 @@ async function run() {
     return;
   }
 
-  await Promise.all([esbuild.build(extensionConfig), esbuild.build(webviewConfig)]);
+  await Promise.all([
+    esbuild.build(extensionConfig),
+    esbuild.build(playwrightDownloaderConfig),
+    esbuild.build(webviewConfig)
+  ]);
   console.log('Build complete');
 }
 

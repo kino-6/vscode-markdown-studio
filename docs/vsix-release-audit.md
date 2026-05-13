@@ -53,16 +53,17 @@ npm run package
 
 Result:
 
-- Package: `dist/markdown-studio-1.0.0.vsix`
-- Size: 22.29 MB
-- File count: 52
+- Package: `dist/markdown-studio-1.0.1.vsix`
+- Size: 22.48 MB
+- File count: 53
 - `vsce` file-count/size warning: not observed
 - `node_modules`: not included
 - Source maps: not included
-- Clean-profile install: `kino6.markdown-studio@1.0.0` verified with isolated VS Code user-data and extensions directories.
+- Clean-profile install: `kino6.markdown-studio@1.0.0` verified with isolated VS Code user-data and extensions directories before the v1.0.1 packaging fix.
 - Packaged-extension smoke: E2E suite passed against the VSIX-extracted extension directory.
 - Runtime bundles:
   - `extension/dist/extension.js`
+  - `extension/dist/oopDownloadBrowserMain.js`
   - `extension/dist/preview.js`
 - Largest shipped file:
   - `extension/third_party/plantuml/plantuml.jar` at about 20.9 MB
@@ -94,6 +95,9 @@ Current policy is acceptable for v1.0:
 
 - `playwright-core` is a runtime dependency and is bundled into
   `dist/extension.js`.
+- Playwright's out-of-process Chromium downloader helper is bundled into
+  `dist/oopDownloadBrowserMain.js` because the Playwright installer forks that
+  file during first-run browser setup.
 - The higher-level `playwright` package remains in `devDependencies` for tests
   and developer scripts and is not shipped in the VSIX.
 - WaveDrom is bundled into `dist/preview.js`; there is no CDN use, no
@@ -146,7 +150,7 @@ Decision for v1.0:
 - VSIX size is acceptable for the current feature set. Most of the package is
   the bundled PlantUML jar, which is intentional and documented.
 - Bundling runtime dependencies is aligned with VS Code guidance and improved
-  the package from hundreds of shipped dependency files to a compact 52-file
+  the package from hundreds of shipped dependency files to a compact 53-file
   VSIX.
 - The SVG icon source can remain in the repository for examples/design source,
   but it should stay excluded from the VSIX.

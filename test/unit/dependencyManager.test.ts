@@ -42,7 +42,7 @@ function fullManifest(): DependencyManifest {
     chromium: {
       installedAt: new Date().toISOString(),
       browserPath: BROWSER_PATH,
-      playwrightVersion: "1.53.0",
+      playwrightVersion: "1.59.1",
     },
   };
 }
@@ -119,7 +119,7 @@ describe("DependencyManager unit tests", () => {
     manifest.chromium = {
       installedAt: new Date().toISOString(),
       browserPath: BROWSER_PATH,
-      playwrightVersion: "1.53.0",
+      playwrightVersion: "1.59.1",
     };
     const deps = makeDeps({
       readManifest: vi.fn().mockResolvedValue(manifest),

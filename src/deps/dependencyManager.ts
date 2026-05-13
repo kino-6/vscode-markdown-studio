@@ -148,7 +148,7 @@ export class DependencyManager {
                   manifest.chromium = {
                     installedAt: new Date().toISOString(),
                     browserPath: result.path!,
-                    playwrightVersion: "1.53.0",
+                    playwrightVersion: "1.59.1",
                   };
                 } else {
                   errors.push(`Chromium: ${result.error}`);

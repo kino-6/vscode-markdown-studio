@@ -2,6 +2,13 @@
 
 All notable changes to Markdown Studio will be documented in this file.
 
+## [1.0.1] - 2026-05-14
+
+### Fixed
+
+- Fixed packaged first-run Chromium setup by shipping Playwright's downloader helper with the VSIX.
+- Pinned Playwright runtime packages to an exact version so the managed Chromium revision is reproducible.
+
 ## [1.0.0] - 2026-05-13
 
 ### Release Focus

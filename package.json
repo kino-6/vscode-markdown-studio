@@ -2,7 +2,7 @@
   "name": "markdown-studio",
   "displayName": "Markdown Studio",
   "description": "%extension.description%",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "kino6",
   "license": "MIT",
   "repository": {
@@ -345,7 +345,7 @@
     "markdown-it-sup": "^2.0.0",
     "markdown-it-task-lists": "^2.1.1",
     "pdf-lib": "^1.17.1",
-    "playwright-core": "^1.53.0",
+    "playwright-core": "1.59.1",
     "sanitize-html": "^2.17.0",
     "tar-stream": "^3.1.7",
     "wavedrom": "^3.5.0"
@@ -362,7 +362,7 @@
     "esbuild": "^0.24.0",
     "fast-check": "^4.6.0",
     "mermaid": "^11.12.0",
-    "playwright": "^1.53.0",
+    "playwright": "1.59.1",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   }
