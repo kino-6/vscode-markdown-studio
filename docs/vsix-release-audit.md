@@ -53,13 +53,13 @@ npm run package
 
 Result:
 
-- Package: `dist/markdown-studio-1.0.1.vsix`
+- Package: `dist/markdown-studio-1.0.0.vsix`
 - Size: 22.48 MB
 - File count: 53
 - `vsce` file-count/size warning: not observed
 - `node_modules`: not included
 - Source maps: not included
-- Clean-profile install: `kino6.markdown-studio@1.0.0` verified with isolated VS Code user-data and extensions directories before the v1.0.1 packaging fix.
+- Clean-profile install: `kino6.markdown-studio@1.0.0` verified with isolated VS Code user-data and extensions directories.
 - Packaged-extension smoke: E2E suite passed against the VSIX-extracted extension directory.
 - Runtime bundles:
   - `extension/dist/extension.js`

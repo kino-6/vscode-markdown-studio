@@ -2,13 +2,6 @@
 
 All notable changes to Markdown Studio will be documented in this file.
 
-## [1.0.1] - 2026-05-14
-
-### Fixed
-
-- Fixed packaged first-run Chromium setup by shipping Playwright's downloader helper with the VSIX.
-- Pinned Playwright runtime packages to an exact version so the managed Chromium revision is reproducible.
-
 ## [1.0.0] - 2026-05-13
 
 ### Release Focus
@@ -23,6 +16,8 @@ All notable changes to Markdown Studio will be documented in this file.
 - Added local WaveDrom timing diagram rendering for Preview and PDF export.
 - Expanded demo coverage and committed a generated demo PDF artifact.
 - Improved PDF output quality for wide diagrams, link styling, syntax highlighting, inline code, and header/footer visibility.
+- Fixed packaged first-run Chromium setup by shipping Playwright's downloader helper with the VSIX.
+- Pinned Playwright runtime packages to an exact version so the managed Chromium revision is reproducible.
 - Added local corpus and demo-render validation flows for broader Markdown compatibility checks.
 - Clarified local-first behavior, the default GitHub external-resource allowlist, and strict LocalOnly configuration.
 
