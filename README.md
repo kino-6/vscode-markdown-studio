@@ -191,45 +191,16 @@ See [third-party-notices.md](./docs/third-party-notices.md) for license details.
 
 See [docs/troubleshooting.md](./docs/troubleshooting.md) for dependency setup, proxy/CA guidance, and offline installation notes.
 
-## Roadmap
+## v1.0 Highlights
 
-### Completed
-
-| Feature | Version |
-|---------|---------|
-| Custom CSS (theme + inline) | v0.4.0 |
-| KaTeX math, Footnotes, Emoji, Task lists, Definition lists, Sup/Sub | v0.5.0 |
-| PDF export progress + cancellation, code block blank line fix | v0.6.0 |
-| PDF Index, filename customization, theme auto-switch, bookmarks, diagram zoom/pan | v0.7.0 |
-| Manifest localization, configuration cleanup, docs split, glossary | v0.8.4 |
-| PDF diagram aspect ratio, link styling, Windows highlight and inline code fixes | v0.8.5 |
-| Preview current-tab/full-width commands and configurable preview width | v0.8.9 |
-| WaveDrom timing diagrams in Preview and PDF export | v0.9.0 |
-
-### v0.10.0 — Productivity
-
-- Diagram zoom/pan UX overhaul:
-  - Focus-gated interaction: zoom/pan only when diagram is clicked/focused (GitHub-style)
-  - Prevent page scroll hijacking by diagram containers
-  - Add explicit "Reset to 100%" button overlay
-  - Re-render SVG at zoom level for crisp output (not just CSS transform)
-- markdown-pdf theme accuracy: match original Markdown PDF extension styling
-- Demo GIF automation for Marketplace listing
-- Auto-export on save (watch mode)
-- DOCX export via Pandoc integration (optional dependency)
-- Multi-file merge export (combine multiple .md into one PDF)
-- Presentation mode (slide deck from Markdown)
-- Bidirectional scroll sync between editor and preview
-- Copy as formatted HTML (clipboard)
-
-### v1.0.0 — Marketplace Release
-
-- Marketplace listing with demo GIF and screenshots
-- Stable API: all settings finalized, no breaking changes
-- Pandoc-style / academic CSS templates
-- i18n: Japanese localization for commands and messages
-- Performance: large file handling (10k+ lines)
-- Accessibility: keyboard navigation in preview
+- Local-first Preview and PDF export with Mermaid, PlantUML, WaveDrom, KaTeX, syntax highlighting, and local assets.
+- Current-tab and full-width Preview commands with configurable preview width.
+- Source jump is enabled by default; double-click rendered Markdown or diagrams to jump back to the source line.
+- Interactive diagram zoom/pan with focus-gated wheel zoom, drag pan, toolbar reset, and crisp SVG re-rendering.
+- PDF index pages, PDF bookmarks, custom headers/footers, page breaks, and output filename templates.
+- GitHub allowlist external-resource policy by default, with strict LocalOnly available via `block-all`.
+- Japanese localization for commands, settings, and extension metadata.
+- Clean first-run dependency setup for managed Corretto, bundled PlantUML, and local Playwright Chromium.
 
 See [v1.0 Release Plan](./docs/plans/v1.0-release-plan.md) for the current release-readiness checklist and copy drafts.
 
@@ -238,6 +209,12 @@ See [v1.0 Release Plan](./docs/plans/v1.0-release-plan.md) for the current relea
 - Side-by-side preview in same editor tab
 - Agent-aware file watching (auto-refresh on external edits)
 - Export presets (save/recall named configurations)
+- Auto-export on save
+- DOCX export via optional Pandoc integration
+- Multi-file merge export
+- Presentation mode
+- Bidirectional scroll sync
+- Copy as formatted HTML
 - Markdown validation diagnostics
 - PlantUML C4 model / Mermaid Timeline support
 
