@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 suite('Markdown Studio E2E', () => {
-  const extensionId = 'local.markdown-studio';
+  const extensionId = 'kino6.markdown-studio';
 
   suite('Extension Activation', () => {
     test('extension should be present', () => {
