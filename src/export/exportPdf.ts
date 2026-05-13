@@ -69,6 +69,8 @@ type PdfRenderablePage = Pick<Page, 'pdf' | 'evaluate' | 'setViewportSize'>;
 type PdfHeading = { level: number; text: string; offsetTop: number; anchorId?: string };
 type HeadingDomData = { headings: PdfHeading[]; scrollHeight: number };
 
+const CLIENT_RENDERED_DIAGRAM_SELECTOR = '.mermaid-host[data-mermaid-src], .wavedrom-host[data-wavedrom-src]';
+
 /**
  * Converts local image file:// URIs in HTML to inline Base64 data URIs.
  *
@@ -242,7 +244,7 @@ async function waitForClientRenderedDiagrams(
 
   try {
     await page.waitForFunction(`(() => {
-      const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src], .wavedrom-host[data-wavedrom-src]');
+      const hosts = document.querySelectorAll(${JSON.stringify(CLIENT_RENDERED_DIAGRAM_SELECTOR)});
       if (hosts.length === 0) return true;
       return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
     })()`, { timeout: timeoutMs });

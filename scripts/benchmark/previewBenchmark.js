@@ -12,6 +12,8 @@ const defaultFiles = [
   'examples/demo_win.md',
   'examples/demo_load.md',
 ];
+const DIAGRAM_CONTAINER_SELECTOR = '.diagram-container';
+const CLIENT_RENDERED_DIAGRAM_SELECTOR = '.mermaid-host, .wavedrom-host';
 
 class MockUri {
   constructor(fsPath) {
@@ -217,13 +219,11 @@ function formatMs(value) {
 
 async function waitForPreviewReady(page) {
   await page.waitForFunction(() => {
-    const diagrams = Array.from(document.querySelectorAll('.diagram-container'));
-    const mermaidHosts = Array.from(document.querySelectorAll('.mermaid-host'));
-    const waveDromHosts = Array.from(document.querySelectorAll('.wavedrom-host'));
+    const diagrams = Array.from(document.querySelectorAll(window.__diagramContainerSelector));
+    const clientHosts = Array.from(document.querySelectorAll(window.__clientRenderedDiagramSelector));
     const diagramsReady = diagrams.every((diagram) => diagram.hasAttribute('data-zoom-init'));
-    const mermaidReady = mermaidHosts.every((host) => Boolean(host.querySelector('svg') || host.querySelector('.ms-error')));
-    const waveDromReady = waveDromHosts.every((host) => Boolean(host.querySelector('svg') || host.querySelector('.ms-error')));
-    return diagramsReady && mermaidReady && waveDromReady;
+    const clientDiagramsReady = clientHosts.every((host) => Boolean(host.querySelector('svg') || host.querySelector('.ms-error')));
+    return diagramsReady && clientDiagramsReady;
   }, null, { timeout: 15000 });
 }
 
@@ -233,7 +233,7 @@ async function measureBrowser(browser, fullHtml, bodyHtml, screenshotPath) {
     const initialStart = performance.now();
     await page.setContent(fullHtml, { waitUntil: 'domcontentloaded' });
     await page.addScriptTag({
-      content: 'document.body.dataset.msRenderMode="eager";window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){},setState:function(){}}};',
+      content: `document.body.dataset.msRenderMode="eager";window.__diagramContainerSelector=${JSON.stringify(DIAGRAM_CONTAINER_SELECTOR)};window.__clientRenderedDiagramSelector=${JSON.stringify(CLIENT_RENDERED_DIAGRAM_SELECTOR)};window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){},setState:function(){}}};`,
     });
     await page.addScriptTag({ path: path.join(repoRoot, 'dist/preview.js') });
     await waitForPreviewReady(page);
@@ -250,13 +250,11 @@ async function measureBrowser(browser, fullHtml, bodyHtml, screenshotPath) {
       await new Promise((resolve, reject) => {
         const deadline = performance.now() + 15000;
         function check() {
-          const diagrams = Array.from(document.querySelectorAll('.diagram-container'));
-          const mermaidHosts = Array.from(document.querySelectorAll('.mermaid-host'));
-          const waveDromHosts = Array.from(document.querySelectorAll('.wavedrom-host'));
+          const diagrams = Array.from(document.querySelectorAll(window.__diagramContainerSelector));
+          const clientHosts = Array.from(document.querySelectorAll(window.__clientRenderedDiagramSelector));
           const diagramsReady = diagrams.every((diagram) => diagram.hasAttribute('data-zoom-init'));
-          const mermaidReady = mermaidHosts.every((host) => Boolean(host.querySelector('svg') || host.querySelector('.ms-error')));
-          const waveDromReady = waveDromHosts.every((host) => Boolean(host.querySelector('svg') || host.querySelector('.ms-error')));
-          if (diagramsReady && mermaidReady && waveDromReady) {
+          const clientDiagramsReady = clientHosts.every((host) => Boolean(host.querySelector('svg') || host.querySelector('.ms-error')));
+          if (diagramsReady && clientDiagramsReady) {
             resolve();
             return;
           }

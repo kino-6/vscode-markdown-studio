@@ -7,6 +7,9 @@ const THEME_MAP = {
   'vscode-high-contrast': 'dark',
   'vscode-high-contrast-light': 'default',
 };
+const DIAGRAM_CONTAINER_SELECTOR = '.diagram-container';
+const MERMAID_HOST_SELECTOR = '.mermaid-host[data-mermaid-src]';
+const WAVEDROM_HOST_SELECTOR = '.wavedrom-host[data-wavedrom-src]';
 
 function detectThemeKind() {
   const kind = document.body.dataset.vscodeThemeKind;
@@ -43,7 +46,7 @@ function onThemeChanged(newThemeKind) {
     console.error('[Markdown Studio] Mermaid re-init on theme change failed:', err);
   }
   renderClientDiagrams({ reset: true }).then(() => {
-    document.querySelectorAll('.diagram-container').forEach((c) => {
+    document.querySelectorAll(DIAGRAM_CONTAINER_SELECTOR).forEach((c) => {
       c.removeAttribute('data-zoom-init');
     });
     initZoomPan();
@@ -233,11 +236,11 @@ function disconnectMermaidObserver() {
 }
 
 function getMermaidBlocks() {
-  return Array.from(document.querySelectorAll('.mermaid-host[data-mermaid-src]'));
+  return Array.from(document.querySelectorAll(MERMAID_HOST_SELECTOR));
 }
 
 function getWaveDromBlocks() {
-  return Array.from(document.querySelectorAll('.wavedrom-host[data-wavedrom-src]'));
+  return Array.from(document.querySelectorAll(WAVEDROM_HOST_SELECTOR));
 }
 
 function parseWaveDromSource(source) {
@@ -999,7 +1002,7 @@ function restoreZoomStates(savedStates) {
 }
 
 function initZoomPan() {
-  document.querySelectorAll('.diagram-container').forEach((container) => {
+  document.querySelectorAll(DIAGRAM_CONTAINER_SELECTOR).forEach((container) => {
     if (container.hasAttribute('data-zoom-init')) return;
     attachZoomPan(container);
   });

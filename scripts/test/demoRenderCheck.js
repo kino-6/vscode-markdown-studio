@@ -12,6 +12,7 @@ const repoRoot = path.resolve(__dirname, '../..');
 const demoMarkdownPath = path.join(repoRoot, 'examples/demo.md');
 const artifactDir = path.join(repoRoot, 'ignore/demo-render-check');
 const previewScreenshotPath = path.join(artifactDir, 'demo-preview.png');
+const CLIENT_RENDERED_DIAGRAM_SELECTOR = '.mermaid-host[data-mermaid-src], .wavedrom-host[data-wavedrom-src]';
 
 class MockUri {
   constructor(fsPath) {
@@ -190,7 +191,7 @@ function createDocument(markdown) {
 async function waitForRenderedDiagrams(page) {
   await page.waitForFunction(() => {
     const diagrams = Array.from(document.querySelectorAll('.diagram-container'));
-    const clientHosts = Array.from(document.querySelectorAll('.mermaid-host[data-mermaid-src], .wavedrom-host[data-wavedrom-src]'));
+    const clientHosts = Array.from(document.querySelectorAll(window.__clientRenderedDiagramSelector));
     return diagrams.length >= 1 &&
       diagrams.every((diagram) => diagram.hasAttribute('data-zoom-init')) &&
       clientHosts.every((host) => Boolean(host.querySelector('svg') || host.querySelector('.ms-error')));
@@ -213,7 +214,7 @@ async function verifyPreview(previewModule, markdown) {
   try {
     await page.setContent(fullHtml, { waitUntil: 'domcontentloaded' });
     await page.addScriptTag({
-      content: 'document.body.dataset.msRenderMode="eager";window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){},setState:function(){}}};',
+      content: `document.body.dataset.msRenderMode="eager";window.__clientRenderedDiagramSelector=${JSON.stringify(CLIENT_RENDERED_DIAGRAM_SELECTOR)};window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){},setState:function(){}}};`,
     });
     await page.addScriptTag({ path: path.join(repoRoot, 'dist/preview.js') });
     await waitForRenderedDiagrams(page);
