@@ -63,13 +63,13 @@ describe('openPreviewCommand', () => {
     );
   });
 
-  it('passes the full-width preview override', async () => {
-    await openPreviewCommand(context, { previewContentWidth: 'full' });
+  it('opens full-width preview in the current editor group when requested', async () => {
+    await openPreviewCommand(context, { location: 'current', previewContentWidth: 'full' });
 
     expect(mocks.openOrRefreshPreview).toHaveBeenCalledWith(
       context,
       mocks.activeEditor.document,
-      { viewColumn: -2, previewContentWidth: 'full' }
+      { viewColumn: 3, previewContentWidth: 'full' }
     );
   });
 
