@@ -7,9 +7,7 @@ Audited artifact: `dist/markdown-studio-0.9.0.vsix`
 ## Summary
 
 The current VSIX is broadly aligned with VS Code Marketplace packaging guidance.
-The remaining public-release blocker is not technical packaging: `package.json`
-still uses the placeholder publisher id `local`. A real Marketplace publisher id
-must be chosen before publishing v1.0.
+The Marketplace publisher id is set to `kino6`.
 
 No policy blocker was found in the current bundling approach. The extension
 continues to avoid remote renderers and CDNs for Markdown, diagrams, math, and
@@ -73,7 +71,7 @@ Result:
 | --- | --- | --- |
 | `name` | Pass | `markdown-studio`, lowercase and no spaces. |
 | `version` | Pass | `0.9.0`; must become `1.0.0` before the v1.0 tag. |
-| `publisher` | Needs decision | Currently `local`; replace with the real Marketplace publisher id before publish. |
+| `publisher` | Pass | `kino6`, matching the created Marketplace publisher. |
 | `engines.vscode` | Pass | `^1.92.0`, not `*`. |
 | `license` | Pass | `MIT`; root `LICENSE` is included in VSIX as `LICENSE.txt`. |
 | `icon` | Pass | `icon/icon.png`, 128x128 PNG. |
@@ -139,7 +137,6 @@ Decision for v1.0:
 
 ## Release Blockers
 
-- Replace `publisher: "local"` with the real Marketplace publisher id.
 - Bump `version` to `1.0.0` only at the final v1.0 release step.
 - Run clean-profile VSIX install QA before tagging v1.0.
 
