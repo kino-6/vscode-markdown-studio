@@ -15,7 +15,11 @@ media/preview.js
 scripts/**
 
 *.ts
-!dist/**
+dist/**
+!dist/extension.js
+!dist/preview.js
+*.map
+dist/*.map
 tsconfig.json
 e2e_log.txt
 *.vsix
