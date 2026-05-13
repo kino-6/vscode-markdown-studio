@@ -10,6 +10,7 @@ test/**
 config/**
 out/**
 examples/**
+ignore/**
 media/preview.js
 scripts/**
 
