@@ -169,6 +169,50 @@ describe('Message handler unit tests', () => {
     (globalThis as any).document.querySelectorAll = origQuerySelectorAll;
   });
 
+  it('reuses cached Mermaid SVG for unchanged diagram source', async () => {
+    const mermaidMod = await import('mermaid');
+    const mermaidMock = mermaidMod.default;
+    vi.mocked(mermaidMock.parse).mockClear();
+    vi.mocked(mermaidMock.render).mockClear();
+
+    const origQuerySelectorAll = (globalThis as any).document.querySelectorAll;
+    (globalThis as any).document.querySelectorAll = (selector: string) => {
+      if (selector === '.mermaid-host[data-mermaid-src]') {
+        const block = {
+          _inner: '',
+          getAttribute: (attr: string) =>
+            attr === 'data-mermaid-src' ? 'sequenceDiagram%0AA-%3E%3EB%3A%20cached' : null,
+        };
+        Object.defineProperty(block, 'innerHTML', {
+          get() { return this._inner; },
+          set(val: string) { this._inner = val; },
+          configurable: true,
+        });
+        return [block];
+      }
+      return [];
+    };
+
+    dispatchMessage({
+      type: 'update-body',
+      html: '<div class="mermaid-host" data-mermaid-src="sequenceDiagram%0AA-%3E%3EB%3A%20cached"></div>',
+      generation: 600,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    dispatchMessage({
+      type: 'update-body',
+      html: '<div class="mermaid-host" data-mermaid-src="sequenceDiagram%0AA-%3E%3EB%3A%20cached"></div>',
+      generation: 601,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(mermaidMock.parse).toHaveBeenCalledTimes(1);
+    expect(mermaidMock.render).toHaveBeenCalledTimes(1);
+
+    (globalThis as any).document.querySelectorAll = origQuerySelectorAll;
+  });
+
   /**
    * Validates: Requirements 1.4, 3.3
    * Non-update-body message types SHALL be ignored.
@@ -210,7 +254,7 @@ describe('Message handler unit tests', () => {
     dispatchMessage({
       type: 'update-body',
       html: '<a href="file:///C:/Users/Public/Documents/Markdown%20Studio/demo_win.md">file:///...</a>',
-      generation: 500,
+      generation: 700,
     });
 
     await new Promise((resolve) => setTimeout(resolve, 50));

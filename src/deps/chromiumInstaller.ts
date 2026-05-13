@@ -4,6 +4,11 @@ import type { InstallerResult } from "./types";
 import type { NetworkConfig } from "../infra/networkConfig";
 import { runProcess } from "../infra/runProcess";
 import { RUNTIME_MESSAGES } from "../infra/messages";
+import {
+  appendTlsCertificateSettingsHint,
+  isTlsCertificateError,
+  withNodeTlsRejectUnauthorizedDisabled,
+} from "../infra/tlsCertificateRetry";
 
 /**
  * Returns the absolute path to the chromium browser directory.
@@ -49,6 +54,85 @@ function applyNetworkEnv(networkConfig?: NetworkConfig): () => void {
   };
 }
 
+interface ChromiumInstallAttempt {
+  ok: boolean;
+  error?: string;
+  tlsCertificateError?: boolean;
+}
+
+async function installChromiumOnce(): Promise<ChromiumInstallAttempt> {
+  try {
+    // Try programmatic install first
+    const server = await import("playwright-core/lib/server");
+    await server.installBrowsersForNpmPackages(["playwright"]);
+    return { ok: true };
+  } catch (programmaticErr) {
+    if (isTlsCertificateError(programmaticErr)) {
+      return {
+        ok: false,
+        error: RUNTIME_MESSAGES.dependencies.chromiumInstallationFailed(
+          programmaticErr instanceof Error ? programmaticErr.message : String(programmaticErr)
+        ),
+        tlsCertificateError: true,
+      };
+    }
+
+    // Fallback: CLI-based install via playwright-core/cli.js
+    try {
+      const pkgPath = require.resolve("playwright-core/package.json");
+      const cliPath = path.join(path.dirname(pkgPath), "cli.js");
+      const result = await runProcess(
+        process.execPath,
+        [cliPath, "install", "chromium"],
+        120_000
+      );
+      if (result.exitCode !== 0) {
+        const detail = result.stderr || result.stdout;
+        return {
+          ok: false,
+          error: RUNTIME_MESSAGES.dependencies.chromiumInstallFailed(detail),
+          tlsCertificateError: isTlsCertificateError(detail),
+        };
+      }
+      return { ok: true };
+    } catch (cliErr) {
+      return {
+        ok: false,
+        error: RUNTIME_MESSAGES.dependencies.chromiumInstallationFailed(cliErr instanceof Error ? cliErr.message : String(cliErr)),
+        tlsCertificateError: isTlsCertificateError(cliErr),
+      };
+    }
+  }
+}
+
+async function installChromiumWithTlsRetry(): Promise<ChromiumInstallAttempt> {
+  const firstAttempt = await installChromiumOnce();
+  if (
+    firstAttempt.ok ||
+    !firstAttempt.tlsCertificateError
+  ) {
+    return firstAttempt;
+  }
+
+  if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === "0") {
+    return firstAttempt.error
+      ? {
+          ...firstAttempt,
+          error: appendTlsCertificateSettingsHint(firstAttempt.error),
+        }
+      : firstAttempt;
+  }
+
+  const retryAttempt = await withNodeTlsRejectUnauthorizedDisabled(installChromiumOnce);
+  if (!retryAttempt.ok && retryAttempt.tlsCertificateError && retryAttempt.error) {
+    return {
+      ...retryAttempt,
+      error: appendTlsCertificateSettingsHint(retryAttempt.error),
+    };
+  }
+  return retryAttempt;
+}
+
 export const chromiumInstaller = {
   /**
    * Installs Playwright's Chromium browser into storageDir/chromium/.
@@ -74,32 +158,12 @@ export const chromiumInstaller = {
     try {
       progress(RUNTIME_MESSAGES.dependencyProgress.installingChromium, 20);
 
-      try {
-        // Try programmatic install first
-        const server = await import("playwright-core/lib/server");
-        await server.installBrowsersForNpmPackages(["playwright"]);
-      } catch {
-        // Fallback: CLI-based install via playwright-core/cli.js
-        try {
-          const pkgPath = require.resolve("playwright-core/package.json");
-          const cliPath = path.join(path.dirname(pkgPath), "cli.js");
-          const result = await runProcess(
-            process.execPath,
-            [cliPath, "install", "chromium"],
-            120_000
-          );
-          if (result.exitCode !== 0) {
-            return {
-              ok: false,
-              error: RUNTIME_MESSAGES.dependencies.chromiumInstallFailed(result.stderr || result.stdout),
-            };
-          }
-        } catch (cliErr) {
-          return {
-            ok: false,
-            error: RUNTIME_MESSAGES.dependencies.chromiumInstallationFailed(cliErr instanceof Error ? cliErr.message : String(cliErr)),
-          };
-        }
+      const installAttempt = await installChromiumWithTlsRetry();
+      if (!installAttempt.ok) {
+        return {
+          ok: false,
+          error: installAttempt.error ?? RUNTIME_MESSAGES.dependencies.chromiumInstallationFailed("Unknown error"),
+        };
       }
 
       // Verify installation

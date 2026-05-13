@@ -41,7 +41,7 @@ function onThemeChanged(newThemeKind) {
     mermaidReady = false;
     console.error('[Markdown Studio] Mermaid re-init on theme change failed:', err);
   }
-  renderMermaidBlocks().then(() => {
+  renderMermaidBlocks({ reset: true }).then(() => {
     document.querySelectorAll('.diagram-container').forEach((c) => {
       c.removeAttribute('data-zoom-init');
     });
@@ -67,6 +67,12 @@ function observeThemeChanges(callback) {
 }
 
 let mermaidReady = true;
+const MERMAID_SVG_CACHE_LIMIT = 128;
+const mermaidSvgCache = new Map();
+let bodyDelegatedHandlersInstalled = false;
+let zoomDocumentHandlersInstalled = false;
+let mermaidObserver = null;
+let mermaidRenderQueue = Promise.resolve();
 try {
   mermaid.initialize({
     startOnLoad: false,
@@ -90,32 +96,271 @@ function safeDecode(input) {
   }
 }
 
-async function renderMermaidBlocks() {
+function closestMatch(target, selector) {
+  if (!target || typeof target.closest !== 'function') return null;
+  return target.closest(selector);
+}
+
+function mermaidCacheKey(source) {
+  const themeKind = resolveEffectiveThemeKind(currentOverride);
+  return `${getMermaidTheme(themeKind)}\n--\n${source}`;
+}
+
+function getCachedMermaidSvg(source) {
+  const key = mermaidCacheKey(source);
+  const cached = mermaidSvgCache.get(key);
+  if (cached === undefined) return undefined;
+  mermaidSvgCache.delete(key);
+  mermaidSvgCache.set(key, cached);
+  return cached;
+}
+
+function setCachedMermaidSvg(source, svg) {
+  const key = mermaidCacheKey(source);
+  if (mermaidSvgCache.has(key)) {
+    mermaidSvgCache.delete(key);
+  } else if (mermaidSvgCache.size >= MERMAID_SVG_CACHE_LIMIT) {
+    const oldest = mermaidSvgCache.keys().next().value;
+    if (oldest !== undefined) mermaidSvgCache.delete(oldest);
+  }
+  mermaidSvgCache.set(key, svg);
+}
+
+function isEagerMermaidRender() {
+  const mode = document.body?.dataset?.msRenderMode;
+  return mode === 'eager' || mode === 'pdf';
+}
+
+function isMermaidBlockNearViewport(block) {
+  if (typeof block.getBoundingClientRect !== 'function') return true;
+  const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 0;
+  if (!viewportHeight) return true;
+
+  const rect = block.getBoundingClientRect();
+  const preloadMargin = viewportHeight;
+  return rect.top <= viewportHeight + preloadMargin && rect.bottom >= -preloadMargin;
+}
+
+function getMermaidBlockState(block) {
+  if (typeof block.getAttribute === 'function') {
+    return block.getAttribute('data-mermaid-render-state') || '';
+  }
+  return block._mermaidRenderState || '';
+}
+
+function setMermaidBlockState(block, state) {
+  if (typeof block.setAttribute === 'function') {
+    block.setAttribute('data-mermaid-render-state', state);
+  } else {
+    block._mermaidRenderState = state;
+  }
+}
+
+function resetMermaidBlock(block) {
+  block.innerHTML = '';
+  if (typeof block.removeAttribute === 'function') {
+    block.removeAttribute('data-mermaid-render-state');
+  } else {
+    block._mermaidRenderState = '';
+  }
+}
+
+function disconnectMermaidObserver() {
+  if (mermaidObserver) {
+    mermaidObserver.disconnect();
+    mermaidObserver = null;
+  }
+}
+
+function getMermaidBlocks() {
+  return Array.from(document.querySelectorAll('.mermaid-host[data-mermaid-src]'));
+}
+
+async function renderMermaidBlock(block, index) {
+  const state = getMermaidBlockState(block);
+  if (state === 'rendering' || state === 'rendered') return;
+  setMermaidBlockState(block, 'rendering');
+
+  const encoded = safeText(block.getAttribute('data-mermaid-src'));
+  const source = safeDecode(encoded);
+  const cachedSvg = getCachedMermaidSvg(source);
+  if (cachedSvg !== undefined) {
+    block.innerHTML = cachedSvg;
+    setMermaidBlockState(block, 'rendered');
+    return;
+  }
+
+  try {
+    await mermaid.parse(source);
+    const id = `ms-mermaid-${index}-${Date.now()}`;
+    const result = await mermaid.render(id, source);
+    block.innerHTML = result.svg;
+    setCachedMermaidSvg(source, result.svg);
+    setMermaidBlockState(block, 'rendered');
+  } catch (error) {
+    block.innerHTML = `<div class="ms-error"><div class="ms-error-title">Mermaid render error</div><pre>${String(error)}</pre></div>`;
+    setMermaidBlockState(block, 'rendered');
+  }
+}
+
+function enqueueMermaidBlockRender(block, index) {
+  const state = getMermaidBlockState(block);
+  if (state === 'queued' || state === 'rendering' || state === 'rendered') return mermaidRenderQueue;
+
+  setMermaidBlockState(block, 'queued');
+  mermaidRenderQueue = mermaidRenderQueue.then(() => {
+    if (!document.body.contains(block)) return undefined;
+    return renderMermaidBlock(block, index);
+  });
+  return mermaidRenderQueue;
+}
+
+async function renderMermaidBlocksEager(blocks) {
+  for (const [index, block] of blocks.entries()) {
+    await renderMermaidBlock(block, index);
+  }
+}
+
+function splitMermaidBlocksByVisibility(blocks) {
+  const visibleBlocks = [];
+  const deferredBlocks = [];
+
+  for (const [index, block] of blocks.entries()) {
+    if (getMermaidBlockState(block) === 'rendered') continue;
+    const entry = { block, index };
+    if (isMermaidBlockNearViewport(block)) {
+      visibleBlocks.push(entry);
+    } else {
+      deferredBlocks.push(entry);
+    }
+  }
+
+  return { visibleBlocks, deferredBlocks };
+}
+
+async function renderVisibleMermaidBlocks(visibleBlocks) {
+  for (const { block, index } of visibleBlocks) {
+    await renderMermaidBlock(block, index);
+  }
+}
+
+function observeDeferredMermaidBlocks(deferredBlocks) {
+  if (deferredBlocks.length === 0) return;
+
+  const indexByBlock = new WeakMap(deferredBlocks.map(({ block, index }) => [block, index]));
+  mermaidObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      mermaidObserver?.unobserve(entry.target);
+      enqueueMermaidBlockRender(entry.target, indexByBlock.get(entry.target) ?? 0);
+    }
+  }, { rootMargin: '100% 0px' });
+
+  for (const { block } of deferredBlocks) {
+    setMermaidBlockState(block, 'pending');
+    mermaidObserver.observe(block);
+  }
+}
+
+async function renderMermaidBlocks(options = {}) {
   if (!mermaidReady) {
     console.warn('[Markdown Studio] Skipping Mermaid rendering — initialization failed');
     return;
   }
-  const blocks = Array.from(document.querySelectorAll('.mermaid-host[data-mermaid-src]'));
-  for (const [index, block] of blocks.entries()) {
-    const encoded = safeText(block.getAttribute('data-mermaid-src'));
-    const source = safeDecode(encoded);
-    try {
-      await mermaid.parse(source);
-      const id = `ms-mermaid-${index}-${Date.now()}`;
-      const result = await mermaid.render(id, source);
-      block.innerHTML = result.svg;
-    } catch (error) {
-      block.innerHTML = `<div class="ms-error"><div class="ms-error-title">Mermaid render error</div><pre>${String(error)}</pre></div>`;
+  disconnectMermaidObserver();
+
+  const blocks = getMermaidBlocks();
+  if (options.reset) {
+    for (const block of blocks) {
+      resetMermaidBlock(block);
     }
   }
+
+  if (isEagerMermaidRender() || typeof IntersectionObserver === 'undefined') {
+    await renderMermaidBlocksEager(blocks);
+    return;
+  }
+
+  const { visibleBlocks, deferredBlocks } = splitMermaidBlocksByVisibility(blocks);
+  await renderVisibleMermaidBlocks(visibleBlocks);
+  observeDeferredMermaidBlocks(deferredBlocks);
+}
+
+function copyCodeFromButton(btn, preOverride) {
+  const pre = preOverride ?? btn.closest('.ms-code-wrapper')?.querySelector('pre');
+  if (!pre) return;
+
+  const code = pre.querySelector('code');
+  const text = code ? code.textContent : pre.textContent;
+  navigator.clipboard.writeText(text || '').then(() => {
+    btn.textContent = '✓ Copied';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+  });
+}
+
+function handleTocLinkClick(event, link) {
+  const href = link.getAttribute('href');
+  if (!href || !href.startsWith('#')) return false;
+  const targetId = decodeURIComponent(href.slice(1));
+  const target = document.getElementById(targetId);
+  if (!target) return false;
+
+  event.preventDefault();
+  target.scrollIntoView({ behavior: 'smooth' });
+  return true;
+}
+
+function handleDocumentLinkClick(event, link) {
+  const href = link.getAttribute('href');
+  if (!href || href.startsWith('#')) return false;
+  if (!/^[a-z][a-z0-9+\-.]*:/i.test(href)) return false;
+
+  event.preventDefault();
+  vscode.postMessage({ type: 'openExternal', href });
+  return true;
+}
+
+function handlePreviewClick(event) {
+  const copyButton = closestMatch(event.target, '.ms-copy-btn');
+  if (copyButton) {
+    event.preventDefault();
+    copyCodeFromButton(copyButton);
+    return;
+  }
+
+  const tocLink = closestMatch(event.target, '.ms-toc a');
+  if (tocLink && handleTocLinkClick(event, tocLink)) return;
+
+  const link = closestMatch(event.target, 'a[href]');
+  if (link) handleDocumentLinkClick(event, link);
+}
+
+function handlePreviewDblClick(event) {
+  if (closestMatch(event.target, '.diagram-container')) return;
+  const line = findSourceLine(event.target);
+  if (line !== null) {
+    vscode.postMessage({ type: 'jumpToLine', line });
+  }
+}
+
+function installBodyDelegatedHandlers() {
+  if (bodyDelegatedHandlersInstalled) return true;
+  if (!document.body || typeof document.body.addEventListener !== 'function') return false;
+
+  document.body.addEventListener('click', handlePreviewClick);
+  document.body.addEventListener('dblclick', handlePreviewDblClick);
+  bodyDelegatedHandlersInstalled = true;
+  return true;
 }
 
 function findSourceLine(el) {
   while (el && el !== document.body) {
-    const attr = el.getAttribute('data-source-line');
-    if (attr !== null) {
-      const line = parseInt(attr, 10);
-      if (Number.isFinite(line)) return line;
+    if (typeof el.getAttribute === 'function') {
+      const attr = el.getAttribute('data-source-line');
+      if (attr !== null) {
+        const line = parseInt(attr, 10);
+        if (Number.isFinite(line)) return line;
+      }
     }
     el = el.parentElement;
   }
@@ -123,6 +368,7 @@ function findSourceLine(el) {
 }
 
 function addCopyButtons() {
+  const delegated = installBodyDelegatedHandlers();
   const blocks = document.querySelectorAll('pre');
   for (const pre of blocks) {
     if (pre.querySelector('.ms-copy-btn')) continue;
@@ -147,47 +393,34 @@ function addCopyButtons() {
     const btn = document.createElement('button');
     btn.className = 'ms-copy-btn';
     btn.textContent = 'Copy';
-    btn.addEventListener('click', () => {
-      const code = pre.querySelector('code');
-      const text = code ? code.textContent : pre.textContent;
-      navigator.clipboard.writeText(text || '').then(() => {
-        btn.textContent = '✓ Copied';
-        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
-      });
-    });
+    if (!delegated) {
+      btn.addEventListener('click', () => copyCodeFromButton(btn, pre));
+    }
     wrapper.appendChild(btn);
   }
 }
 
 function registerTocLinkHandlers() {
+  if (installBodyDelegatedHandlers()) return;
+
   const links = document.querySelectorAll('.ms-toc a');
   for (const link of links) {
     link.addEventListener('click', (event) => {
-      const href = link.getAttribute('href');
-      if (!href || !href.startsWith('#')) return;
-      const targetId = decodeURIComponent(href.slice(1));
-      const target = document.getElementById(targetId);
-      if (target) {
-        event.preventDefault();
-        target.scrollIntoView({ behavior: 'smooth' });
-      }
+      handleTocLinkClick(event, link);
     });
   }
 }
 
 function registerDocumentLinkHandlers() {
+  if (installBodyDelegatedHandlers()) return;
+
   const links = document.querySelectorAll('a[href]');
   for (const link of links) {
     if (link.getAttribute('data-ms-link-handler') === 'true') continue;
     link.setAttribute('data-ms-link-handler', 'true');
 
     link.addEventListener('click', (event) => {
-      const href = link.getAttribute('href');
-      if (!href || href.startsWith('#')) return;
-      if (!/^[a-z][a-z0-9+\-.]*:/i.test(href)) return;
-
-      event.preventDefault();
-      vscode.postMessage({ type: 'openExternal', href });
+      handleDocumentLinkClick(event, link);
     });
   }
 }
@@ -209,6 +442,16 @@ function hideLoadingOverlay() {
   if (overlay) {
     overlay.style.display = 'none';
   }
+}
+
+function applyPreviewEnhancements(savedZoomStates) {
+  initZoomPan();
+  if (savedZoomStates) {
+    restoreZoomStates(savedZoomStates);
+  }
+  addCopyButtons();
+  registerTocLinkHandlers();
+  registerDocumentLinkHandlers();
 }
 
 let lastAppliedGeneration = -1;
@@ -251,18 +494,10 @@ window.addEventListener('message', (event) => {
   lastAppliedGeneration = message.generation;
   document.body.innerHTML = message.html;
   renderMermaidBlocks().then(() => {
-    initZoomPan();
-    restoreZoomStates(savedZoomStates);
-    addCopyButtons();
-    registerTocLinkHandlers();
-    registerDocumentLinkHandlers();
+    applyPreviewEnhancements(savedZoomStates);
   }).catch((error) => {
     console.error('Mermaid rendering failed during update-body', error);
-    initZoomPan();
-    restoreZoomStates(savedZoomStates);
-    addCopyButtons();
-    registerTocLinkHandlers();
-    registerDocumentLinkHandlers();
+    applyPreviewEnhancements(savedZoomStates);
   });
   // innerHTML destroyed the overlay element — showLoadingOverlay() would
   // re-create it, but the render is already done so just ensure it's gone.
@@ -294,13 +529,7 @@ function initPreview() {
     onThemeChanged(newThemeKind);
   });
 
-  document.body.addEventListener('dblclick', (event) => {
-    if (event.target.closest('.diagram-container')) return;
-    const line = findSourceLine(event.target);
-    if (line !== null) {
-      vscode.postMessage({ type: 'jumpToLine', line });
-    }
-  });
+  installBodyDelegatedHandlers();
 }
 
 // Support both normal webview loading and late injection (e.g. Playwright PDF export).
@@ -548,6 +777,38 @@ function handleDblClick(container, state) {
   applyTransform(container, state);
 }
 
+function clearZoomFocus(container) {
+  const state = container._zoomState;
+  if (!state || !state.focused) return;
+  state.focused = false;
+  container.classList.remove('diagram-focused');
+}
+
+function handleDocumentZoomMouseDown(event) {
+  document.querySelectorAll('.diagram-container[data-zoom-init]').forEach((container) => {
+    if (container._zoomState?.focused && !container.contains(event.target)) {
+      clearZoomFocus(container);
+    }
+  });
+}
+
+function handleDocumentZoomKeyDown(event) {
+  if (event.key !== 'Escape') return;
+  document.querySelectorAll('.diagram-container[data-zoom-init]').forEach((container) => {
+    clearZoomFocus(container);
+  });
+}
+
+function installZoomDocumentHandlers() {
+  if (zoomDocumentHandlersInstalled) return true;
+  if (typeof document.addEventListener !== 'function') return false;
+
+  document.addEventListener('mousedown', handleDocumentZoomMouseDown);
+  document.addEventListener('keydown', handleDocumentZoomKeyDown);
+  zoomDocumentHandlersInstalled = true;
+  return true;
+}
+
 function attachZoomPan(container) {
   const state = {
     scale: 1.0,
@@ -561,6 +822,7 @@ function attachZoomPan(container) {
   };
   container._zoomState = state;
   container.setAttribute('data-zoom-init', 'true');
+  installZoomDocumentHandlers();
 
   createZoomToolbar(container, state);
 
@@ -578,20 +840,6 @@ function attachZoomPan(container) {
   container.addEventListener('mouseup', () => handleMouseUp(container, state));
   container.addEventListener('mouseleave', () => handleMouseUp(container, state));
   container.addEventListener('dblclick', () => handleDblClick(container, state));
-
-  document.addEventListener('mousedown', (e) => {
-    if (state.focused && !container.contains(e.target)) {
-      state.focused = false;
-      container.classList.remove('diagram-focused');
-    }
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && state.focused) {
-      state.focused = false;
-      container.classList.remove('diagram-focused');
-    }
-  });
 }
 
 function saveZoomStates() {

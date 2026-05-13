@@ -297,9 +297,12 @@
     "pretest:e2e": "tsc -p config/tsconfig.e2e.json && npm run build",
     "test:e2e": "vscode-test --config config/vscode-test.mjs",
     "test:ci": "npm run lint && npm run test:unit && npm run test:integration",
+    "test:preview-runtime": "npm run build && node scripts/test/previewRuntimeCheck.js",
     "package": "npm run build && rm -f dist/*.vsix && vsce package -o dist/",
     "reinstall": "bash scripts/dev/reinstall.sh",
     "demo": "npx tsx scripts/demo/index.ts",
+    "benchmark:preview": "npm run build && node scripts/benchmark/previewBenchmark.js",
+    "benchmark:pdf": "npm run build && node scripts/benchmark/pdfExportBenchmark.js",
     "repro:about-blank-footer": "node scripts/repro/aboutBlankFooter.js"
   },
   "dependencies": {

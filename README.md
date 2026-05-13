@@ -236,6 +236,7 @@ See [testing.md](./docs/testing.md) for details.
 ## Demo
 
 Open `examples/demo.md` and run `Markdown Studio: Preview` to see all features in action.
+Use `examples/demo_win.md` for Windows path/rendering checks, and `examples/demo_load.md` for PDF export load testing.
 
 ## Coexistence
 

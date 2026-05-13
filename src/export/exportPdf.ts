@@ -2,7 +2,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as vscode from 'vscode';
+import type { Page } from 'playwright';
 import { dependencyStatus } from '../extension';
+import { mapWithConcurrency } from '../infra/async';
 import { buildPdfOptions, injectPageBreakCss, injectTocPageBreakCss } from './pdfHeaderFooter';
 import { buildPdfIndexHtml, estimateIndexPageCount, HeadingPageEntry } from './pdfIndex';
 import { addBookmarks } from './pdfBookmarks';
@@ -50,6 +52,23 @@ const MIME_TYPES: Record<string, string> = {
   '.ico': 'image/x-icon',
 };
 
+type PdfExportConfig = ReturnType<typeof getConfig>;
+type LocalImageRef = { match: string; before: string; fileUri: string };
+type HtmlReplacement = { match: string; replacement: string };
+type PdfAssets = {
+  previewCss?: string;
+  hljsCss?: string;
+  katexCss?: string;
+  customCss: string;
+  customCssWarnings: string[];
+  previewJsContent?: string;
+};
+type PdfOptions = ReturnType<typeof buildPdfOptions>;
+type PdfPageOptions = NonNullable<Parameters<Page['pdf']>[0]>;
+type PdfRenderablePage = Pick<Page, 'pdf' | 'evaluate' | 'setViewportSize'>;
+type PdfHeading = { level: number; text: string; offsetTop: number; anchorId?: string };
+type HeadingDomData = { headings: PdfHeading[]; scrollHeight: number };
+
 /**
  * Converts local image file:// URIs in HTML to inline Base64 data URIs.
  *
@@ -58,36 +77,50 @@ const MIME_TYPES: Record<string, string> = {
  * Inlining images as data URIs bypasses all file-access restrictions.
  */
 export async function inlineLocalImages(html: string): Promise<string> {
-  const regex = /<img([^>]*)\bsrc="(file:\/\/[^"]+)"/g;
-  const replacements: { match: string; replacement: string }[] = [];
-
-  let m: RegExpExecArray | null;
-  while ((m = regex.exec(html)) !== null) {
-    const [fullMatch, before, fileUri] = m;
-    const filePath = filePathFromUri(fileUri);
-    if (!filePath) continue;
-
-    const ext = path.extname(filePath).toLowerCase();
-    const mime = MIME_TYPES[ext];
-    if (!mime) continue;
-
-    try {
-      const buf = await fs.readFile(filePath);
-      const b64 = buf.toString('base64');
-      replacements.push({
-        match: fullMatch,
-        replacement: `<img${before}src="data:${mime};base64,${b64}"`,
-      });
-    } catch {
-      // File not found or unreadable — leave the src as-is (graceful degradation)
-    }
-  }
+  const imageRefs = findLocalImageRefs(html);
+  const replacements = await mapWithConcurrency(imageRefs, 8, buildLocalImageReplacement);
 
   let result = html;
-  for (const { match, replacement } of replacements) {
+  for (const item of replacements) {
+    if (!item) continue;
+    const { match, replacement } = item;
     result = result.replace(match, replacement);
   }
   return result;
+}
+
+function findLocalImageRefs(html: string): LocalImageRef[] {
+  const regex = /<img([^>]*)\bsrc="(file:\/\/[^"]+)"/g;
+  const refs: LocalImageRef[] = [];
+
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(html)) !== null) {
+    const [fullMatch, before, fileUri] = match;
+    refs.push({ match: fullMatch, before, fileUri });
+  }
+
+  return refs;
+}
+
+async function buildLocalImageReplacement({ match, before, fileUri }: LocalImageRef): Promise<HtmlReplacement | undefined> {
+  const filePath = filePathFromUri(fileUri);
+  if (!filePath) return undefined;
+
+  const ext = path.extname(filePath).toLowerCase();
+  const mime = MIME_TYPES[ext];
+  if (!mime) return undefined;
+
+  try {
+    const buf = await fs.readFile(filePath);
+    const b64 = buf.toString('base64');
+    return {
+      match,
+      replacement: `<img${before}src="data:${mime};base64,${b64}"`,
+    };
+  } catch {
+    // File not found or unreadable — leave the src as-is (graceful degradation)
+    return undefined;
+  }
 }
 
 function filePathFromUri(fileUri: string): string | undefined {
@@ -99,6 +132,308 @@ function filePathFromUri(fileUri: string): string | undefined {
   }
 }
 
+async function readUtf8IfExists(filePath: string): Promise<string | undefined> {
+  try {
+    return await fs.readFile(filePath, 'utf-8');
+  } catch {
+    return undefined;
+  }
+}
+
+async function loadPdfAssets(context: vscode.ExtensionContext, cfg: PdfExportConfig): Promise<PdfAssets> {
+  const previewCssPath = path.join(context.extensionPath, 'media', 'preview.css');
+  const hljsCssPath = path.join(context.extensionPath, 'media', 'hljs-theme.css');
+  const katexCssPath = path.join(context.extensionPath, 'media', 'katex.min.css');
+  const previewJsPath = path.join(context.extensionPath, 'dist', 'preview.js');
+
+  const [
+    previewCss,
+    hljsCss,
+    katexCss,
+    customCssResult,
+    previewJsContent,
+  ] = await Promise.all([
+    readUtf8IfExists(previewCssPath),
+    readUtf8IfExists(hljsCssPath),
+    readUtf8IfExists(katexCssPath),
+    loadCustomCss(cfg.theme, cfg.customCss, context.extensionPath),
+    readUtf8IfExists(previewJsPath),
+  ]);
+
+  return {
+    previewCss,
+    hljsCss,
+    katexCss,
+    customCss: customCssResult.css,
+    customCssWarnings: customCssResult.warnings,
+    previewJsContent,
+  };
+}
+
+function injectStyle(html: string, css: string, label?: string): string {
+  const prefix = label ? `/* ${label} */\n` : '';
+  return html.replace('</head>', `<style>${prefix}${css}</style>\n</head>`);
+}
+
+function injectPdfAssets(html: string, assets: PdfAssets): string {
+  let result = html;
+  if (assets.previewCss) {
+    result = injectStyle(result, assets.previewCss);
+  }
+  if (assets.hljsCss) {
+    result = injectStyle(result, assets.hljsCss);
+  }
+  if (assets.katexCss) {
+    result = injectStyle(result, assets.katexCss);
+  }
+  if (assets.customCss) {
+    result = injectStyle(result, assets.customCss, 'md-studio-custom-css');
+  }
+  return result;
+}
+
+function preparePdfHtml(html: string, cfg: PdfExportConfig): string {
+  let result = html
+    .replace(/<div id="ms-loading-overlay"[^>]*>.*?<\/div>\s*<\/div>/s, '')
+    .replace(/<details(?![^>]*\bopen\b)/g, '<details open');
+
+  if (cfg.pdfToc.hidden) {
+    result = injectStyle(result, '.ms-toc, .ms-toc-comment { display: none !important; }');
+  }
+  if (cfg.pdfHeaderFooter.pageBreakEnabled) {
+    result = injectPageBreakCss(result);
+  }
+  if (cfg.toc.pageBreak) {
+    result = injectTocPageBreakCss(result);
+  }
+  return result;
+}
+
+async function insertPdfIndexIntoRenderedPage(page: Pick<Page, 'evaluate'>, indexHtml: string): Promise<void> {
+  await page.evaluate((html: string) => {
+    document.body.insertAdjacentHTML('afterbegin', html);
+  }, indexHtml);
+}
+
+async function forceLightMode(page: Pick<Page, 'evaluate'>): Promise<void> {
+  await page.evaluate(`(() => {
+    document.body.classList.remove('vscode-dark', 'vscode-high-contrast');
+    document.body.classList.add('vscode-light');
+  })()`);
+}
+
+async function injectPreviewRuntime(page: Pick<Page, 'addScriptTag'>, previewJsContent: string): Promise<void> {
+  await page.addScriptTag({
+    content: 'document.body.dataset.msRenderMode="pdf";if(typeof acquireVsCodeApi==="undefined"){window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){return undefined},setState:function(){}};};}',
+  });
+  await page.addScriptTag({ content: previewJsContent });
+}
+
+async function waitForMermaidDiagrams(
+  page: Pick<Page, 'waitForFunction'>,
+  timeoutMs: number,
+  onTimeout?: (elapsedSeconds: number) => void,
+  onTick?: (elapsedSeconds: number) => void,
+): Promise<void> {
+  const startTime = Date.now();
+  const progressInterval = onTick
+    ? setInterval(() => onTick(Math.round((Date.now() - startTime) / 1000)), 1000)
+    : undefined;
+
+  try {
+    await page.waitForFunction(`(() => {
+      const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
+      if (hosts.length === 0) return true;
+      return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
+    })()`, { timeout: timeoutMs });
+  } catch {
+    onTimeout?.(Math.round((Date.now() - startTime) / 1000));
+  } finally {
+    if (progressInterval) {
+      clearInterval(progressInterval);
+    }
+  }
+}
+
+function countPdfPages(pdfBuffer: Buffer): number {
+  const pdfStr = pdfBuffer.toString('latin1');
+  const pageMatches = pdfStr.match(/\/Type\s*\/Page(?!s)/g);
+  return pageMatches ? pageMatches.length : 1;
+}
+
+function buildPdfPageOptions(cfg: PdfExportConfig, pdfOptions: PdfOptions): PdfPageOptions {
+  return {
+    format: cfg.pageFormat,
+    printBackground: true,
+    preferCSSPageSize: true,
+    displayHeaderFooter: pdfOptions.displayHeaderFooter,
+    headerTemplate: pdfOptions.headerTemplate,
+    footerTemplate: pdfOptions.footerTemplate,
+    margin: pdfOptions.margin,
+  };
+}
+
+async function renderPdfBuffer(page: PdfRenderablePage, cfg: PdfExportConfig, pdfOptions: PdfOptions): Promise<Buffer> {
+  return await page.pdf(buildPdfPageOptions(cfg, pdfOptions));
+}
+
+async function writePdfFile(
+  page: PdfRenderablePage,
+  outputPath: string,
+  cfg: PdfExportConfig,
+  pdfOptions: PdfOptions,
+): Promise<void> {
+  await page.pdf({
+    ...buildPdfPageOptions(cfg, pdfOptions),
+    path: outputPath,
+  });
+  await fs.access(outputPath);
+}
+
+function pageNumberForOffset(offsetTop: number, scrollHeight: number, totalPages: number): number {
+  const ratio = scrollHeight > 0 ? offsetTop / scrollHeight : 0;
+  return Math.min(Math.floor(ratio * totalPages) + 1, totalPages);
+}
+
+function mapDomHeadingsToEntries(domData: HeadingDomData, totalPages: number): HeadingPageEntry[] {
+  return domData.headings.map((h) => ({
+    level: h.level,
+    text: h.text,
+    pageNumber: pageNumberForOffset(h.offsetTop, domData.scrollHeight, totalPages),
+    anchorId: h.anchorId ?? '',
+  }));
+}
+
+function mapHeadingEntriesToBookmarks(headingEntries: HeadingPageEntry[], pageOffset = 0): BookmarkEntry[] {
+  return headingEntries.map(({ level, text, pageNumber }) => ({
+    level,
+    text,
+    pageNumber: pageNumber + pageOffset,
+  }));
+}
+
+async function collectPdfIndexHeadingData(page: PdfRenderablePage, cfg: PdfExportConfig): Promise<HeadingDomData> {
+  return await page.evaluate(
+    `(function() {
+      var headings = [];
+      var els = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        var level = parseInt(el.tagName[1], 10);
+        if (level < ${cfg.toc.minLevel} || level > ${cfg.toc.maxLevel}) continue;
+        if (el.classList.contains('ms-pdf-index-title')) continue;
+        headings.push({ level: level, text: (el.textContent || '').trim(), anchorId: el.id || '', offsetTop: el.offsetTop });
+      }
+      return { headings: headings, scrollHeight: document.documentElement.scrollHeight };
+    })()`
+  ) as HeadingDomData;
+}
+
+async function collectBookmarkHeadingData(page: PdfRenderablePage): Promise<HeadingDomData> {
+  return await page.evaluate(
+    `(function() {
+      var headings = [];
+      var els = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        var level = parseInt(el.tagName[1], 10);
+        headings.push({ level: level, text: (el.textContent || '').trim(), offsetTop: el.offsetTop });
+      }
+      return { headings: headings, scrollHeight: document.documentElement.scrollHeight };
+    })()`
+  ) as HeadingDomData;
+}
+
+async function preparePdfIndex(
+  page: PdfRenderablePage,
+  cfg: PdfExportConfig,
+  pdfOptions: PdfOptions,
+): Promise<BookmarkEntry[]> {
+  const totalPages = countPdfPages(await renderPdfBuffer(page, cfg, pdfOptions));
+  const domData = await collectPdfIndexHeadingData(page, cfg);
+  if (domData.headings.length === 0) {
+    return [];
+  }
+
+  const headingEntries = mapDomHeadingsToEntries(domData, totalPages);
+  const indexPageCount = estimateIndexPageCount(headingEntries.length);
+  const indexHtml = buildPdfIndexHtml(headingEntries, cfg.pdfIndex.title, indexPageCount);
+
+  await insertPdfIndexIntoRenderedPage(page, indexHtml);
+  await page.setViewportSize({ width: 980, height: 1400 });
+
+  return mapHeadingEntriesToBookmarks(headingEntries, indexPageCount);
+}
+
+async function collectBookmarkEntries(
+  page: PdfRenderablePage,
+  cfg: PdfExportConfig,
+  pdfOptions: PdfOptions,
+): Promise<BookmarkEntry[]> {
+  const totalPages = countPdfPages(await renderPdfBuffer(page, cfg, pdfOptions));
+  const domData = await collectBookmarkHeadingData(page);
+  if (domData.headings.length === 0) {
+    return [];
+  }
+  return mapHeadingEntriesToBookmarks(mapDomHeadingsToEntries(domData, totalPages));
+}
+
+async function prepareBookmarkEntries(
+  page: PdfRenderablePage,
+  cfg: PdfExportConfig,
+  pdfOptions: PdfOptions,
+  progress?: ProgressReporter,
+): Promise<BookmarkEntry[]> {
+  if (cfg.pdfIndex.enabled) {
+    progress?.report(RUNTIME_MESSAGES.exportProgress.generatingTableOfContents, 15);
+    return await preparePdfIndex(page, cfg, pdfOptions);
+  }
+
+  if (cfg.pdfBookmarks.enabled) {
+    return await collectBookmarkEntries(page, cfg, pdfOptions);
+  }
+
+  return [];
+}
+
+async function addPdfBookmarksIfNeeded(
+  outputPath: string,
+  bookmarkEntries: BookmarkEntry[],
+  cfg: PdfExportConfig,
+  progress?: ProgressReporter,
+): Promise<void> {
+  if (cfg.pdfBookmarks.enabled && bookmarkEntries.length > 0) {
+    progress?.report(RUNTIME_MESSAGES.exportProgress.addingBookmarks, 5);
+    try {
+      await addBookmarks(outputPath, bookmarkEntries, cfg.toc.minLevel, cfg.toc.maxLevel);
+    } catch (err) {
+      // Log but don't fail the export — bookmarks are non-critical
+      console.error('[Markdown Studio] Failed to add PDF bookmarks:', err instanceof Error ? err.message : String(err));
+    }
+  } else {
+    console.log('[Markdown Studio] Bookmarks skipped: enabled=%s, entries=%d', cfg.pdfBookmarks.enabled, bookmarkEntries.length);
+  }
+}
+
+function resolvePdfOutputPath(document: vscode.TextDocument, cfg: PdfExportConfig): string {
+  const filenameCtx: FilenameContext = {
+    filename: path.basename(document.uri.fsPath, path.extname(document.uri.fsPath)),
+    ext: path.extname(document.uri.fsPath).replace(/^\./, ''),
+    title: extractH1Title(document.getText()),
+  };
+  const resolvedName = resolveOutputFilename(cfg.outputFilename, filenameCtx);
+  return path.join(path.dirname(document.uri.fsPath), resolvedName);
+}
+
+async function cleanupPartialPdf(outputPath: string): Promise<void> {
+  try {
+    await fs.access(outputPath);
+    await fs.unlink(outputPath);
+  } catch {
+    // File doesn't exist or can't be deleted — ignore
+  }
+}
+
 export async function exportToPdf(
   document: vscode.TextDocument,
   context: vscode.ExtensionContext,
@@ -106,6 +441,7 @@ export async function exportToPdf(
   cancellation?: CancellationChecker,
 ): Promise<string> {
   const cfg = getConfig();
+  const assetsPromise = loadPdfAssets(context, cfg);
 
   // Step 1: Build HTML
   progress?.report(RUNTIME_MESSAGES.exportProgress.buildingHtml, 15);
@@ -117,72 +453,11 @@ export async function exportToPdf(
   progress?.report(RUNTIME_MESSAGES.exportProgress.processingImages, 15);
   html = await inlineLocalImages(html);
 
-  // Inline the preview CSS so tables, code blocks, and other elements are styled in the PDF.
-  // There's no webview in the PDF path, so we read the CSS from disk
-  // and inject it as <style> tags that Playwright can render.
-  const previewCssPath = path.join(context.extensionPath, 'media', 'preview.css');
-  const hljsCssPath = path.join(context.extensionPath, 'media', 'hljs-theme.css');
-  try {
-    const previewCss = await fs.readFile(previewCssPath, 'utf-8');
-    html = html.replace('</head>', `<style>${previewCss}</style>\n</head>`);
-  } catch {
-    // CSS file missing — degrade gracefully
-  }
-  try {
-    const hljsCss = await fs.readFile(hljsCssPath, 'utf-8');
-    html = html.replace('</head>', `<style>${hljsCss}</style>\n</head>`);
-  } catch {
-    // CSS file missing — degrade gracefully, code blocks render without color
-  }
-
-  // Inject KaTeX CSS for math rendering in PDF
-  const katexCssPath = path.join(context.extensionPath, 'media', 'katex.min.css');
-  try {
-    const katexCss = await fs.readFile(katexCssPath, 'utf-8');
-    html = html.replace('</head>', `<style>${katexCss}</style>\n</head>`);
-  } catch {
-    // KaTeX CSS missing — math will render without proper styling
-  }
-
-  // Inject custom CSS (theme + inline) if configured
-  const { css: customCss, warnings: customCssWarnings } = await loadCustomCss(cfg.theme, cfg.customCss, context.extensionPath);
-  for (const w of customCssWarnings) {
+  const assets = await assetsPromise;
+  for (const w of assets.customCssWarnings) {
     console.warn(w);
   }
-  if (customCss) {
-    html = html.replace('</head>', `<style>/* md-studio-custom-css */\n${customCss}</style>\n</head>`);
-  }
-
-  // Read the bundled preview script path for later injection via Playwright.
-  // We inject it after setContent so DOMContentLoaded fires and Mermaid renders.
-  const previewJsPath = path.join(context.extensionPath, 'dist', 'preview.js');
-  let previewJsContent: string | undefined;
-  try {
-    previewJsContent = await fs.readFile(previewJsPath, 'utf-8');
-  } catch {
-    // preview.js missing — Mermaid diagrams will not render in PDF
-  }
-
-  // Remove the loading overlay — it's only needed for the live preview webview
-  html = html.replace(/<div id="ms-loading-overlay"[^>]*>.*?<\/div>\s*<\/div>/s, '');
-
-  // Force all <details> elements open for PDF — collapsed content would be invisible
-  html = html.replace(/<details(?![^>]*\bopen\b)/g, '<details open');
-
-  // When pdfToc.hidden is true, hide inline TOC (both [toc] marker and <!-- TOC --> comment marker)
-  if (cfg.pdfToc.hidden) {
-    html = html.replace('</head>', '<style>.ms-toc, .ms-toc-comment { display: none !important; }</style>\n</head>');
-  }
-
-  // Inject page-break CSS if enabled
-  if (cfg.pdfHeaderFooter.pageBreakEnabled) {
-    html = injectPageBreakCss(html);
-  }
-
-  // Inject TOC-specific page-break CSS if enabled
-  if (cfg.toc.pageBreak) {
-    html = injectTocPageBreakCss(html);
-  }
+  html = preparePdfHtml(injectPdfAssets(html, assets), cfg);
 
   checkCancellation(cancellation);
 
@@ -210,25 +485,14 @@ export async function exportToPdf(
     throw err;
   }
 
-  const filenameCtx: FilenameContext = {
-    filename: path.basename(document.uri.fsPath, path.extname(document.uri.fsPath)),
-    ext: path.extname(document.uri.fsPath).replace(/^\./, ''),
-    title: extractH1Title(document.getText()),
-  };
-  const resolvedName = resolveOutputFilename(cfg.outputFilename, filenameCtx);
-  const outputPath = path.join(path.dirname(document.uri.fsPath), resolvedName);
+  const outputPath = resolvePdfOutputPath(document, cfg);
 
   try {
     checkCancellation(cancellation);
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle' });
-
-    // Force light mode for PDF output — remove dark/high-contrast classes
-    await page.evaluate(`(() => {
-      document.body.classList.remove('vscode-dark', 'vscode-high-contrast');
-      document.body.classList.add('vscode-light');
-    })()`);
+    await forceLightMode(page);
 
     // Step 4: Mermaid rendering
     progress?.report(RUNTIME_MESSAGES.exportProgress.renderingDiagrams, 15);
@@ -236,34 +500,15 @@ export async function exportToPdf(
     // Inject the bundled preview script (contains Mermaid) into the Playwright page.
     // We use addScriptTag after setContent so the DOM is ready.
     // First, stub acquireVsCodeApi which only exists in VS Code webviews.
-    if (previewJsContent) {
-      await page.addScriptTag({
-        content: 'if(typeof acquireVsCodeApi==="undefined"){window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){return undefined},setState:function(){}};};}',
-      });
-      await page.addScriptTag({ content: previewJsContent });
-
-      // Wait for Mermaid diagrams to render with progress counter.
-      // timeout=0 means no limit (poll indefinitely until all diagrams are ready).
+    if (assets.previewJsContent) {
+      await injectPreviewRuntime(page, assets.previewJsContent);
       const diagramTimeoutMs = cfg.diagramTimeout > 0 ? cfg.diagramTimeout * 1000 : 0;
-      const startTime = Date.now();
-      const progressInterval = setInterval(() => {
-        const elapsed = Math.round((Date.now() - startTime) / 1000);
-        progress?.report(RUNTIME_MESSAGES.exportProgress.renderingDiagramsElapsed(elapsed));
-      }, 1000);
-
-      try {
-        await page.waitForFunction(`(() => {
-          const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
-          if (hosts.length === 0) return true;
-          return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
-        })()`, { timeout: diagramTimeoutMs });
-      } catch {
-        // Timeout — proceed with PDF generation; some diagrams may be missing
-        const elapsed = Math.round((Date.now() - startTime) / 1000);
-        progress?.report(RUNTIME_MESSAGES.exportProgress.diagramTimeoutProceeding(elapsed));
-      } finally {
-        clearInterval(progressInterval);
-      }
+      await waitForMermaidDiagrams(
+        page,
+        diagramTimeoutMs,
+        (elapsed) => progress?.report(RUNTIME_MESSAGES.exportProgress.diagramTimeoutProceeding(elapsed)),
+        (elapsed) => progress?.report(RUNTIME_MESSAGES.exportProgress.renderingDiagramsElapsed(elapsed)),
+      );
     }
 
     await page.setViewportSize({ width: 980, height: 1400 });
@@ -274,177 +519,19 @@ export async function exportToPdf(
     const documentTitle = path.basename(document.uri.fsPath, '.md');
     const pdfOptions = buildPdfOptions(cfg.pdfHeaderFooter, documentTitle, cfg.style.margin);
 
-    // --- PDF Index: 2-pass rendering ---
-    let bookmarkEntries: BookmarkEntry[] = [];
-    if (cfg.pdfIndex.enabled) {
-      // Step 6: Generate TOC
-      progress?.report(RUNTIME_MESSAGES.exportProgress.generatingTableOfContents, 15);
-      // Pass 1: Generate PDF to buffer (no file) to get total page count
-      const tempPdfBuffer = await page.pdf({
-        format: cfg.pageFormat,
-        printBackground: true,
-        preferCSSPageSize: true,
-        displayHeaderFooter: pdfOptions.displayHeaderFooter,
-        headerTemplate: pdfOptions.headerTemplate,
-        footerTemplate: pdfOptions.footerTemplate,
-        margin: pdfOptions.margin,
-      });
-
-      // Count pages from PDF binary: each page object contains "/Type /Page"
-      // but we need to exclude "/Type /Pages" (the page tree root)
-      const pdfStr = tempPdfBuffer.toString('latin1');
-      const pageMatches = pdfStr.match(/\/Type\s*\/Page(?!s)/g);
-      const totalPages = pageMatches ? pageMatches.length : 1;
-
-      // Get heading positions and total document height from the DOM
-      const domData: { headings: { level: number; text: string; anchorId: string; offsetTop: number }[]; scrollHeight: number } = await page.evaluate(
-        `(function() {
-          var headings = [];
-          var els = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
-          for (var i = 0; i < els.length; i++) {
-            var el = els[i];
-            var level = parseInt(el.tagName[1], 10);
-            if (level < ${cfg.toc.minLevel} || level > ${cfg.toc.maxLevel}) continue;
-            if (el.classList.contains('ms-pdf-index-title')) continue;
-            headings.push({ level: level, text: (el.textContent || '').trim(), anchorId: el.id || '', offsetTop: el.offsetTop });
-          }
-          return { headings: headings, scrollHeight: document.documentElement.scrollHeight };
-        })()`
-      );
-
-      if (domData.headings.length > 0) {
-        // Calculate page number for each heading using proportion:
-        // pageNumber = floor(offsetTop / scrollHeight * totalPages) + 1
-        const headingEntries: HeadingPageEntry[] = domData.headings.map((h) => {
-          const ratio = domData.scrollHeight > 0 ? h.offsetTop / domData.scrollHeight : 0;
-          const pageNumber = Math.min(Math.floor(ratio * totalPages) + 1, totalPages);
-          return { level: h.level, text: h.text, pageNumber, anchorId: h.anchorId };
-        });
-
-        // Map heading entries to bookmark entries (drop anchorId)
-        // Add indexPageCount offset because the TOC page(s) are inserted before the content
-        const indexPageCount = estimateIndexPageCount(headingEntries.length);
-        bookmarkEntries = headingEntries.map(({ level, text, pageNumber }) => ({
-          level, text, pageNumber: pageNumber + indexPageCount,
-        }));
-
-        const indexHtml = buildPdfIndexHtml(headingEntries, cfg.pdfIndex.title, indexPageCount);
-
-        // Pass 2: Insert index at top and re-render
-        const htmlWithIndex = html.replace(/<body[^>]*>/, (match) => `${match}\n${indexHtml}`);
-        await page.setContent(htmlWithIndex, { waitUntil: 'networkidle' });
-
-        // Force light mode for PDF output — remove dark/high-contrast classes
-        await page.evaluate(`(() => {
-          document.body.classList.remove('vscode-dark', 'vscode-high-contrast');
-          document.body.classList.add('vscode-light');
-        })()`);
-
-        if (previewJsContent) {
-          await page.addScriptTag({
-            content: 'if(typeof acquireVsCodeApi==="undefined"){window.acquireVsCodeApi=function(){return{postMessage:function(){},getState:function(){return undefined},setState:function(){}};};}',
-          });
-          await page.addScriptTag({ content: previewJsContent });
-
-          const diagramTimeoutMs2 = cfg.diagramTimeout > 0 ? cfg.diagramTimeout * 1000 : 0;
-          const startTime2 = Date.now();
-          const progressInterval2 = setInterval(() => {
-            const elapsed = Math.round((Date.now() - startTime2) / 1000);
-            progress?.report(RUNTIME_MESSAGES.exportProgress.renderingDiagramsPass2Elapsed(elapsed));
-          }, 1000);
-
-          try {
-            await page.waitForFunction(`(() => {
-              const hosts = document.querySelectorAll('.mermaid-host[data-mermaid-src]');
-              if (hosts.length === 0) return true;
-              return Array.from(hosts).every(h => h.querySelector('svg') !== null || h.querySelector('.ms-error') !== null);
-            })()`, { timeout: diagramTimeoutMs2 });
-          } catch {
-            // Timeout on pass 2
-          } finally {
-            clearInterval(progressInterval2);
-          }
-        }
-        await page.setViewportSize({ width: 980, height: 1400 });
-      }
-    } else if (cfg.pdfBookmarks.enabled) {
-      // Single-pass bookmark collection: generate temp PDF to count pages, then collect headings
-      const tempPdfBuffer = await page.pdf({
-        format: cfg.pageFormat,
-        printBackground: true,
-        preferCSSPageSize: true,
-        displayHeaderFooter: pdfOptions.displayHeaderFooter,
-        headerTemplate: pdfOptions.headerTemplate,
-        footerTemplate: pdfOptions.footerTemplate,
-        margin: pdfOptions.margin,
-      });
-
-      const pdfStr = tempPdfBuffer.toString('latin1');
-      const pageMatches = pdfStr.match(/\/Type\s*\/Page(?!s)/g);
-      const totalPages = pageMatches ? pageMatches.length : 1;
-
-      const domData: { headings: { level: number; text: string; offsetTop: number }[]; scrollHeight: number } = await page.evaluate(
-        `(function() {
-          var headings = [];
-          var els = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
-          for (var i = 0; i < els.length; i++) {
-            var el = els[i];
-            var level = parseInt(el.tagName[1], 10);
-            headings.push({ level: level, text: (el.textContent || '').trim(), offsetTop: el.offsetTop });
-          }
-          return { headings: headings, scrollHeight: document.documentElement.scrollHeight };
-        })()`
-      );
-
-      if (domData.headings.length > 0) {
-        bookmarkEntries = domData.headings.map((h) => {
-          const ratio = domData.scrollHeight > 0 ? h.offsetTop / domData.scrollHeight : 0;
-          const pageNumber = Math.min(Math.floor(ratio * totalPages) + 1, totalPages);
-          return { level: h.level, text: h.text, pageNumber };
-        });
-      }
-    }
+    const bookmarkEntries = await prepareBookmarkEntries(page, cfg, pdfOptions, progress);
 
     // Step 5: Generate PDF
     checkCancellation(cancellation);
     progress?.report(RUNTIME_MESSAGES.exportProgress.generatingPdf, 20);
 
-    await page.pdf({
-      path: outputPath,
-      format: cfg.pageFormat,
-      printBackground: true,
-      preferCSSPageSize: true,
-      displayHeaderFooter: pdfOptions.displayHeaderFooter,
-      headerTemplate: pdfOptions.headerTemplate,
-      footerTemplate: pdfOptions.footerTemplate,
-      margin: pdfOptions.margin,
-    });
-
-    await fs.access(outputPath);
-
-    // Add bookmarks to PDF
-    if (cfg.pdfBookmarks.enabled && bookmarkEntries.length > 0) {
-      progress?.report(RUNTIME_MESSAGES.exportProgress.addingBookmarks, 5);
-      try {
-        await addBookmarks(outputPath, bookmarkEntries, cfg.toc.minLevel, cfg.toc.maxLevel);
-      } catch (err) {
-        // Log but don't fail the export — bookmarks are non-critical
-        console.error('[Markdown Studio] Failed to add PDF bookmarks:', err instanceof Error ? err.message : String(err));
-      }
-    } else {
-      console.log('[Markdown Studio] Bookmarks skipped: enabled=%s, entries=%d', cfg.pdfBookmarks.enabled, bookmarkEntries.length);
-    }
+    await writePdfFile(page, outputPath, cfg, pdfOptions);
+    await addPdfBookmarksIfNeeded(outputPath, bookmarkEntries, cfg, progress);
 
     return outputPath;
   } catch (err) {
     if (err instanceof CancellationError) {
-      // Clean up partial PDF file if it exists
-      try {
-        await fs.access(outputPath);
-        await fs.unlink(outputPath);
-      } catch {
-        // File doesn't exist or can't be deleted — ignore
-      }
+      await cleanupPartialPdf(outputPath);
       throw err;
     }
     throw err;

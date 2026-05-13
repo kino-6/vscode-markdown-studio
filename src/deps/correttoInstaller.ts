@@ -6,6 +6,11 @@ import { downloadFile } from "./download";
 import { extractTarGz, extractZip, findJavaBinary } from "./extract";
 import { runProcess } from "../infra/runProcess";
 import { RUNTIME_MESSAGES } from "../infra/messages";
+import {
+  appendTlsCertificateSettingsHint,
+  isTlsCertificateError,
+  withNodeTlsRejectUnauthorizedDisabled,
+} from "../infra/tlsCertificateRetry";
 
 const CORRETTO_BASE_URL = "https://corretto.aws/downloads/latest";
 
@@ -41,6 +46,32 @@ export function buildCorrettoUrl(platform: PlatformInfo): string {
  */
 function getJavaPath(storageDir: string): string {
   return path.join(storageDir, "corretto");
+}
+
+function createTlsDisabledNetworkConfig(networkConfig?: NetworkConfig): NetworkConfig {
+  return {
+    ...networkConfig,
+    caCertPaths: networkConfig?.caCertPaths ?? [],
+    strictSSL: false,
+  };
+}
+
+async function downloadFileWithTlsRetry(
+  url: string,
+  archivePath: string,
+  networkConfig?: NetworkConfig
+): Promise<void> {
+  try {
+    await downloadFile(url, archivePath, networkConfig);
+  } catch (err) {
+    if (!isTlsCertificateError(err) || process.env.NODE_TLS_REJECT_UNAUTHORIZED === "0") {
+      throw err;
+    }
+
+    await withNodeTlsRejectUnauthorizedDisabled(() =>
+      downloadFile(url, archivePath, createTlsDisabledNetworkConfig(networkConfig))
+    );
+  }
 }
 
 /**
@@ -94,7 +125,7 @@ export const correttoInstaller = {
     try {
       // Step 1: Download
       progress(RUNTIME_MESSAGES.dependencyProgress.downloadingCorretto, 10);
-      await downloadFile(url, archivePath, networkConfig);
+      await downloadFileWithTlsRetry(url, archivePath, networkConfig);
 
       // Step 2: Extract
       progress(RUNTIME_MESSAGES.dependencyProgress.extractingJdk, 20);
@@ -126,7 +157,11 @@ export const correttoInstaller = {
       await fs.promises.unlink(archivePath).catch(() => {});
       return {
         ok: false,
-        error: RUNTIME_MESSAGES.dependencies.correttoInstallFailed(err instanceof Error ? err.message : String(err)),
+        error: RUNTIME_MESSAGES.dependencies.correttoInstallFailed(
+          isTlsCertificateError(err)
+            ? appendTlsCertificateSettingsHint(err instanceof Error ? err.message : String(err))
+            : err instanceof Error ? err.message : String(err)
+        ),
       };
     }
   },

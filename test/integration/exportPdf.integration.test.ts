@@ -94,6 +94,36 @@ describe('inlineLocalImages', () => {
 
     expect(readFileMock).toHaveBeenCalledWith('C:/Users/A B/diagram.svg');
   });
+
+  it('reads multiple local images concurrently', async () => {
+    const deferred = <T>() => {
+      let resolve!: (value: T) => void;
+      const promise = new Promise<T>((res) => { resolve = res; });
+      return { promise, resolve };
+    };
+    const first = deferred<Buffer>();
+    const second = deferred<Buffer>();
+    const started: string[] = [];
+
+    readFileMock.mockImplementation((filePath: string) => {
+      started.push(filePath);
+      return filePath.endsWith('one.svg') ? first.promise : second.promise;
+    });
+
+    const promise = inlineLocalImages(
+      '<img src="file:///tmp/one.svg"><img src="file:///tmp/two.svg">'
+    );
+    await Promise.resolve();
+
+    expect(started).toEqual(['/tmp/one.svg', '/tmp/two.svg']);
+
+    first.resolve(Buffer.from('<svg>one</svg>'));
+    second.resolve(Buffer.from('<svg>two</svg>'));
+    const result = await promise;
+
+    expect(result).toContain('data:image/svg+xml;base64,PHN2Zz5vbmU8L3N2Zz4=');
+    expect(result).toContain('data:image/svg+xml;base64,PHN2Zz50d288L3N2Zz4=');
+  });
 });
 
 /** Default config used by existing tests (pdfBookmarks disabled) */
@@ -302,6 +332,48 @@ describe('exportToPdf smoke/integration', () => {
 
     const htmlArg = setContentMock.mock.calls[0][0] as string;
     expect(htmlArg).toContain('page-break-before');
+  });
+
+  it('inserts the PDF index into the rendered page without reloading diagrams', async () => {
+    getConfigMock.mockReturnValue(makeDefaultConfig({
+      pdfIndex: { enabled: true, title: 'Table of Contents' },
+      pdfBookmarks: { enabled: true },
+    }));
+    buildHtmlMock.mockResolvedValue('<html><head></head><body><h1 id="title">Title</h1><h2 id="section">Section</h2></body></html>');
+    readFileMock.mockResolvedValue('.hljs { background: #f6f8fa; }');
+    accessMock.mockResolvedValue(undefined);
+    setContentMock.mockResolvedValue(undefined);
+    pdfMock.mockResolvedValue(Buffer.from('/Type /Page\n/Type /Page\n'));
+    closeMock.mockResolvedValue(undefined);
+    evaluateMock.mockResolvedValue({
+      headings: [
+        { level: 1, text: 'Title', anchorId: 'title', offsetTop: 0 },
+        { level: 2, text: 'Section', anchorId: 'section', offsetTop: 500 },
+      ],
+      scrollHeight: 1000,
+    });
+    addScriptTagMock.mockResolvedValue(undefined);
+    waitForFunctionMock.mockResolvedValue(undefined);
+    setViewportSizeMock.mockResolvedValue(undefined);
+    addBookmarksMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({
+      setContent: setContentMock, pdf: pdfMock,
+      evaluate: evaluateMock, addScriptTag: addScriptTagMock,
+      waitForFunction: waitForFunctionMock, setViewportSize: setViewportSizeMock,
+    });
+    launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
+
+    const document = {
+      getText: () => '# Title\n## Section',
+      uri: { fsPath: '/tmp/sample.md' }
+    } as any;
+
+    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+
+    expect(setContentMock).toHaveBeenCalledTimes(1);
+    expect(waitForFunctionMock).toHaveBeenCalledTimes(1);
+    expect(addScriptTagMock).toHaveBeenCalledTimes(2);
+    expect(evaluateMock).toHaveBeenCalledWith(expect.any(Function), expect.stringContaining('ms-pdf-index'));
   });
 });
 

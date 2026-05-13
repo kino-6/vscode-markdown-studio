@@ -1,5 +1,6 @@
 import MarkdownIt from 'markdown-it';
 import * as vscode from 'vscode';
+import { mapWithConcurrency } from '../infra/async';
 import { getConfig } from '../infra/config';
 import { countLineBreaks, detectLineEnding } from '../infra/lineEndings';
 import { RUNTIME_MESSAGES } from '../infra/messages';
@@ -12,7 +13,7 @@ import { findTocCommentMarkers } from '../toc/tocCommentMarker';
 import { replaceTocMarker } from '../toc/tocMarker';
 import { AnchorMapping, RenderedMarkdown } from '../types/models';
 import { renderMermaidBlock } from './renderMermaid';
-import { renderPlantUml } from './renderPlantUml';
+import * as plantUmlRenderer from './renderPlantUml';
 import { filterExternalResources } from './resourceFilter';
 
 /**
@@ -84,18 +85,29 @@ export async function renderMarkdownDocument(
 
   const errors: RenderedMarkdown['errors'] = [];
   const fencedBlocks = scanFencedBlocks(markdown);
+  const plantUmlBatchIndexes = new Map<number, number>();
+  const plantUmlSources: string[] = [];
+  for (const [index, block] of fencedBlocks.entries()) {
+    if (block.kind !== 'plantuml' && block.kind !== 'puml') continue;
+    plantUmlBatchIndexes.set(index, plantUmlSources.length);
+    plantUmlSources.push(block.content);
+  }
+  const plantUmlResultsPromise = plantUmlSources.length > 0
+    ? renderPlantUmlSources(plantUmlSources, context)
+    : Promise.resolve([]);
 
   const replacements: Array<{ startOffset: number; endOffset: number; text: string }> = [];
-  for (const block of fencedBlocks) {
+  const renderedBlocks = await mapWithConcurrency(fencedBlocks, 4, async (block, index) => {
     const sourceFence = block.raw;
     let replacement = sourceFence;
+    const blockErrors: RenderedMarkdown['errors'] = [];
 
     if (block.kind === 'mermaid') {
       const result = await renderMermaidBlock(block.content);
       if (result.ok && result.placeholder) {
         replacement = `<div class="diagram-container">${result.placeholder}</div>`;
       } else {
-        errors.push({
+        blockErrors.push({
           title: RUNTIME_MESSAGES.render.mermaidErrorTitle,
           detail: result.error ?? RUNTIME_MESSAGES.render.unknownMermaidIssue,
         });
@@ -109,12 +121,15 @@ export async function renderMarkdownDocument(
     }
 
     if (block.kind === 'plantuml' || block.kind === 'puml') {
-      const result = await renderPlantUml(block.content, context);
+      const batchIndex = plantUmlBatchIndexes.get(index);
+      const result = batchIndex === undefined
+        ? { ok: false, error: RUNTIME_MESSAGES.render.unknownPlantUmlIssue }
+        : (await plantUmlResultsPromise)[batchIndex];
       if (result.ok && result.svg) {
         const encodedSrc = encodeURIComponent(block.content);
         replacement = `<div class="diagram-container" data-plantuml-src="${encodedSrc}">${result.svg}</div>`;
       } else {
-        errors.push({
+        blockErrors.push({
           title: RUNTIME_MESSAGES.render.plantUmlErrorTitle,
           detail: result.error ?? RUNTIME_MESSAGES.render.unknownPlantUmlIssue,
         });
@@ -123,10 +138,20 @@ export async function renderMarkdownDocument(
     }
 
     replacement = padToLineCount(replacement, sourceFence);
-    replacements.push({
+    return {
       startOffset: block.startOffset,
       endOffset: block.endOffset,
       text: replacement,
+      errors: blockErrors,
+    };
+  });
+
+  for (const block of renderedBlocks) {
+    errors.push(...block.errors);
+    replacements.push({
+      startOffset: block.startOffset,
+      endOffset: block.endOffset,
+      text: block.text,
     });
   }
 
@@ -174,4 +199,14 @@ export async function renderMarkdownDocument(
   }
 
   return { htmlBody, errors };
+}
+
+async function renderPlantUmlSources(
+  sources: string[],
+  context: vscode.ExtensionContext,
+) {
+  if (Object.prototype.hasOwnProperty.call(plantUmlRenderer, 'renderPlantUmlBatch')) {
+    return await plantUmlRenderer.renderPlantUmlBatch(sources, context);
+  }
+  return await Promise.all(sources.map((source) => plantUmlRenderer.renderPlantUml(source, context)));
 }
