@@ -29,6 +29,7 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
     - [Security Summary](#security-summary)
   - [7. Theme Adaptability](#7-theme-adaptability)
   - [8. Diagram Type Catalog](#8-diagram-type-catalog)
+    - [WaveDrom Timing Diagram](#wavedrom-timing-diagram)
     - [Wide Diagrams for PDF Aspect Ratio](#wide-diagrams-for-pdf-aspect-ratio)
   - [9. Custom CSS](#9-custom-css)
     - [Bundled Themes](#bundled-themes)
@@ -52,7 +53,8 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
 | Mermaid    | ✅     | B      |
 | PlantUML   | ✅     | C      |
 | SVG        | ✅     | D      |
-| PDF Export | ✅     | E      |
+| WaveDrom   | ✅     | E      |
+| PDF Export | ✅     | F      |
 
 1. Ordered list item
 2. Another item
@@ -73,6 +75,7 @@ Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).
 - [x] Markdown rendering
 - [x] Mermaid diagrams
 - [x] PlantUML diagrams
+- [x] WaveDrom timing diagrams
 - [X] LaTeX math
 - [x] Footnotes
 - [ ] no checked
@@ -130,14 +133,16 @@ flowchart TD
     B --> C{Fenced Block?}
     C -- mermaid --> D[Mermaid Placeholder]
     C -- plantuml/puml --> E[PlantUML JAR → SVG]
-    C -- svg --> F[SVG Sanitizer]
-    C -- code --> G[highlight.js]
-    C -- none --> H[HTML Output]
+    C -- wavedrom/wavejson --> F[WaveDrom Placeholder]
+    C -- svg --> G[SVG Sanitizer]
+    C -- code --> H[highlight.js]
+    C -- none --> M[HTML Output]
     D --> I[sanitize-html]
     E --> I
     F --> I
     G --> I
     H --> I
+    M --> I
     I --> J[buildHtml + CSP Nonce]
     J --> K[Webview Preview]
     J --> L[Playwright → PDF Export]
@@ -407,6 +412,7 @@ Set `markdownStudio.security.externalResources.mode` to `allow-all` in VS Code s
 | Inline SVG | ✅ Allowed | — |
 | Mermaid diagrams | ✅ Allowed | — |
 | PlantUML diagrams | ✅ Allowed | — |
+| WaveDrom diagrams | ✅ Allowed | — |
 
 ---
 
@@ -415,6 +421,7 @@ Set `markdownStudio.security.externalResources.mode` to `allow-all` in VS Code s
 Switch between **light** and **dark** mode in VS Code (`Cmd+K Cmd+T`) to see how the preview adapts:
 
 - Mermaid diagrams automatically switch between light and dark themes
+- WaveDrom diagrams keep a light timing-diagram surface for readability
 - SVG elements use colors chosen for visibility in both themes
 - Code blocks use theme-aware syntax highlighting
 - PlantUML output receives CSS overrides for dark mode
@@ -423,7 +430,7 @@ Switch between **light** and **dark** mode in VS Code (`Cmd+K Cmd+T`) to see how
 
 ## 8. Diagram Type Catalog
 
-All diagram types below are verified to render correctly with the bundled PlantUML + Smetana engine (no Graphviz required).
+All diagram types below are verified to render locally. PlantUML uses the bundled Smetana engine, Mermaid and WaveDrom render in the webview runtime, and inline SVG is passed through directly.
 
 <details>
 <summary>Class Diagram</summary>
@@ -712,6 +719,17 @@ xychart-beta
 ```
 
 </details>
+
+### WaveDrom Timing Diagram
+
+```wavedrom
+{ signal: [
+  { name: "clk", wave: "p......" },
+  { name: "req", wave: "0.1..0." },
+  { name: "ack", wave: "0..1.0." },
+  { name: "bus", wave: "x.34.5x", data: ["addr", "read", "data"] }
+]}
+```
 
 ### Wide Diagrams for PDF Aspect Ratio
 

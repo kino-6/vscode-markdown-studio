@@ -6,6 +6,12 @@
 - License: MIT
 - Usage: Local diagram rendering in webview preview.
 
+## WaveDrom
+- Project: WaveDrom
+- Homepage: https://github.com/wavedrom/wavedrom
+- License: MIT
+- Usage: Local timing diagram rendering in webview preview and PDF export.
+
 ## markdown-it
 - Project: markdown-it
 - Homepage: https://github.com/markdown-it/markdown-it

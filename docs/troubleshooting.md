@@ -18,6 +18,7 @@ Markdown Studio auto-installs Amazon Corretto JDK for PlantUML and Playwright Ch
 | ------- | :-----------: | :---------------: |
 | Markdown Preview | No | No |
 | Mermaid diagrams | No | No |
+| WaveDrom diagrams | No | No |
 | Inline SVG | No | No |
 | Syntax highlighting | No | No |
 | TOC generation | No | No |
@@ -46,4 +47,3 @@ Then configure the Java path if VS Code cannot find it automatically:
 2. Install it with `code --install-extension markdown-studio-*.vsix`.
 3. Install Java manually and set `markdownStudio.java.path`.
 4. For PDF export, install Chromium on a connected machine and copy the Playwright browser directory into the offline environment.
-

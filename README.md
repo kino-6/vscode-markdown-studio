@@ -21,6 +21,7 @@ Markdown Studio is a **local-first** VS Code extension for Markdown preview and 
 
 - **Mermaid** — client-side rendering, theme-aware (dark/light), no external dependencies
 - **PlantUML** — bundled JAR with Smetana layout engine, no Graphviz or remote server needed
+- **WaveDrom** — local timing diagrams from `wavedrom`, `wavejson`, and `wavedrom-json` fenced blocks
 - **Inline SVG** — rendered directly, sanitized for security
 - Interactive zoom & pan — scroll-wheel zoom (cursor-centered, 0.25×–4×), mouse-drag pan, double-click reset
 
@@ -90,10 +91,11 @@ Five built-in presets with per-setting overrides:
 
 | Operation          | Network Access                 | Notes                                                                 |
 | ------------------ | ------------------------------ | --------------------------------------------------------------------- |
-| Preview            | None                           | All rendering is local (markdown-it, highlight.js, Mermaid)           |
+| Preview            | None                           | All rendering is local (markdown-it, highlight.js, Mermaid, WaveDrom) |
 | PDF Export         | None                           | Playwright Chromium runs locally with `networkidle` wait              |
 | PlantUML           | None                           | Bundled JAR + Amazon Corretto JDK, Smetana layout engine              |
 | Mermaid            | None                           | Bundled in webview script, rendered client-side                       |
+| WaveDrom           | None                           | Bundled in webview script, rendered client-side                       |
 | SVG                | None                           | Passed through directly, no external references                       |
 | Syntax Highlighting| None                           | Bundled highlight.js with registered languages                        |
 | Initial Setup      | Corretto + Chromium download   | One-time only, via `Setup Dependencies` command                       |
@@ -131,6 +133,21 @@ Common settings:
 | `markdownStudio.network.caCertificates` | `[]` | Extra CA certificates for proxy/SSL inspection environments. |
 
 The same CSS stack applies to both preview and PDF export. Preview width is controlled separately by `markdownStudio.preview.contentWidth` and does not change PDF page size.
+
+## WaveDrom
+
+WaveDrom timing diagrams are rendered locally in Preview and PDF export from fenced blocks:
+
+````markdown
+```wavedrom
+{ signal: [
+  { name: "clk", wave: "p......" },
+  { name: "bus", wave: "x.34.5x", data: ["head", "body", "tail"] }
+]}
+```
+````
+
+Aliases `wavejson` and `wavedrom-json` are also supported. Raw `<script type="WaveDrom">` blocks are intentionally not executed.
 
 ## PlantUML
 
@@ -170,8 +187,10 @@ See [docs/troubleshooting.md](./docs/troubleshooting.md) for dependency setup, p
 | PDF Index, filename customization, theme auto-switch, bookmarks, diagram zoom/pan | v0.7.0 |
 | Manifest localization, configuration cleanup, docs split, glossary | v0.8.4 |
 | PDF diagram aspect ratio, link styling, Windows highlight and inline code fixes | v0.8.5 |
+| Preview current-tab/full-width commands and configurable preview width | v0.8.9 |
+| WaveDrom timing diagrams in Preview and PDF export | v0.9.0 |
 
-### v0.9.0 — Productivity
+### v0.10.0 — Productivity
 
 - Diagram zoom/pan UX overhaul:
   - Focus-gated interaction: zoom/pan only when diagram is clicked/focused (GitHub-style)

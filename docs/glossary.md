@@ -22,7 +22,8 @@ These terms keep UI strings, documentation, and future Japanese translations con
 | Dependency setup | 依存関係セットアップ | Installing managed Java and Chromium dependencies. |
 | Managed Corretto | 管理対象 Corretto | The Amazon Corretto JDK installed and managed by Markdown Studio. |
 | Managed Chromium | 管理対象 Chromium | The Playwright Chromium browser installed and managed by Markdown Studio. |
-| Diagram | ダイアグラム | Mermaid, PlantUML, or inline SVG content rendered from fenced Markdown blocks. |
+| Diagram | ダイアグラム | Mermaid, PlantUML, WaveDrom, or inline SVG content rendered from fenced Markdown blocks. |
+| WaveDrom | WaveDrom | Timing diagram renderer for `wavedrom`, `wavejson`, and `wavedrom-json` fenced blocks. Do not translate. |
 
 ## Style Notes
 
@@ -32,4 +33,3 @@ These terms keep UI strings, documentation, and future Japanese translations con
 - Use `TOC` for inline Markdown tables of contents.
 - Use `bookmark` for what users see in a PDF viewer sidebar.
 - Keep setting enum values unchanged, even when the prose term has evolved. For example, use `allowlist` in docs but keep `whitelist` as the setting value.
-

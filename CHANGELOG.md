@@ -2,6 +2,15 @@
 
 All notable changes to Markdown Studio will be documented in this file.
 
+## [0.9.0] - 2026-05-13
+
+### Added
+
+- Added local WaveDrom timing diagram rendering for `wavedrom`, `wavejson`, and `wavedrom-json` fenced blocks.
+- Added WaveDrom support to Preview and PDF export using the bundled webview runtime, with no CDN or remote rendering service.
+- Added WaveDrom runtime coverage to the preview browser smoke test, including invalid WaveJSON error rendering.
+- Added WaveDrom documentation, third-party notice, and redistributable examples.
+
 ## [0.8.9] - 2026-05-13
 
 ### Added

@@ -2,7 +2,7 @@
   "name": "markdown-studio",
   "displayName": "Markdown Studio",
   "description": "%extension.description%",
-  "version": "0.8.9",
+  "version": "0.9.0",
   "publisher": "local",
   "license": "MIT",
   "repository": {
@@ -22,6 +22,7 @@
     "pdf",
     "mermaid",
     "plantuml",
+    "wavedrom",
     "preview"
   ],
   "activationEvents": [
