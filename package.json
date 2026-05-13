@@ -2,7 +2,7 @@
   "name": "markdown-studio",
   "displayName": "Markdown Studio",
   "description": "%extension.description%",
-  "version": "0.8.5",
+  "version": "0.8.6",
   "publisher": "local",
   "license": "MIT",
   "repository": {
