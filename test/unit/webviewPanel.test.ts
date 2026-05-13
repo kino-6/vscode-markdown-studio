@@ -112,7 +112,14 @@ vi.mock('../../src/extension', () => ({
 }));
 
 vi.mock('../../src/infra/config', () => ({
-  getConfig: vi.fn(() => ({ javaPath: 'java', style: {}, theme: 'default', customCss: '' })),
+  getConfig: vi.fn(() => ({
+    javaPath: 'java',
+    style: {},
+    theme: 'default',
+    customCss: '',
+    previewContentWidth: 'a4',
+    previewTheme: 'auto',
+  })),
 }));
 
 vi.mock('../../src/infra/customCssLoader', () => ({
@@ -176,7 +183,24 @@ describe('openOrRefreshPreview – panel reuse (R3/D3)', () => {
     const panel = await openOrRefreshPreview(fakeContext(), fakeDocument());
 
     expect(vscode.window.createWebviewPanel).toHaveBeenCalledTimes(1);
+    expect(vscode.window.createWebviewPanel).toHaveBeenCalledWith(
+      'markdownStudio.preview',
+      'Markdown Studio Preview',
+      vscode.ViewColumn.Beside,
+      expect.any(Object)
+    );
     expect(panel).toBe(mockPanel);
+  });
+
+  it('can create a panel in the requested editor group', async () => {
+    await openOrRefreshPreview(fakeContext(), fakeDocument(), { viewColumn: vscode.ViewColumn.One });
+
+    expect(vscode.window.createWebviewPanel).toHaveBeenCalledWith(
+      'markdownStudio.preview',
+      'Markdown Studio Preview',
+      vscode.ViewColumn.One,
+      expect.any(Object)
+    );
   });
 
   it('reuses the existing panel on subsequent calls', async () => {
@@ -187,6 +211,18 @@ describe('openOrRefreshPreview – panel reuse (R3/D3)', () => {
     expect(vscode.window.createWebviewPanel).toHaveBeenCalledTimes(1);
     expect(second).toBe(mockPanel);
     expect(mockPanel.reveal).toHaveBeenCalledTimes(1);
+    expect(mockPanel.reveal).toHaveBeenCalledWith(vscode.ViewColumn.Beside);
+  });
+
+  it('reveals a reused panel in the requested editor group', async () => {
+    await openOrRefreshPreview(fakeContext(), fakeDocument());
+
+    await openOrRefreshPreview(fakeContext(), fakeDocument('file:///other.md'), {
+      viewColumn: vscode.ViewColumn.One,
+      previewContentWidth: 'full',
+    });
+
+    expect(mockPanel.reveal).toHaveBeenCalledWith(vscode.ViewColumn.One);
   });
 
   it('creates a new panel after the previous one is disposed', async () => {
@@ -217,6 +253,21 @@ describe('openOrRefreshPreview – panel reuse (R3/D3)', () => {
     // Same panel is returned, html was refreshed
     expect(panel2).toBe(panel1);
     expect(panel2.webview.html).toBe('<html>mock</html>');
+  });
+
+  it('passes full-width override to buildHtml', async () => {
+    const { buildHtml } = await import('../../src/preview/buildHtml');
+
+    await openOrRefreshPreview(fakeContext(), fakeDocument(), { previewContentWidth: 'full' });
+
+    expect(buildHtml).toHaveBeenCalledWith(
+      '# Hello',
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      { previewContentWidth: 'full' }
+    );
   });
 });
 

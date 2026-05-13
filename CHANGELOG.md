@@ -2,6 +2,14 @@
 
 All notable changes to Markdown Studio will be documented in this file.
 
+## [0.8.9] - 2026-05-13
+
+### Added
+
+- Added `Markdown Studio: Preview in Current Tab` to open the preview in the active editor group instead of beside the source editor.
+- Added `Markdown Studio: Preview Full Width` to open the preview without the normal content width limit.
+- Added `markdownStudio.preview.contentWidth` with `a4` and `full` modes for configurable preview width.
+
 ## [0.8.5] - 2026-05-13
 
 ### Fixed

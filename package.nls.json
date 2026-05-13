@@ -1,5 +1,7 @@
 {
   "command.openPreview.title": "Markdown Studio: Preview",
+  "command.openPreviewInCurrentTab.title": "Markdown Studio: Preview in Current Tab",
+  "command.openPreviewFullWidth.title": "Markdown Studio: Preview Full Width",
   "extension.description": "Local-first Markdown authoring studio with integrated diagram rendering (Mermaid, PlantUML), SVG support, and secure PDF export.",
   "command.exportPdf.title": "Markdown Studio: Export PDF",
   "command.validateEnvironment.title": "Markdown Studio: Validate Local Environment",
@@ -30,6 +32,9 @@
   "configuration.preview.theme.enum.auto": "Automatically follow the VS Code color theme.",
   "configuration.preview.theme.enum.light": "Always render the preview in light mode.",
   "configuration.preview.theme.enum.dark": "Always render the preview in dark mode.",
+  "configuration.preview.contentWidth.description": "Preview content width. A4 keeps the preview close to paper width; full removes the max-width constraint.",
+  "configuration.preview.contentWidth.enum.a4": "Constrain preview content to A4 paper width.",
+  "configuration.preview.contentWidth.enum.full": "Use the full available editor width.",
   "configuration.preview.sourceJump.enabled.description": "Double-click in preview jumps to the corresponding source line.",
   "configuration.style.preset.markdownDescription": "Base typography preset for preview and PDF export.",
   "configuration.style.fontFamily.markdownDescription": "Override the preset font family. Takes priority over the preset default, but can be overridden by Theme or Custom CSS.",

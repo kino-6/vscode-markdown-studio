@@ -11,6 +11,12 @@ import { createMarkdownParser } from '../parser/parseMarkdown';
 import { extractHeadings } from '../toc/extractHeadings';
 import { resolveAnchors } from '../toc/anchorResolver';
 import { validateAnchors, publishDiagnostics } from '../toc/tocValidator';
+import type { PreviewContentWidth } from '../types/models';
+
+export interface PreviewOpenOptions {
+  viewColumn?: vscode.ViewColumn;
+  previewContentWidth?: PreviewContentWidth;
+}
 
 /** Shared markdown-it parser for TOC heading extraction. */
 const tocParser = createMarkdownParser();
@@ -20,6 +26,9 @@ let tocDiagnostics: vscode.DiagnosticCollection | undefined;
 
 /** Module-level reference to the current preview panel. */
 let currentPanel: vscode.WebviewPanel | undefined;
+
+/** Optional per-panel width override used by commands such as Full Width Preview. */
+let currentPreviewContentWidthOverride: PreviewContentWidth | undefined;
 
 /** Subscription for text-document changes tied to the current panel. */
 let changeSubscription: vscode.Disposable | undefined;
@@ -44,6 +53,12 @@ let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 /** Subscription for configuration changes related to custom CSS. */
 let configChangeSubscription: vscode.Disposable | undefined;
+
+function getActiveBuildOptions(): { previewContentWidth: PreviewContentWidth } {
+  return {
+    previewContentWidth: currentPreviewContentWidthOverride ?? getConfig().previewContentWidth,
+  };
+}
 
 /**
  * Run TOC validation on the given markdown text and publish diagnostics.
@@ -108,7 +123,8 @@ function setupCssWatcher(
         context,
         currentPanel.webview,
         assets,
-        document.uri
+        document.uri,
+        getActiveBuildOptions()
       );
     }, 500);
   });
@@ -126,7 +142,8 @@ function setupCssWatcher(
       context,
       currentPanel.webview,
       assets,
-      document.uri
+      document.uri,
+      getActiveBuildOptions()
     );
   });
 
@@ -186,11 +203,15 @@ export async function handleOpenExternalMessage(message: { type?: unknown; href?
  */
 export async function openOrRefreshPreview(
   context: vscode.ExtensionContext,
-  document: vscode.TextDocument
+  document: vscode.TextDocument,
+  options: PreviewOpenOptions = {}
 ): Promise<vscode.WebviewPanel> {
+  const targetViewColumn = options.viewColumn ?? vscode.ViewColumn.Beside;
+  currentPreviewContentWidthOverride = options.previewContentWidth;
+
   if (currentPanel) {
     // Reuse existing panel – just reveal and update content
-    currentPanel.reveal(vscode.ViewColumn.Beside);
+    currentPanel.reveal(targetViewColumn);
 
     // Dispose old listeners so we track the new document
     changeSubscription?.dispose();
@@ -227,7 +248,14 @@ export async function openOrRefreshPreview(
     } catch { /* fall back to spinner only */ }
     currentPanel.webview.html = buildLoadingHtml(currentPanel.webview, assets, envLines);
 
-    currentPanel.webview.html = await buildHtml(document.getText(), context, currentPanel.webview, assets, document.uri);
+    currentPanel.webview.html = await buildHtml(
+      document.getText(),
+      context,
+      currentPanel.webview,
+      assets,
+      document.uri,
+      getActiveBuildOptions()
+    );
 
     // Run TOC validation after initial render
     runTocValidation(document.getText(), document.uri);
@@ -274,7 +302,8 @@ export async function openOrRefreshPreview(
     configChangeSubscription = vscode.workspace.onDidChangeConfiguration(async (e) => {
       if (
         e.affectsConfiguration(configurationPath(CONFIG_KEYS.styleTheme)) ||
-        e.affectsConfiguration(configurationPath(CONFIG_KEYS.styleCustomCss))
+        e.affectsConfiguration(configurationPath(CONFIG_KEYS.styleCustomCss)) ||
+        e.affectsConfiguration(configurationPath(CONFIG_KEYS.previewContentWidth))
       ) {
         disposeCssWatcher();
         setupCssWatcher(context, document);
@@ -286,7 +315,8 @@ export async function openOrRefreshPreview(
             context,
             currentPanel.webview,
             assets,
-            document.uri
+            document.uri,
+            getActiveBuildOptions()
           );
         }
       }
@@ -305,7 +335,7 @@ export async function openOrRefreshPreview(
   const panel = vscode.window.createWebviewPanel(
     'markdownStudio.preview',
     'Markdown Studio Preview',
-    vscode.ViewColumn.Beside,
+    targetViewColumn,
     {
       enableScripts: true,
       retainContextWhenHidden: true,
@@ -333,7 +363,14 @@ export async function openOrRefreshPreview(
   } catch { /* fall back to spinner only */ }
   panel.webview.html = buildLoadingHtml(panel.webview, assets, envLines);
 
-  panel.webview.html = await buildHtml(document.getText(), context, panel.webview, assets, document.uri);
+  panel.webview.html = await buildHtml(
+    document.getText(),
+    context,
+    panel.webview,
+    assets,
+    document.uri,
+    getActiveBuildOptions()
+  );
 
   // Run TOC validation after initial render
   runTocValidation(document.getText(), document.uri);
@@ -396,7 +433,8 @@ export async function openOrRefreshPreview(
   configChangeSubscription = vscode.workspace.onDidChangeConfiguration(async (e) => {
     if (
       e.affectsConfiguration(configurationPath(CONFIG_KEYS.styleTheme)) ||
-      e.affectsConfiguration(configurationPath(CONFIG_KEYS.styleCustomCss))
+      e.affectsConfiguration(configurationPath(CONFIG_KEYS.styleCustomCss)) ||
+      e.affectsConfiguration(configurationPath(CONFIG_KEYS.previewContentWidth))
     ) {
       disposeCssWatcher();
       setupCssWatcher(context, document);
@@ -408,7 +446,8 @@ export async function openOrRefreshPreview(
           context,
           currentPanel.webview,
           assets,
-          document.uri
+          document.uri,
+          getActiveBuildOptions()
         );
       }
     }
@@ -431,6 +470,7 @@ export async function openOrRefreshPreview(
     tocDiagnostics?.dispose();
     tocDiagnostics = undefined;
     currentPanel = undefined;
+    currentPreviewContentWidthOverride = undefined;
     trackedUri = undefined;
     generation = 0;
   });
@@ -464,6 +504,7 @@ export function _resetPanelForTesting(): void {
   tocDiagnostics?.dispose();
   tocDiagnostics = undefined;
   currentPanel = undefined;
+  currentPreviewContentWidthOverride = undefined;
   trackedUri = undefined;
   generation = 0;
 }

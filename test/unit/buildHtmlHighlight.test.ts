@@ -9,10 +9,13 @@ vi.mock('../../src/renderers/renderMarkdown', () => {
 });
 
 import * as renderMarkdownModule from '../../src/renderers/renderMarkdown';
-import { buildHtml } from '../../src/preview/buildHtml';
+import { buildHtml, buildPreviewLayoutStyle } from '../../src/preview/buildHtml';
 
 const renderMarkdownDocumentMock = (renderMarkdownModule as any)
   .__renderMarkdownDocumentMock as ReturnType<typeof vi.fn>;
+
+const fakeContext = { extensionPath: '/tmp/ext' } as any;
+const fakeWebview = { cspSource: 'https://webview' } as any;
 
 function makeFakeAssets(hljsStyleUri?: { toString: () => string }) {
   return {
@@ -22,17 +25,14 @@ function makeFakeAssets(hljsStyleUri?: { toString: () => string }) {
   };
 }
 
-describe('buildHtml hljs CSS inclusion', () => {
-  const fakeContext = { extensionPath: '/tmp/ext' } as any;
-  const fakeWebview = { cspSource: 'https://webview' } as any;
-
-  beforeEach(() => {
-    renderMarkdownDocumentMock.mockResolvedValue({
-      htmlBody: '<p>hello</p>',
-      errors: []
-    });
+beforeEach(() => {
+  renderMarkdownDocumentMock.mockResolvedValue({
+    htmlBody: '<p>hello</p>',
+    errors: []
   });
+});
 
+describe('buildHtml hljs CSS inclusion', () => {
   /**
    * Validates: Requirements 3.3
    */
@@ -85,5 +85,48 @@ describe('buildHtml hljs CSS inclusion', () => {
 
     // The hljs link tag should still be present but with empty href
     expect(html).toContain('<link rel="stylesheet" href="">');
+  });
+});
+
+describe('buildHtml preview content width', () => {
+  it('uses an A4-like max width by default', async () => {
+    const html = await buildHtml('# Test', fakeContext, fakeWebview, makeFakeAssets() as any);
+
+    expect(html).toContain('/* md-studio-preview-layout */');
+    expect(html).toContain('max-width: 210mm;');
+    expect(html).toContain('data-preview-content-width="a4"');
+  });
+
+  it('can remove the max-width limit for full-width preview commands', async () => {
+    const html = await buildHtml(
+      '# Test',
+      fakeContext,
+      fakeWebview,
+      makeFakeAssets() as any,
+      undefined,
+      { previewContentWidth: 'full' }
+    );
+
+    expect(html).toContain('max-width: none;');
+    expect(html).toContain('data-preview-content-width="full"');
+  });
+
+  it('does not inject preview width CSS for PDF/non-webview rendering', async () => {
+    const html = await buildHtml(
+      '# Test',
+      fakeContext,
+      undefined,
+      makeFakeAssets() as any,
+      undefined,
+      { previewContentWidth: 'full' }
+    );
+
+    expect(html).not.toContain('/* md-studio-preview-layout */');
+    expect(html).not.toContain('max-width: none;');
+  });
+
+  it('renders stable layout CSS snippets', () => {
+    expect(buildPreviewLayoutStyle('a4')).toContain('max-width: 210mm;');
+    expect(buildPreviewLayoutStyle('full')).toContain('max-width: none;');
   });
 });

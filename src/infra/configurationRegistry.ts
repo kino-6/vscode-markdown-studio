@@ -1,4 +1,4 @@
-import type { ExternalResourceMode, PreviewThemeMode } from '../types/models';
+import type { ExternalResourceMode, PreviewContentWidth, PreviewThemeMode } from '../types/models';
 import { DEFAULT_ALLOWED_DOMAINS } from '../types/models';
 
 export const CONFIG_SECTION = 'markdownStudio';
@@ -20,6 +20,7 @@ export const CONFIG_KEYS = {
   exportPdfTocHidden: 'export.pdfToc.hidden',
   exportPdfBookmarksEnabled: 'export.pdfBookmarks.enabled',
   previewTheme: 'preview.theme',
+  previewContentWidth: 'preview.contentWidth',
   previewSourceJumpEnabled: 'preview.sourceJump.enabled',
   stylePreset: 'style.preset',
   styleFontFamily: 'style.fontFamily',
@@ -54,6 +55,7 @@ export const CONFIG_DEFAULTS = {
   exportPdfTocHidden: true,
   exportPdfBookmarksEnabled: true,
   previewTheme: 'auto' as PreviewThemeMode,
+  previewContentWidth: 'a4' as PreviewContentWidth,
   previewSourceJumpEnabled: false,
   stylePreset: 'markdown-pdf',
   styleFontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
@@ -74,4 +76,3 @@ export const CONFIG_DEFAULTS = {
 export function configurationPath(key: string): string {
   return `${CONFIG_SECTION}.${key}`;
 }
-

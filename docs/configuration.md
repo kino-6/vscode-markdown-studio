@@ -24,6 +24,7 @@ For term definitions such as TOC, PDF Index, and bookmarks, see [glossary.md](./
 | `markdownStudio.export.outputFilename` | string | `${filename}` | PDF output filename template. |
 | `markdownStudio.export.diagramTimeout` | number | `0` | Diagram render timeout in seconds. `0` means no timeout. |
 | `markdownStudio.preview.theme` | enum | `auto` | Preview theme mode: auto, light, dark. |
+| `markdownStudio.preview.contentWidth` | enum | `a4` | Preview content width: a4, full. |
 | `markdownStudio.preview.sourceJump.enabled` | boolean | `false` | Double-click preview to jump to source line. |
 | `markdownStudio.security.externalResources.mode` | enum | `whitelist` | External resource control: block-all, whitelist, allow-all. |
 | `markdownStudio.security.externalResources.allowedDomains` | array | GitHub domains | Domains allowed in whitelist mode. |
@@ -50,6 +51,7 @@ Styling is applied in layers. Later layers override earlier ones.
 3. Individual overrides
 4. Theme
 5. Custom CSS
+6. Preview layout width (`markdownStudio.preview.contentWidth`, screen preview only)
 ```
 
 Example:

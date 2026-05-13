@@ -75,6 +75,13 @@ describe('getConfig().theme', () => {
   });
 });
 
+describe('getConfig().previewContentWidth', () => {
+  it('returns a4 as the default preview content width', () => {
+    const config = getConfig();
+    expect(config.previewContentWidth).toBe('a4');
+  });
+});
+
 describe('getConfig().customCss', () => {
   it('returns empty string as default customCss', () => {
     const config = getConfig();

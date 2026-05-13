@@ -1,4 +1,5 @@
 export type PreviewThemeMode = 'auto' | 'light' | 'dark';
+export type PreviewContentWidth = 'a4' | 'full';
 
 export type FencedBlockKind = 'mermaid' | 'plantuml' | 'puml' | 'svg';
 

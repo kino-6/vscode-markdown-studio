@@ -64,6 +64,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   context.subscriptions.push(
     vscode.commands.registerCommand('markdownStudio.openPreview', async () => openPreviewCommand(context)),
+    vscode.commands.registerCommand('markdownStudio.openPreviewInCurrentTab', async () => openPreviewCommand(context, { location: 'current' })),
+    vscode.commands.registerCommand('markdownStudio.openPreviewFullWidth', async () => openPreviewCommand(context, { previewContentWidth: 'full' })),
     vscode.commands.registerCommand('markdownStudio.exportPdf', async () => exportPdfCommand(context)),
     vscode.commands.registerCommand('markdownStudio.validateEnvironment', async () => validateEnvironmentCommand(context)),
     vscode.commands.registerCommand('markdownStudio.reloadPreview', async () => {

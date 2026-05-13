@@ -2,7 +2,7 @@
   "name": "markdown-studio",
   "displayName": "Markdown Studio",
   "description": "%extension.description%",
-  "version": "0.8.8",
+  "version": "0.8.9",
   "publisher": "local",
   "license": "MIT",
   "repository": {
@@ -34,6 +34,14 @@
       {
         "command": "markdownStudio.openPreview",
         "title": "%command.openPreview.title%"
+      },
+      {
+        "command": "markdownStudio.openPreviewInCurrentTab",
+        "title": "%command.openPreviewInCurrentTab.title%"
+      },
+      {
+        "command": "markdownStudio.openPreviewFullWidth",
+        "title": "%command.openPreviewFullWidth.title%"
       },
       {
         "command": "markdownStudio.exportPdf",
@@ -185,6 +193,19 @@
             "%configuration.preview.theme.enum.dark%"
           ],
           "description": "%configuration.preview.theme.description%"
+        },
+        "markdownStudio.preview.contentWidth": {
+          "type": "string",
+          "default": "a4",
+          "enum": [
+            "a4",
+            "full"
+          ],
+          "enumDescriptions": [
+            "%configuration.preview.contentWidth.enum.a4%",
+            "%configuration.preview.contentWidth.enum.full%"
+          ],
+          "description": "%configuration.preview.contentWidth.description%"
         },
         "markdownStudio.preview.sourceJump.enabled": {
           "type": "boolean",

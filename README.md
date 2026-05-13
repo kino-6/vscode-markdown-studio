@@ -103,6 +103,8 @@ Five built-in presets with per-setting overrides:
 | Command | Description |
 | ------- | ----------- |
 | `Markdown Studio: Preview` | Open Markdown preview in side panel |
+| `Markdown Studio: Preview in Current Tab` | Open Markdown preview in the active editor group |
+| `Markdown Studio: Preview Full Width` | Open Markdown preview without the content width limit |
 | `Markdown Studio: Export PDF` | Export current document to PDF |
 | `Markdown Studio: Validate Local Environment` | Check Java, PlantUML JAR, temp directory |
 | `Markdown Studio: Setup Dependencies` | Install Amazon Corretto JDK and Chromium |
@@ -119,6 +121,7 @@ Common settings:
 | Setting | Default | Purpose |
 | ------- | ------- | ------- |
 | `markdownStudio.preview.theme` | `auto` | Follow VS Code theme, or force light/dark preview. |
+| `markdownStudio.preview.contentWidth` | `a4` | Use A4-like preview width, or `full` for no max-width limit. |
 | `markdownStudio.style.preset` | `markdown-pdf` | Base typography preset. |
 | `markdownStudio.style.theme` | `markdown-pdf` | Visual theme layered above the preset. |
 | `markdownStudio.style.customCss` | `""` | Final CSS override layer. |
@@ -127,7 +130,7 @@ Common settings:
 | `markdownStudio.security.externalResources.mode` | `whitelist` | External resource policy. |
 | `markdownStudio.network.caCertificates` | `[]` | Extra CA certificates for proxy/SSL inspection environments. |
 
-The same CSS stack applies to both preview and PDF export.
+The same CSS stack applies to both preview and PDF export. Preview width is controlled separately by `markdownStudio.preview.contentWidth` and does not change PDF page size.
 
 ## PlantUML
 
@@ -176,7 +179,6 @@ See [docs/troubleshooting.md](./docs/troubleshooting.md) for dependency setup, p
   - Add explicit "Reset to 100%" button overlay
   - Re-render SVG at zoom level for crisp output (not just CSS transform)
 - markdown-pdf theme accuracy: match original Markdown PDF extension styling
-- Full-width preview mode: toggle command to remove max-width constraint for wide monitors
 - Demo GIF automation for Marketplace listing
 - Auto-export on save (watch mode)
 - DOCX export via Pandoc integration (optional dependency)

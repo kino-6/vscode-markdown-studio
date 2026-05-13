@@ -89,9 +89,11 @@ describe('extension activation', () => {
     expect(ensureAllMock).toHaveBeenCalledWith(context);
     expect(showWarningMessage).not.toHaveBeenCalled();
 
-    // 6 commands registered: openPreview, exportPdf, validateEnvironment, reloadPreview, setupDependencies, insertToc
-    expect(registerCommand).toHaveBeenCalledTimes(6);
+    // 8 commands registered: preview variants, exportPdf, validateEnvironment, reloadPreview, setupDependencies, insertToc
+    expect(registerCommand).toHaveBeenCalledTimes(8);
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.openPreview', expect.any(Function));
+    expect(registerCommand).toHaveBeenCalledWith('markdownStudio.openPreviewInCurrentTab', expect.any(Function));
+    expect(registerCommand).toHaveBeenCalledWith('markdownStudio.openPreviewFullWidth', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.exportPdf', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.validateEnvironment', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.reloadPreview', expect.any(Function));
@@ -115,7 +117,7 @@ describe('extension activation', () => {
       expect.stringContaining('Setup Dependencies')
     );
     // Commands still registered despite failure
-    expect(registerCommand).toHaveBeenCalledTimes(6);
+    expect(registerCommand).toHaveBeenCalledTimes(8);
   });
 
   it('still activates and registers commands when ensureAll throws', async () => {
@@ -128,7 +130,7 @@ describe('extension activation', () => {
       expect.stringContaining('unexpected crash')
     );
     // All commands still registered
-    expect(registerCommand).toHaveBeenCalledTimes(6);
+    expect(registerCommand).toHaveBeenCalledTimes(8);
   });
 
   it('setupDependencies command calls reinstall and shows success', async () => {

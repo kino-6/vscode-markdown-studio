@@ -4,10 +4,30 @@ import { renderMarkdownDocument } from '../renderers/renderMarkdown';
 import { getConfig } from '../infra/config';
 import { loadCustomCss } from '../infra/customCssLoader';
 import { RUNTIME_MESSAGES } from '../infra/messages';
-import { ResolvedStyleConfig } from '../types/models';
+import { PreviewContentWidth, ResolvedStyleConfig } from '../types/models';
 import { PreviewAssetUris } from './previewAssets';
 
 const DEFAULT_FONT_FAMILY = '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+const PREVIEW_A4_MAX_WIDTH = '210mm';
+
+export interface BuildHtmlOptions {
+  previewContentWidth?: PreviewContentWidth;
+}
+
+function normalizePreviewContentWidth(value: PreviewContentWidth | undefined): PreviewContentWidth {
+  return value === 'full' ? 'full' : 'a4';
+}
+
+export function buildPreviewLayoutStyle(contentWidth: PreviewContentWidth): string {
+  const maxWidth = contentWidth === 'full' ? 'none' : PREVIEW_A4_MAX_WIDTH;
+  return `<style>/* md-studio-preview-layout */
+@media screen {
+  body {
+    max-width: ${maxWidth};
+  }
+}
+</style>`;
+}
 
 export function buildStyleBlock(style: ResolvedStyleConfig): string {
   const fontFamily = style.fontFamily.trim() === '' ? DEFAULT_FONT_FAMILY : style.fontFamily;
@@ -198,7 +218,8 @@ export async function buildHtml(
   context: vscode.ExtensionContext,
   webview?: vscode.Webview,
   assets?: PreviewAssetUris,
-  documentUri?: vscode.Uri
+  documentUri?: vscode.Uri,
+  options: BuildHtmlOptions = {}
 ): Promise<string> {
   const rendered = await renderMarkdownDocument(markdown, context);
   let htmlBody = rendered.htmlBody;
@@ -212,6 +233,7 @@ export async function buildHtml(
   const cspSource = webview?.cspSource ?? 'none';
   const nonce = crypto.randomUUID();
   const config = getConfig();
+  const previewContentWidth = normalizePreviewContentWidth(options.previewContentWidth ?? config.previewContentWidth);
   const styleBlock = buildStyleBlock(config.style);
 
   // Load custom CSS (theme + inline) if configured
@@ -227,6 +249,7 @@ export async function buildHtml(
   const customCssBlock = customCss
     ? `<style>/* md-studio-custom-css */\n${customCss}</style>`
     : '';
+  const previewLayoutStyle = webview ? buildPreviewLayoutStyle(previewContentWidth) : '';
 
   // CSP: 'unsafe-eval' is required because Mermaid 11.x uses new Function() internally
   // PDF context (no webview): omit CSP entirely — Playwright runs a local trusted Chromium
@@ -245,8 +268,9 @@ ${cspTag}
 <link rel="stylesheet" href="${katexStyleHref}">
 ${styleBlock}
 ${customCssBlock}
+${previewLayoutStyle}
 </head>
-<body data-theme-override="${webview ? config.previewTheme : 'light'}">
+<body data-theme-override="${webview ? config.previewTheme : 'light'}" data-preview-content-width="${webview ? previewContentWidth : 'a4'}">
 ${htmlBody}
 <div id="ms-loading-overlay" class="ms-loading-overlay" style="display: flex"><div class="ms-spinner"></div></div>
 ${scriptSrc ? `<script src="${scriptSrc}" nonce="${nonce}"></script>` : ''}

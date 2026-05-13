@@ -1,5 +1,7 @@
 {
   "command.openPreview.title": "Markdown Studio: プレビュー",
+  "command.openPreviewInCurrentTab.title": "Markdown Studio: 現在のタブでプレビュー",
+  "command.openPreviewFullWidth.title": "Markdown Studio: 幅制限なしでプレビュー",
   "extension.description": "Mermaid、PlantUML、SVG、セキュアな PDF エクスポートを備えたローカルファーストの Markdown 制作環境です。",
   "command.exportPdf.title": "Markdown Studio: PDF をエクスポート",
   "command.validateEnvironment.title": "Markdown Studio: ローカル環境を検証",
@@ -30,6 +32,9 @@
   "configuration.preview.theme.enum.auto": "VS Code のカラーテーマに自動で追従します。",
   "configuration.preview.theme.enum.light": "常にライトモードでプレビューを表示します。",
   "configuration.preview.theme.enum.dark": "常にダークモードでプレビューを表示します。",
+  "configuration.preview.contentWidth.description": "プレビュー本文の表示幅。A4 は紙面幅に近い幅へ制限し、full は最大幅制限を外します。",
+  "configuration.preview.contentWidth.enum.a4": "プレビュー本文を A4 用紙幅に制限します。",
+  "configuration.preview.contentWidth.enum.full": "利用可能なエディタ幅いっぱいに表示します。",
   "configuration.preview.sourceJump.enabled.description": "プレビューをダブルクリックすると対応するソース行へ移動します。",
   "configuration.style.preset.markdownDescription": "プレビューと PDF エクスポートの基本タイポグラフィプリセット。",
   "configuration.style.fontFamily.markdownDescription": "プリセットのフォントファミリーを上書きします。プリセットより優先されますが、Theme または Custom CSS でさらに上書きできます。",

@@ -35,6 +35,7 @@ const baseConfig: MarkdownStudioConfig = {
   customCss: '',
   outputFilename: '${filename}',
   previewTheme: 'auto',
+  previewContentWidth: 'a4',
   diagramTimeout: 0,
 };
 

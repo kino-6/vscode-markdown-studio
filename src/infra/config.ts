@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CodeBlockConfig, ExternalResourceConfig, ExternalResourceMode, PdfBookmarksConfig, PdfHeaderFooterConfig, PdfIndexConfig, PdfTocConfig, PreviewThemeMode, ResolvedStyleConfig, StyleConfigOverrides, TocConfig } from '../types/models';
+import { CodeBlockConfig, ExternalResourceConfig, ExternalResourceMode, PdfBookmarksConfig, PdfHeaderFooterConfig, PdfIndexConfig, PdfTocConfig, PreviewContentWidth, PreviewThemeMode, ResolvedStyleConfig, StyleConfigOverrides, TocConfig } from '../types/models';
 import { CONFIG_DEFAULTS, CONFIG_KEYS, CONFIG_SECTION } from './configurationRegistry';
 import { resolvePreset } from './presets';
 
@@ -28,6 +28,7 @@ export interface MarkdownStudioConfig {
   customCss: string;
   outputFilename: string;
   previewTheme: PreviewThemeMode;
+  previewContentWidth: PreviewContentWidth;
   diagramTimeout: number;
 }
 
@@ -142,6 +143,7 @@ export function getConfig(): MarkdownStudioConfig {
     customCss: cfg.get<string>(CONFIG_KEYS.styleCustomCss, CONFIG_DEFAULTS.styleCustomCss),
     outputFilename: cfg.get<string>(CONFIG_KEYS.exportOutputFilename, CONFIG_DEFAULTS.exportOutputFilename),
     previewTheme: cfg.get<PreviewThemeMode>(CONFIG_KEYS.previewTheme, CONFIG_DEFAULTS.previewTheme),
+    previewContentWidth: cfg.get<PreviewContentWidth>(CONFIG_KEYS.previewContentWidth, CONFIG_DEFAULTS.previewContentWidth),
     diagramTimeout: cfg.get<number>(CONFIG_KEYS.exportDiagramTimeout, CONFIG_DEFAULTS.exportDiagramTimeout),
   };
 }
