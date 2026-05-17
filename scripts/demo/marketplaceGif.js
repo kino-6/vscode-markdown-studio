@@ -22,6 +22,7 @@ const scenes = [
     key: 'Local',
     label: 'Local Markdown to Preview + PDF',
     kicker: 'Core rendering stays on your machine. No remote diagram servers.',
+    maxPreviewNodes: 7,
     source: [
       '# Technical Spec',
       '',
@@ -38,6 +39,7 @@ const scenes = [
     key: 'Mermaid',
     label: 'Mermaid renders locally',
     kicker: 'Flowcharts and architecture diagrams appear in Preview and PDF.',
+    maxPreviewNodes: 8,
     source: [
       '```mermaid',
       'graph TD',
@@ -52,6 +54,7 @@ const scenes = [
     key: 'PlantUML',
     label: 'PlantUML without remote servers',
     kicker: 'Bundled PlantUML runs through a local Java runtime.',
+    maxPreviewNodes: 8,
     source: [
       '```plantuml',
       '@startuml',
@@ -68,6 +71,7 @@ const scenes = [
     key: 'WaveDrom',
     label: 'WaveDrom timing diagrams',
     kicker: 'Timing diagrams for hardware-style docs stay offline too.',
+    maxPreviewNodes: 8,
     source: [
       '```wavedrom',
       '{ signal: [',
@@ -82,6 +86,7 @@ const scenes = [
     key: 'Markdown',
     label: 'Modern Markdown preview',
     kicker: 'Tasks, tables, code, CJK text, emoji, and KaTeX math in one renderer.',
+    maxPreviewNodes: 8,
     source: [
       '## Modern Markdown',
       '',
@@ -97,6 +102,7 @@ const scenes = [
     key: 'PDF',
     label: 'Export polished PDFs',
     kicker: 'The same local renderer produces TOCs, page numbers, and bookmarks.',
+    maxPreviewNodes: 10,
     source: [
       'Markdown Studio: Export PDF',
       '',
@@ -495,6 +501,11 @@ async function installDemoShell(page, viewport) {
       #ms-demo-preview-scroll h1 {
         margin-top: 0;
       }
+      #ms-demo-preview-scroll h2,
+      #ms-demo-preview-scroll h3,
+      #ms-demo-preview-scroll h4 {
+        margin-top: 0;
+      }
       #ms-demo-preview-scroll .diagram-container {
         margin: 18px 0;
       }
@@ -505,6 +516,20 @@ async function installDemoShell(page, viewport) {
       #ms-demo-preview-scroll h2,
       #ms-demo-preview-scroll h3 {
         scroll-margin-top: 20px;
+      }
+      #ms-demo-rendered-source {
+        position: absolute;
+        left: -10000px;
+        top: 0;
+        width: 720px;
+        min-height: 720px;
+        padding: 30px 48px;
+        overflow: visible;
+        background: #ffffff;
+        color: #24292f;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-size: 16px;
+        line-height: 1.55;
       }
       #ms-loading-overlay {
         display: none !important;
@@ -538,11 +563,12 @@ async function installDemoShell(page, viewport) {
         <div class="ms-demo-preview-title">Markdown Studio Preview <span>local render</span></div>
         <main id="ms-demo-preview-scroll"></main>
       </section>
+      <div id="ms-demo-rendered-source" aria-hidden="true"></div>
     `;
 
-    const preview = shell.querySelector('#ms-demo-preview-scroll');
+    const renderedSource = shell.querySelector('#ms-demo-rendered-source');
     for (const node of originalNodes) {
-      preview.appendChild(node);
+      renderedSource.appendChild(node);
     }
 
     document.body.replaceChildren(shell);
@@ -555,6 +581,28 @@ async function installDemoShell(page, viewport) {
       document.getElementById('ms-demo-caption').textContent = scene.label;
       document.getElementById('ms-demo-label').textContent = scene.label;
       document.getElementById('ms-demo-kicker').textContent = scene.kicker;
+      const rendered = document.getElementById('ms-demo-rendered-source');
+      const preview = document.getElementById('ms-demo-preview-scroll');
+      const headings = Array.from(rendered.querySelectorAll('h1, h2, h3, h4'));
+      const target = headings.find((node) => (node.textContent || '').trim() === scene.heading);
+      if (target) {
+        const targetLevel = Number(target.tagName.slice(1));
+        const fragment = document.createDocumentFragment();
+        let node = target;
+        let count = 0;
+        const limit = scene.maxPreviewNodes || 8;
+        while (node && count < limit) {
+          if (node !== target && /^H[1-4]$/.test(node.tagName)) {
+            const level = Number(node.tagName.slice(1));
+            if (level <= targetLevel) break;
+          }
+          fragment.appendChild(node.cloneNode(true));
+          node = node.nextElementSibling;
+          count += 1;
+        }
+        preview.replaceChildren(fragment);
+        preview.scrollTop = 0;
+      }
       const chips = document.getElementById('ms-demo-chips');
       chips.replaceChildren(...['Local', 'Mermaid', 'PlantUML', 'WaveDrom', 'Markdown', 'PDF'].map((label) => {
         const chip = document.createElement('span');
@@ -567,37 +615,17 @@ async function installDemoShell(page, viewport) {
   }, scenes[0]);
 }
 
-async function resolveScenePositions(page) {
-  return page.evaluate((sceneData) => {
-    const scroller = document.getElementById('ms-demo-preview-scroll');
-    const headings = Array.from(scroller.querySelectorAll('h1, h2, h3, h4'));
-    return sceneData.map((scene) => {
-      const heading = headings.find((node) => (node.textContent || '').trim() === scene.heading);
-      if (!heading) {
-        throw new Error(`Heading not found in rendered preview: ${scene.heading}`);
-      }
-      return Math.max(0, heading.offsetTop - scroller.offsetTop - 14);
-    });
-  }, scenes);
-}
-
-function easeInOut(t) {
-  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-}
-
-async function captureFrames(page, options, positions) {
+async function captureFrames(page, options) {
   await fs.rm(options.framesDir, { recursive: true, force: true });
   await fs.mkdir(options.framesDir, { recursive: true });
 
   let frame = 0;
-  const holdFrames = 9;
-  const transitionFrames = 8;
+  const holdFrames = 14;
 
-  async function setScene(sceneIndex, scrollTop) {
-    await page.evaluate(({ scene, top }) => {
+  async function setScene(sceneIndex) {
+    await page.evaluate((scene) => {
       window.__msDemoSetScene(scene);
-      document.getElementById('ms-demo-preview-scroll').scrollTop = top;
-    }, { scene: scenes[sceneIndex], top: scrollTop });
+    }, scenes[sceneIndex]);
   }
 
   async function shot() {
@@ -607,18 +635,8 @@ async function captureFrames(page, options, positions) {
   }
 
   for (let sceneIndex = 0; sceneIndex < scenes.length; sceneIndex++) {
-    await setScene(sceneIndex, positions[sceneIndex]);
+    await setScene(sceneIndex);
     for (let i = 0; i < holdFrames; i++) {
-      await shot();
-    }
-
-    if (sceneIndex === scenes.length - 1) continue;
-
-    const from = positions[sceneIndex];
-    const to = positions[sceneIndex + 1];
-    for (let i = 1; i <= transitionFrames; i++) {
-      const progress = easeInOut(i / transitionFrames);
-      await setScene(sceneIndex + 1, Math.round(from + (to - from) * progress));
       await shot();
     }
   }
@@ -693,8 +711,7 @@ async function main() {
     await page.addScriptTag({ path: previewRuntimePath });
     await waitForRenderedDiagrams(page);
 
-    const positions = await resolveScenePositions(page);
-    const frameCount = await captureFrames(page, options, positions);
+    const frameCount = await captureFrames(page, options);
     await convertFramesToGif(options);
 
     if (!options.keepFrames) {
