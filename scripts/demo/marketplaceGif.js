@@ -19,22 +19,25 @@ const clientRenderedDiagramSelector = '.mermaid-host[data-mermaid-src], .wavedro
 const scenes = [
   {
     heading: 'Markdown Studio — Feature Demo',
-    label: 'Local-first Markdown Preview',
+    key: 'Local',
+    label: 'Local Markdown to Preview + PDF',
+    kicker: 'Core rendering stays on your machine. No remote diagram servers.',
     source: [
-      '# Markdown Studio',
+      '# Technical Spec',
       '',
-      'Local preview and PDF export',
-      'for technical Markdown documents.',
+      'Preview and export locally:',
       '',
-      '- diagrams',
-      '- math',
-      '- local assets',
-      '- PDF bookmarks',
+      '- modern Markdown',
+      '- Mermaid / PlantUML / WaveDrom',
+      '- KaTeX math and code',
+      '- PDF TOC + bookmarks',
     ].join('\n'),
   },
   {
     heading: 'Markdown Studio Architecture',
-    label: 'Mermaid Renders Locally',
+    key: 'Mermaid',
+    label: 'Mermaid renders locally',
+    kicker: 'Flowcharts and architecture diagrams appear in Preview and PDF.',
     source: [
       '```mermaid',
       'graph TD',
@@ -46,7 +49,9 @@ const scenes = [
   },
   {
     heading: 'Extension Component Diagram',
-    label: 'PlantUML Without Remote Servers',
+    key: 'PlantUML',
+    label: 'PlantUML without remote servers',
+    kicker: 'Bundled PlantUML runs through a local Java runtime.',
     source: [
       '```plantuml',
       '@startuml',
@@ -60,7 +65,9 @@ const scenes = [
   },
   {
     heading: 'WaveDrom Timing Diagram',
-    label: 'WaveDrom Timing Diagrams',
+    key: 'WaveDrom',
+    label: 'WaveDrom timing diagrams',
+    kicker: 'Timing diagrams for hardware-style docs stay offline too.',
     source: [
       '```wavedrom',
       '{ signal: [',
@@ -71,8 +78,25 @@ const scenes = [
     ].join('\n'),
   },
   {
+    heading: 'Math (KaTeX)',
+    key: 'Markdown',
+    label: 'Modern Markdown preview',
+    kicker: 'Tasks, tables, code, CJK text, emoji, and KaTeX math in one renderer.',
+    source: [
+      '## Modern Markdown',
+      '',
+      '- [x] task lists',
+      '- tables and footnotes',
+      '- syntax highlighted code',
+      '',
+      '$$E = mc^2$$',
+    ].join('\n'),
+  },
+  {
     heading: '10. PDF Export',
-    label: 'Polished PDF Export',
+    key: 'PDF',
+    label: 'Export polished PDFs',
+    kicker: 'The same local renderer produces TOCs, page numbers, and bookmarks.',
     source: [
       'Markdown Studio: Export PDF',
       '',
@@ -318,13 +342,71 @@ async function installDemoShell(page, viewport) {
         width: ${viewport.width}px;
         height: ${viewport.height}px;
         display: grid;
+        grid-template-rows: 96px 1fr;
         grid-template-columns: 39% 61%;
         background: #0d1117;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
+      #ms-demo-hero {
+        grid-column: 1 / 3;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 28px;
+        padding: 16px 28px;
+        border-bottom: 1px solid #30363d;
+        background: linear-gradient(90deg, #0d1117 0%, #111827 48%, #0f172a 100%);
+      }
+      .ms-demo-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        width: max-content;
+        margin-bottom: 6px;
+        padding: 4px 9px;
+        border: 1px solid #3fb950;
+        border-radius: 999px;
+        color: #9be9a8;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+      #ms-demo-label {
+        color: #f0f6fc;
+        font-size: 30px;
+        line-height: 1.1;
+        font-weight: 800;
+      }
+      #ms-demo-kicker {
+        margin-top: 5px;
+        color: #c9d1d9;
+        font-size: 17px;
+        line-height: 1.35;
+      }
+      #ms-demo-chips {
+        display: grid;
+        grid-template-columns: repeat(3, max-content);
+        gap: 8px;
+        justify-content: end;
+      }
+      .ms-demo-chip {
+        padding: 7px 10px;
+        border: 1px solid #30363d;
+        border-radius: 999px;
+        color: #8b949e;
+        background: #161b22;
+        font-size: 13px;
+        font-weight: 800;
+      }
+      .ms-demo-chip.is-active {
+        color: #0d1117;
+        border-color: #58a6ff;
+        background: #58a6ff;
+      }
       #ms-demo-editor {
         display: grid;
-        grid-template-rows: 44px 1fr 72px;
+        grid-row: 2;
+        grid-template-rows: 44px 1fr 70px;
         min-width: 0;
         border-right: 1px solid #30363d;
         background: #0d1117;
@@ -357,8 +439,8 @@ async function installDemoShell(page, viewport) {
         color: #c9d1d9;
         background: #0d1117;
         font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-        font-size: 17px;
-        line-height: 1.58;
+        font-size: 18px;
+        line-height: 1.55;
         white-space: pre-wrap;
       }
       #ms-demo-source::before {
@@ -375,11 +457,12 @@ async function installDemoShell(page, viewport) {
         align-items: center;
         padding: 0 24px;
         border-top: 1px solid #30363d;
-        color: #f0f6fc;
-        font-size: 22px;
+        color: #9be9a8;
+        font-size: 20px;
         font-weight: 700;
       }
       #ms-demo-preview-frame {
+        grid-row: 2;
         min-width: 0;
         display: grid;
         grid-template-rows: 44px 1fr;
@@ -406,7 +489,7 @@ async function installDemoShell(page, viewport) {
         background: #ffffff;
         color: #24292f;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        font-size: 15px;
+        font-size: 16px;
         line-height: 1.55;
       }
       #ms-demo-preview-scroll h1 {
@@ -418,6 +501,10 @@ async function installDemoShell(page, viewport) {
       #ms-demo-preview-scroll .ms-code-wrapper,
       #ms-demo-preview-scroll pre {
         max-width: 100%;
+      }
+      #ms-demo-preview-scroll h2,
+      #ms-demo-preview-scroll h3 {
+        scroll-margin-top: 20px;
       }
       #ms-loading-overlay {
         display: none !important;
@@ -431,6 +518,14 @@ async function installDemoShell(page, viewport) {
     const shell = document.createElement('div');
     shell.id = 'ms-demo-shell';
     shell.innerHTML = `
+      <header id="ms-demo-hero" aria-label="Demo headline">
+        <div>
+          <div class="ms-demo-eyebrow">local-only core</div>
+          <div id="ms-demo-label"></div>
+          <div id="ms-demo-kicker"></div>
+        </div>
+        <div id="ms-demo-chips" aria-label="Capabilities"></div>
+      </header>
       <section id="ms-demo-editor" aria-label="Markdown source">
         <div class="ms-demo-tabbar">
           <div class="ms-demo-dot"></div>
@@ -458,6 +553,15 @@ async function installDemoShell(page, viewport) {
     window.__msDemoSetScene = (scene) => {
       document.getElementById('ms-demo-source').textContent = scene.source;
       document.getElementById('ms-demo-caption').textContent = scene.label;
+      document.getElementById('ms-demo-label').textContent = scene.label;
+      document.getElementById('ms-demo-kicker').textContent = scene.kicker;
+      const chips = document.getElementById('ms-demo-chips');
+      chips.replaceChildren(...['Local', 'Mermaid', 'PlantUML', 'WaveDrom', 'Markdown', 'PDF'].map((label) => {
+        const chip = document.createElement('span');
+        chip.className = `ms-demo-chip${label === scene.key ? ' is-active' : ''}`;
+        chip.textContent = label;
+        return chip;
+      }));
     };
     window.__msDemoSetScene(initialSource);
   }, scenes[0]);
@@ -486,8 +590,8 @@ async function captureFrames(page, options, positions) {
   await fs.mkdir(options.framesDir, { recursive: true });
 
   let frame = 0;
-  const holdFrames = 8;
-  const transitionFrames = 10;
+  const holdFrames = 9;
+  const transitionFrames = 8;
 
   async function setScene(sceneIndex, scrollTop) {
     await page.evaluate(({ scene, top }) => {
