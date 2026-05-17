@@ -1,6 +1,6 @@
 {
   "name": "markdown-studio-local",
-  "displayName": "Markdown Studio Local",
+  "displayName": "Markdown Studio: Local PDF Export",
   "description": "%extension.description%",
   "version": "1.0.0",
   "publisher": "kino6",
@@ -26,7 +26,15 @@
     "wavedrom",
     "svg",
     "math",
-    "toc"
+    "toc",
+    "export",
+    "offline",
+    "local",
+    "latex",
+    "katex",
+    "bookmarks",
+    "documentation",
+    "technical-docs"
   ],
   "activationEvents": [
     "onLanguage:markdown"
@@ -327,6 +335,7 @@
     "package": "npm run build && rm -f dist/*.vsix && vsce package -o dist/",
     "reinstall": "bash scripts/dev/reinstall.sh",
     "demo": "npx tsx scripts/demo/index.ts",
+    "demo:marketplace-gif": "npm run build && node scripts/demo/marketplaceGif.js",
     "benchmark:preview": "npm run build && node scripts/benchmark/previewBenchmark.js",
     "benchmark:pdf": "npm run build && node scripts/benchmark/pdfExportBenchmark.js",
     "corpus:check": "node scripts/corpus/runCorpusChecks.js",
