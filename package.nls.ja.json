@@ -2,7 +2,7 @@
   "command.openPreview.title": "Markdown Studio: プレビュー",
   "command.openPreviewInCurrentTab.title": "Markdown Studio: 現在のタブでプレビュー",
   "command.openPreviewFullWidth.title": "Markdown Studio: 幅制限なしでプレビュー",
-  "extension.description": "Mermaid、PlantUML、WaveDrom、KaTeX、TOC、PDF ブックマーク対応の Markdown をローカルでプレビューし、整った PDF にエクスポート。",
+  "extension.description": "モダンな Markdown をプレビューし、Mermaid、PlantUML、WaveDrom、KaTeX 数式、TOC、ブックマーク対応 PDF をローカルで生成。",
   "command.exportPdf.title": "Markdown Studio: PDF をエクスポート",
   "command.validateEnvironment.title": "Markdown Studio: ローカル環境を検証",
   "command.reloadPreview.title": "Markdown Studio: プレビューを再読み込み（キャッシュをクリア）",

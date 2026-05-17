@@ -1,6 +1,6 @@
 # Markdown Studio: Local PDF Export
 
-Preview Markdown and export polished PDFs locally with diagrams, math, TOCs, and PDF bookmarks.
+Preview modern Markdown and export PDFs locally with Mermaid, PlantUML, WaveDrom, math, TOCs, and bookmarks.
 
 ![Markdown Studio preview and PDF export demo](./docs/assets/markdown-studio-demo.gif)
 
