@@ -10,7 +10,7 @@ const esbuild = require('esbuild');
 const { chromium } = require('playwright');
 
 const repoRoot = path.resolve(__dirname, '../..');
-const demoMarkdownPath = path.join(repoRoot, 'examples/demo.md');
+const demoMarkdownPath = path.join(repoRoot, 'scripts/demo/marketplace-demo.md');
 const defaultOutputPath = path.join(repoRoot, 'docs/assets/markdown-studio-demo.gif');
 const defaultFramesDir = path.join(repoRoot, 'ignore/marketplace-gif/frames');
 const previewRuntimePath = path.join(repoRoot, 'dist/preview.js');
@@ -18,13 +18,13 @@ const clientRenderedDiagramSelector = '.mermaid-host[data-mermaid-src], .wavedro
 
 const scenes = [
   {
-    heading: 'Markdown Studio — Feature Demo',
+    heading: 'Local Summary',
     key: 'Local',
     label: 'Local Markdown to Preview + PDF',
     kicker: 'Core rendering stays on your machine. No remote diagram servers.',
     maxPreviewNodes: 7,
     source: [
-      '# Technical Spec',
+      '## Local Summary',
       '',
       'Preview and export locally:',
       '',
@@ -35,22 +35,22 @@ const scenes = [
     ].join('\n'),
   },
   {
-    heading: 'Markdown Studio Architecture',
+    heading: 'Mermaid Flow',
     key: 'Mermaid',
     label: 'Mermaid renders locally',
     kicker: 'Flowcharts and architecture diagrams appear in Preview and PDF.',
     maxPreviewNodes: 8,
     source: [
       '```mermaid',
-      'graph TD',
-      '  MD[Markdown] --> Preview',
-      '  Preview --> Mermaid',
-      '  Preview --> PDF',
+      'flowchart LR',
+      '  A[Markdown] --> B[Local Preview]',
+      '  B --> C[Mermaid SVG]',
+      '  C --> D[PDF Export]',
       '```',
     ].join('\n'),
   },
   {
-    heading: 'Extension Component Diagram',
+    heading: 'PlantUML Components',
     key: 'PlantUML',
     label: 'PlantUML without remote servers',
     kicker: 'Bundled PlantUML runs through a local Java runtime.',
@@ -58,16 +58,15 @@ const scenes = [
     source: [
       '```plantuml',
       '@startuml',
-      'package "Markdown Studio" {',
-      '  [Parser] --> [Preview]',
-      '  [Preview] --> [PDF Export]',
-      '}',
+      '[Markdown] --> [Markdown Studio]',
+      '[Markdown Studio] --> [Local PlantUML]',
+      '[Local PlantUML] --> [Preview + PDF]',
       '@enduml',
       '```',
     ].join('\n'),
   },
   {
-    heading: 'WaveDrom Timing Diagram',
+    heading: 'WaveDrom Timing',
     key: 'WaveDrom',
     label: 'WaveDrom timing diagrams',
     kicker: 'Timing diagrams for hardware-style docs stay offline too.',
@@ -75,14 +74,15 @@ const scenes = [
     source: [
       '```wavedrom',
       '{ signal: [',
-      '  { name: "clk", wave: "p......" },',
-      '  { name: "data", wave: "x.34.5x" }',
+      '  { name: "clk", wave: "p....." },',
+      '  { name: "req", wave: "01..0." },',
+      '  { name: "ack", wave: "0.1.0." }',
       ']}',
       '```',
     ].join('\n'),
   },
   {
-    heading: 'Math (KaTeX)',
+    heading: 'Modern Markdown',
     key: 'Markdown',
     label: 'Modern Markdown preview',
     kicker: 'Tasks, tables, code, CJK text, emoji, and KaTeX math in one renderer.',
@@ -98,7 +98,7 @@ const scenes = [
     ].join('\n'),
   },
   {
-    heading: '10. PDF Export',
+    heading: 'PDF Output',
     key: 'PDF',
     label: 'Export polished PDFs',
     kicker: 'The same local renderer produces TOCs, page numbers, and bookmarks.',
@@ -509,6 +509,9 @@ async function installDemoShell(page, viewport) {
       #ms-demo-preview-scroll .diagram-container {
         margin: 18px 0;
       }
+      #ms-demo-shell .ms-copy-btn {
+        display: none !important;
+      }
       #ms-demo-preview-scroll .ms-code-wrapper,
       #ms-demo-preview-scroll pre {
         max-width: 100%;
@@ -554,7 +557,7 @@ async function installDemoShell(page, viewport) {
       <section id="ms-demo-editor" aria-label="Markdown source">
         <div class="ms-demo-tabbar">
           <div class="ms-demo-dot"></div>
-          <div class="ms-demo-filename">demo.md</div>
+          <div class="ms-demo-filename">local-spec.md</div>
         </div>
         <pre id="ms-demo-source"></pre>
         <div id="ms-demo-caption"></div>
@@ -596,7 +599,14 @@ async function installDemoShell(page, viewport) {
             const level = Number(node.tagName.slice(1));
             if (level <= targetLevel) break;
           }
-          fragment.appendChild(node.cloneNode(true));
+          const clone = node.cloneNode(true);
+          if (clone.querySelectorAll) {
+            clone.querySelectorAll('.ms-copy-btn, .zoom-toolbar').forEach((el) => el.remove());
+          }
+          if (clone.classList) {
+            clone.classList.remove('ms-code-wrapper');
+          }
+          fragment.appendChild(clone);
           node = node.nextElementSibling;
           count += 1;
         }
