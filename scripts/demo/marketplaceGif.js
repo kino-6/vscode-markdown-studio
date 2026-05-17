@@ -18,23 +18,6 @@ const clientRenderedDiagramSelector = '.mermaid-host[data-mermaid-src], .wavedro
 
 const scenes = [
   {
-    heading: 'Local Summary',
-    key: 'Local',
-    label: 'Local Markdown to Preview + PDF',
-    kicker: 'Core rendering stays on your machine. No remote diagram servers.',
-    maxPreviewNodes: 7,
-    source: [
-      '## Local Summary',
-      '',
-      'Preview and export locally:',
-      '',
-      '- modern Markdown',
-      '- Mermaid / PlantUML / WaveDrom',
-      '- KaTeX math and code',
-      '- PDF TOC + bookmarks',
-    ].join('\n'),
-  },
-  {
     heading: 'Mermaid Flow',
     key: 'Mermaid',
     label: 'Mermaid renders locally',
@@ -43,9 +26,8 @@ const scenes = [
     source: [
       '```mermaid',
       'flowchart LR',
-      '  A[Markdown] --> B[Local Preview]',
-      '  B --> C[Mermaid SVG]',
-      '  C --> D[PDF Export]',
+      '  Markdown --> Preview',
+      '  Preview --> PDF',
       '```',
     ].join('\n'),
   },
@@ -58,9 +40,8 @@ const scenes = [
     source: [
       '```plantuml',
       '@startuml',
-      '[Markdown] --> [Markdown Studio]',
-      '[Markdown Studio] --> [Local PlantUML]',
-      '[Local PlantUML] --> [Preview + PDF]',
+      '[Markdown] --> [Local PlantUML]',
+      '[Local PlantUML] --> [PDF]',
       '@enduml',
       '```',
     ].join('\n'),
@@ -74,9 +55,8 @@ const scenes = [
     source: [
       '```wavedrom',
       '{ signal: [',
-      '  { name: "clk", wave: "p....." },',
-      '  { name: "req", wave: "01..0." },',
-      '  { name: "ack", wave: "0.1.0." }',
+      '  { name: "clk", wave: "p...." },',
+      '  { name: "data", wave: "x.3.x" }',
       ']}',
       '```',
     ].join('\n'),
@@ -90,9 +70,8 @@ const scenes = [
     source: [
       '## Modern Markdown',
       '',
-      '- [x] task lists',
-      '- tables and footnotes',
-      '- syntax highlighted code',
+      '- [x] tasks',
+      '- tables',
       '',
       '$$E = mc^2$$',
     ].join('\n'),
@@ -104,13 +83,11 @@ const scenes = [
     kicker: 'The same local renderer produces TOCs, page numbers, and bookmarks.',
     maxPreviewNodes: 10,
     source: [
-      'Markdown Studio: Export PDF',
+      'Export PDF',
       '',
-      '- TOC with page numbers',
       '- PDF bookmarks',
-      '- headers / footers',
-      '- page breaks',
-      '- repeatable local output',
+      '- page numbers',
+      '- local output',
     ].join('\n'),
   },
 ];
@@ -348,99 +325,36 @@ async function installDemoShell(page, viewport) {
         width: ${viewport.width}px;
         height: ${viewport.height}px;
         display: grid;
-        grid-template-rows: 96px 1fr;
+        grid-template-rows: 74px 1fr;
         grid-template-columns: 39% 61%;
         background: #0d1117;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
       #ms-demo-hero {
         grid-column: 1 / 3;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
+        display: flex;
         align-items: center;
-        gap: 28px;
-        padding: 16px 28px;
+        padding: 0 30px;
         border-bottom: 1px solid #30363d;
-        background: linear-gradient(90deg, #0d1117 0%, #111827 48%, #0f172a 100%);
-      }
-      .ms-demo-eyebrow {
-        display: inline-flex;
-        align-items: center;
-        width: max-content;
-        margin-bottom: 6px;
-        padding: 4px 9px;
-        border: 1px solid #3fb950;
-        border-radius: 999px;
-        color: #9be9a8;
-        font-size: 12px;
-        font-weight: 800;
-        letter-spacing: 0;
-        text-transform: uppercase;
+        background: #0d1117;
       }
       #ms-demo-label {
         color: #f0f6fc;
-        font-size: 30px;
+        font-size: 32px;
         line-height: 1.1;
         font-weight: 800;
-      }
-      #ms-demo-kicker {
-        margin-top: 5px;
-        color: #c9d1d9;
-        font-size: 17px;
-        line-height: 1.35;
-      }
-      #ms-demo-chips {
-        display: grid;
-        grid-template-columns: repeat(3, max-content);
-        gap: 8px;
-        justify-content: end;
-      }
-      .ms-demo-chip {
-        padding: 7px 10px;
-        border: 1px solid #30363d;
-        border-radius: 999px;
-        color: #8b949e;
-        background: #161b22;
-        font-size: 13px;
-        font-weight: 800;
-      }
-      .ms-demo-chip.is-active {
-        color: #0d1117;
-        border-color: #58a6ff;
-        background: #58a6ff;
       }
       #ms-demo-editor {
         display: grid;
         grid-row: 2;
-        grid-template-rows: 44px 1fr 70px;
+        grid-template-rows: 1fr;
         min-width: 0;
         border-right: 1px solid #30363d;
         background: #0d1117;
       }
-      .ms-demo-tabbar {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 0 18px;
-        color: #8b949e;
-        border-bottom: 1px solid #30363d;
-        font-size: 14px;
-      }
-      .ms-demo-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: #2f81f7;
-        box-shadow: 16px 0 #a371f7, 32px 0 #3fb950;
-      }
-      .ms-demo-filename {
-        margin-left: 38px;
-        color: #f0f6fc;
-        font-weight: 600;
-      }
       #ms-demo-source {
         margin: 0;
-        padding: 24px 26px;
+        padding: 34px 30px;
         overflow: hidden;
         color: #c9d1d9;
         background: #0d1117;
@@ -449,49 +363,17 @@ async function installDemoShell(page, viewport) {
         line-height: 1.55;
         white-space: pre-wrap;
       }
-      #ms-demo-source::before {
-        content: "1\\A 2\\A 3\\A 4\\A 5\\A 6\\A 7\\A 8\\A 9\\A 10";
-        float: left;
-        width: 34px;
-        margin-right: 16px;
-        color: #6e7681;
-        white-space: pre;
-        text-align: right;
-      }
-      #ms-demo-caption {
-        display: flex;
-        align-items: center;
-        padding: 0 24px;
-        border-top: 1px solid #30363d;
-        color: #9be9a8;
-        font-size: 20px;
-        font-weight: 700;
-      }
       #ms-demo-preview-frame {
         grid-row: 2;
         min-width: 0;
-        display: grid;
-        grid-template-rows: 44px 1fr;
+        display: block;
         background: #f6f8fa;
-      }
-      .ms-demo-preview-title {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 0 20px;
-        color: #24292f;
-        background: #ffffff;
-        border-bottom: 1px solid #d8dee4;
-        font-size: 14px;
-        font-weight: 700;
-      }
-      .ms-demo-preview-title span {
-        color: #57606a;
-        font-weight: 500;
       }
       #ms-demo-preview-scroll {
         overflow: hidden;
-        padding: 30px 48px 48px;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 38px 56px 48px;
         background: #ffffff;
         color: #24292f;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -547,23 +429,12 @@ async function installDemoShell(page, viewport) {
     shell.id = 'ms-demo-shell';
     shell.innerHTML = `
       <header id="ms-demo-hero" aria-label="Demo headline">
-        <div>
-          <div class="ms-demo-eyebrow">local-only core</div>
-          <div id="ms-demo-label"></div>
-          <div id="ms-demo-kicker"></div>
-        </div>
-        <div id="ms-demo-chips" aria-label="Capabilities"></div>
+        <div id="ms-demo-label"></div>
       </header>
       <section id="ms-demo-editor" aria-label="Markdown source">
-        <div class="ms-demo-tabbar">
-          <div class="ms-demo-dot"></div>
-          <div class="ms-demo-filename">local-spec.md</div>
-        </div>
         <pre id="ms-demo-source"></pre>
-        <div id="ms-demo-caption"></div>
       </section>
       <section id="ms-demo-preview-frame" aria-label="Markdown Studio preview">
-        <div class="ms-demo-preview-title">Markdown Studio Preview <span>local render</span></div>
         <main id="ms-demo-preview-scroll"></main>
       </section>
       <div id="ms-demo-rendered-source" aria-hidden="true"></div>
@@ -581,9 +452,7 @@ async function installDemoShell(page, viewport) {
 
     window.__msDemoSetScene = (scene) => {
       document.getElementById('ms-demo-source').textContent = scene.source;
-      document.getElementById('ms-demo-caption').textContent = scene.label;
       document.getElementById('ms-demo-label').textContent = scene.label;
-      document.getElementById('ms-demo-kicker').textContent = scene.kicker;
       const rendered = document.getElementById('ms-demo-rendered-source');
       const preview = document.getElementById('ms-demo-preview-scroll');
       const headings = Array.from(rendered.querySelectorAll('h1, h2, h3, h4'));
@@ -591,7 +460,7 @@ async function installDemoShell(page, viewport) {
       if (target) {
         const targetLevel = Number(target.tagName.slice(1));
         const fragment = document.createDocumentFragment();
-        let node = target;
+        let node = target.nextElementSibling;
         let count = 0;
         const limit = scene.maxPreviewNodes || 8;
         while (node && count < limit) {
@@ -613,13 +482,6 @@ async function installDemoShell(page, viewport) {
         preview.replaceChildren(fragment);
         preview.scrollTop = 0;
       }
-      const chips = document.getElementById('ms-demo-chips');
-      chips.replaceChildren(...['Local', 'Mermaid', 'PlantUML', 'WaveDrom', 'Markdown', 'PDF'].map((label) => {
-        const chip = document.createElement('span');
-        chip.className = `ms-demo-chip${label === scene.key ? ' is-active' : ''}`;
-        chip.textContent = label;
-        return chip;
-      }));
     };
     window.__msDemoSetScene(initialSource);
   }, scenes[0]);
