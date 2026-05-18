@@ -26,8 +26,7 @@ const scenes = [
     source: [
       '```mermaid',
       'flowchart LR',
-      '  Markdown --> Preview',
-      '  Preview --> PDF',
+      '  MD --> Preview --> PDF',
       '```',
     ].join('\n'),
   },
@@ -40,8 +39,8 @@ const scenes = [
     source: [
       '```plantuml',
       '@startuml',
-      '[Markdown] --> [Local PlantUML]',
-      '[Local PlantUML] --> [PDF]',
+      '[MD] --> [PlantUML]',
+      '[PlantUML] --> [PDF]',
       '@enduml',
       '```',
     ].join('\n'),
@@ -54,10 +53,8 @@ const scenes = [
     maxPreviewNodes: 8,
     source: [
       '```wavedrom',
-      '{ signal: [',
-      '  { name: "clk", wave: "p...." },',
-      '  { name: "data", wave: "x.3.x" }',
-      ']}',
+      'clk:  p....',
+      'data: x.3.x',
       '```',
     ].join('\n'),
   },
@@ -73,7 +70,7 @@ const scenes = [
       '- [x] tasks',
       '- tables',
       '',
-      '$$E = mc^2$$',
+      '$$E=mc^2$$',
     ].join('\n'),
   },
   {
@@ -325,8 +322,8 @@ async function installDemoShell(page, viewport) {
         width: ${viewport.width}px;
         height: ${viewport.height}px;
         display: grid;
-        grid-template-rows: 74px 1fr;
-        grid-template-columns: 34% 66%;
+        grid-template-rows: 82px 1fr;
+        grid-template-columns: 32% 68%;
         background: #0d1117;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
@@ -340,7 +337,7 @@ async function installDemoShell(page, viewport) {
       }
       #ms-demo-label {
         color: #f0f6fc;
-        font-size: 32px;
+        font-size: 40px;
         line-height: 1.1;
         font-weight: 800;
       }
@@ -359,7 +356,7 @@ async function installDemoShell(page, viewport) {
         color: #c9d1d9;
         background: #0d1117;
         font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-        font-size: 18px;
+        font-size: 23px;
         line-height: 1.55;
         white-space: pre-wrap;
       }
@@ -381,16 +378,16 @@ async function installDemoShell(page, viewport) {
         line-height: 1.55;
       }
       #ms-demo-preview-scroll.is-diagram {
-        padding: 74px 84px;
+        padding: 62px 78px;
       }
       #ms-demo-preview-scroll.is-diagram .diagram-container {
-        zoom: 2.2;
+        zoom: 2.55;
       }
       #ms-demo-preview-scroll.is-markdown,
       #ms-demo-preview-scroll.is-pdf {
         padding: 58px 84px;
-        font-size: 20px;
-        zoom: 1.35;
+        font-size: 22px;
+        zoom: 1.5;
       }
       #ms-demo-preview-scroll.is-markdown table {
         font-size: 18px;

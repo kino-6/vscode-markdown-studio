@@ -14,8 +14,7 @@ Preview modern Markdown and export polished PDFs without sending document conten
 
 ```mermaid
 flowchart LR
-  Markdown --> Preview
-  Preview --> PDF
+  Markdown --> Preview --> PDF
 ```
 
 ## PlantUML Components
@@ -45,7 +44,7 @@ skinparam shadowing false
 
 | Feature | Output |
 | --- | --- |
-| KaTeX | $$E = mc^2$$ |
+| KaTeX | $$E=mc^2$$ |
 
 ## PDF Output
 
