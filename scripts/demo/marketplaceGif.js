@@ -20,7 +20,7 @@ const scenes = [
   {
     heading: 'Mermaid Flow',
     key: 'Mermaid',
-    label: 'Mermaid renders locally',
+    label: 'Preview Mermaid',
     kicker: 'Flowcharts and architecture diagrams appear in Preview and PDF.',
     maxPreviewNodes: 8,
     source: [
@@ -34,7 +34,7 @@ const scenes = [
   {
     heading: 'PlantUML Components',
     key: 'PlantUML',
-    label: 'PlantUML without remote servers',
+    label: 'Preview PlantUML',
     kicker: 'Bundled PlantUML runs through a local Java runtime.',
     maxPreviewNodes: 8,
     source: [
@@ -49,7 +49,7 @@ const scenes = [
   {
     heading: 'WaveDrom Timing',
     key: 'WaveDrom',
-    label: 'WaveDrom timing diagrams',
+    label: 'Preview WaveDrom',
     kicker: 'Timing diagrams for hardware-style docs stay offline too.',
     maxPreviewNodes: 8,
     source: [
@@ -64,7 +64,7 @@ const scenes = [
   {
     heading: 'Modern Markdown',
     key: 'Markdown',
-    label: 'Modern Markdown preview',
+    label: 'Preview Markdown',
     kicker: 'Tasks, tables, code, CJK text, emoji, and KaTeX math in one renderer.',
     maxPreviewNodes: 8,
     source: [
@@ -79,7 +79,7 @@ const scenes = [
   {
     heading: 'PDF Output',
     key: 'PDF',
-    label: 'Export polished PDFs',
+    label: 'Export PDF',
     kicker: 'The same local renderer produces TOCs, page numbers, and bookmarks.',
     maxPreviewNodes: 10,
     source: [
@@ -326,7 +326,7 @@ async function installDemoShell(page, viewport) {
         height: ${viewport.height}px;
         display: grid;
         grid-template-rows: 74px 1fr;
-        grid-template-columns: 39% 61%;
+        grid-template-columns: 34% 66%;
         background: #0d1117;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
@@ -379,6 +379,21 @@ async function installDemoShell(page, viewport) {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         font-size: 16px;
         line-height: 1.55;
+      }
+      #ms-demo-preview-scroll.is-diagram {
+        padding: 74px 84px;
+      }
+      #ms-demo-preview-scroll.is-diagram .diagram-container {
+        zoom: 2.2;
+      }
+      #ms-demo-preview-scroll.is-markdown,
+      #ms-demo-preview-scroll.is-pdf {
+        padding: 58px 84px;
+        font-size: 20px;
+        zoom: 1.35;
+      }
+      #ms-demo-preview-scroll.is-markdown table {
+        font-size: 18px;
       }
       #ms-demo-preview-scroll h1 {
         margin-top: 0;
@@ -455,6 +470,11 @@ async function installDemoShell(page, viewport) {
       document.getElementById('ms-demo-label').textContent = scene.label;
       const rendered = document.getElementById('ms-demo-rendered-source');
       const preview = document.getElementById('ms-demo-preview-scroll');
+      preview.className = scene.key === 'PDF'
+        ? 'is-pdf'
+        : scene.key === 'Markdown'
+          ? 'is-markdown'
+          : 'is-diagram';
       const headings = Array.from(rendered.querySelectorAll('h1, h2, h3, h4'));
       const target = headings.find((node) => (node.textContent || '').trim() === scene.heading);
       if (target) {
