@@ -82,9 +82,8 @@ const scenes = [
     source: [
       'Export PDF',
       '',
-      '- PDF bookmarks',
-      '- page numbers',
-      '- local output',
+      'Preview content',
+      '  -> embedded PDF',
     ].join('\n'),
   },
 ];
@@ -389,6 +388,64 @@ async function installDemoShell(page, viewport) {
         font-size: 22px;
         zoom: 1.5;
       }
+      #ms-demo-preview-scroll.is-pdf {
+        padding: 14px 34px;
+        zoom: 1;
+        background: #eaeef2;
+      }
+      .ms-demo-pdf-page {
+        width: 710px;
+        min-height: 500px;
+        box-sizing: border-box;
+        margin: 0 auto;
+        padding: 24px 28px;
+        border: 1px solid #d0d7de;
+        background: #ffffff;
+        box-shadow: 0 18px 40px rgba(27, 31, 36, 0.18);
+      }
+      .ms-demo-pdf-title {
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #d8dee4;
+        color: #24292f;
+        font-size: 26px;
+        font-weight: 800;
+      }
+      .ms-demo-pdf-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .ms-demo-pdf-card {
+        min-height: 152px;
+        padding: 12px 14px;
+        border: 1px solid #d8dee4;
+        border-radius: 8px;
+        background: #f6f8fa;
+        overflow: hidden;
+      }
+      .ms-demo-pdf-card strong {
+        display: block;
+        margin-bottom: 8px;
+        color: #57606a;
+        font-size: 15px;
+      }
+      .ms-demo-pdf-card .diagram-container {
+        margin: 0;
+        zoom: 1.04;
+      }
+      .ms-demo-pdf-card svg {
+        max-width: none;
+      }
+      .ms-demo-pdf-equation {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 66px;
+        color: #24292f;
+        font-size: 34px;
+        font-weight: 700;
+      }
       #ms-demo-preview-scroll.is-markdown table {
         font-size: 18px;
       }
@@ -462,6 +519,49 @@ async function installDemoShell(page, viewport) {
       document.body.appendChild(overlay);
     }
 
+    function cloneRenderedBlock(headingText, selector) {
+      const rendered = document.getElementById('ms-demo-rendered-source');
+      const heading = Array.from(rendered.querySelectorAll('h1, h2, h3, h4'))
+        .find((node) => (node.textContent || '').trim() === headingText);
+      if (!heading) return null;
+      let node = heading.nextElementSibling;
+      while (node) {
+        if (/^H[1-4]$/.test(node.tagName)) break;
+        const match = node.matches?.(selector) ? node : node.querySelector?.(selector);
+        if (match) {
+          const clone = match.cloneNode(true);
+          clone.querySelectorAll?.('.ms-copy-btn, .zoom-toolbar').forEach((el) => el.remove());
+          return clone;
+        }
+        node = node.nextElementSibling;
+      }
+      return null;
+    }
+
+    function buildPdfPreview() {
+      const page = document.createElement('section');
+      page.className = 'ms-demo-pdf-page';
+      page.innerHTML = `
+        <div class="ms-demo-pdf-title">preview.pdf</div>
+        <div class="ms-demo-pdf-grid">
+          <article class="ms-demo-pdf-card" data-demo-pdf-slot="Mermaid"><strong>Mermaid</strong></article>
+          <article class="ms-demo-pdf-card" data-demo-pdf-slot="PlantUML"><strong>PlantUML</strong></article>
+          <article class="ms-demo-pdf-card" data-demo-pdf-slot="WaveDrom"><strong>WaveDrom</strong></article>
+          <article class="ms-demo-pdf-card"><strong>Markdown + KaTeX</strong><div class="ms-demo-pdf-equation">E=mc²</div></article>
+        </div>
+      `;
+      const slots = {
+        Mermaid: cloneRenderedBlock('Mermaid Flow', '.diagram-container'),
+        PlantUML: cloneRenderedBlock('PlantUML Components', '.diagram-container'),
+        WaveDrom: cloneRenderedBlock('WaveDrom Timing', '.diagram-container'),
+      };
+      for (const [name, clone] of Object.entries(slots)) {
+        const slot = page.querySelector(`[data-demo-pdf-slot="${name}"]`);
+        if (slot && clone) slot.appendChild(clone);
+      }
+      return page;
+    }
+
     window.__msDemoSetScene = (scene) => {
       document.getElementById('ms-demo-source').textContent = scene.source;
       document.getElementById('ms-demo-label').textContent = scene.label;
@@ -472,6 +572,11 @@ async function installDemoShell(page, viewport) {
         : scene.key === 'Markdown'
           ? 'is-markdown'
           : 'is-diagram';
+      if (scene.key === 'PDF') {
+        preview.replaceChildren(buildPdfPreview());
+        preview.scrollTop = 0;
+        return;
+      }
       const headings = Array.from(rendered.querySelectorAll('h1, h2, h3, h4'));
       const target = headings.find((node) => (node.textContent || '').trim() === scene.heading);
       if (target) {
