@@ -12,6 +12,7 @@ cd "$REPO_ROOT"
 VERSION=$(node -p "require('./package.json').version")
 NAME=$(node -p "require('./package.json').name")
 PUBLISHER=$(node -p "require('./package.json').publisher")
+BRANCH=$(git branch --show-current 2>/dev/null || echo HEAD)
 VSIX_PATH="dist/${NAME}-${VERSION}.vsix"
 EXTENSION_ID="${PUBLISHER}.${NAME}"
 
@@ -37,7 +38,9 @@ rm -rf ~/.vscode/extensions/${EXTENSION_ID}-*
 
 # 5. VSIXを再ビルド
 echo "[5/6] Building VSIX..."
-npm run package
+npm run build
+rm -f dist/*.vsix
+vsce package --githubBranch "$BRANCH" -o dist/
 
 # 6. 再インストール
 echo "[6/6] Installing ${VSIX_PATH}..."

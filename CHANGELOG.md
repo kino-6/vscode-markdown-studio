@@ -2,6 +2,14 @@
 
 All notable changes to Markdown Studio will be documented in this file.
 
+## [1.0.1] - 2026-05-18
+
+### Changed
+
+- Refined Marketplace positioning around local PDF export, Mermaid, PlantUML, WaveDrom, KaTeX, TOCs, and bookmarks.
+- Added a focused Marketplace GIF that shows Markdown source rendered locally in Preview and embedded into PDF output.
+- Added a direct sample PDF link from the Marketplace README.
+
 ## [1.0.0] - 2026-05-13
 
 ### Release Focus
