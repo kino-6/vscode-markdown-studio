@@ -8,6 +8,8 @@ Preview modern Markdown and export PDFs locally with Mermaid, PlantUML, WaveDrom
 
 Markdown Studio renders Markdown, diagrams, math, code, local assets, TOCs, PDF indexes, and PDF bookmarks from one VS Code workflow. Core Markdown, diagram rendering, and PDF export run on your machine. External resources use `whitelist` mode by default with GitHub domains allowlisted; switch to `block-all` for strict LocalOnly documents.
 
+New here? Start with [docs/getting-started.md](./docs/getting-started.md) for common Preview, PDF export, diagram, and LocalOnly workflows.
+
 ## Quick Start
 
 1. Open a Markdown file.
