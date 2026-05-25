@@ -128,16 +128,12 @@ Five built-in presets with per-setting overrides:
 | `Markdown Studio: Preview in Current Tab` | Open Markdown preview in the active editor group |
 | `Markdown Studio: Preview Full Width` | Open Markdown preview without the content width limit |
 | `Markdown Studio: Export PDF` | Export current document to PDF |
-| `Markdown Studio: Export PDF with Setting` | Choose a profile, recent snapshot, or current settings for one PDF export |
 | `Markdown Studio: Validate Local Environment` | Check Java, PlantUML JAR, temp directory |
 | `Markdown Studio: Setup Dependencies` | Install Amazon Corretto JDK and Chromium |
 | `Markdown Studio: Reload Preview (Clear Cache)` | Clear webview cache and reload |
 | `Markdown Studio: Insert TOC` | Insert or update Table of Contents at cursor |
-| `Markdown Studio: Select Export Profile` | Choose a configured PDF export profile |
-| `Markdown Studio: Import Profile from JSON` | Import a portable export profile into settings |
-| `Markdown Studio: Export Profile to JSON` | Save a configured export profile as JSON |
-| `Markdown Studio: Export Active Profile to JSON` | Save the active export profile as JSON |
-| `Markdown Studio: Save Export Snapshot as Profile` | Promote a recent export snapshot into a named profile |
+| `Markdown Studio: Export Current Settings to JSON` | Save the current portable PDF settings as JSON |
+| `Markdown Studio: Import Settings from JSON` | Apply portable PDF settings from JSON |
 
 ## Configuration
 
@@ -155,37 +151,26 @@ Common settings:
 | `markdownStudio.style.customCss` | `""` | Final CSS override layer. |
 | `markdownStudio.export.pageFormat` | `A4` | PDF page size. |
 | `markdownStudio.export.outputFilename` | `${filename}` | PDF filename template. |
-| `markdownStudio.exportProfiles` | `[]` | Named PDF export profiles for team sharing. |
-| `markdownStudio.activeExportProfile` | `""` | Active profile applied during PDF export. |
 | `markdownStudio.security.externalResources.mode` | `whitelist` | External resource policy. Use `block-all` for strict LocalOnly documents. |
 | `markdownStudio.network.caCertificates` | `[]` | Extra CA certificates for proxy/SSL inspection environments. |
 
 The same CSS stack applies to both preview and PDF export. Preview width is controlled separately by `markdownStudio.preview.contentWidth` and does not change PDF page size.
 
-Team export profiles can be shared through `.vscode/settings.json`:
+Portable PDF settings can be shared as JSON:
 
 ```json
 {
-  "markdownStudio.exportProfiles": [
-    {
-      "schemaVersion": 1,
-      "name": "Company Spec A4",
-      "pageFormat": "A4",
-      "stylePreset": "github",
-      "securityMode": "block-all",
-      "includeBookmarks": true,
-      "includePdfIndex": true
-    }
-  ],
-  "markdownStudio.activeExportProfile": "Company Spec A4"
+  "schemaVersion": 1,
+  "name": "Company Spec A4",
+  "pageFormat": "A4",
+  "stylePreset": "github",
+  "securityMode": "block-all",
+  "includeBookmarks": true,
+  "includePdfIndex": true
 }
 ```
 
-Profiles are export-time overlays and do not rewrite normal settings. `Markdown Studio: Export PDF with Setting` lets you choose a profile, a recent timestamped snapshot, or current settings for a single export without changing the active profile.
-
-Every successful command-based PDF export stores a bounded internal snapshot of the resolved export subset. Snapshots are kept in VS Code state, not as workspace files, so they do not scatter through the repository. Use `Markdown Studio: Save Export Snapshot as Profile` when a timestamped export should become a named, shareable profile.
-
-JSON import/export commands are available for moving profiles between users and repositories; imported profiles are copied into User or Workspace settings.
+Use `Markdown Studio: Export Current Settings to JSON` to write the current portable subset. Use `Markdown Studio: Import Settings from JSON` to apply a shared JSON file to User or Workspace settings.
 
 ## WaveDrom
 

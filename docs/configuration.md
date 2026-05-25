@@ -23,8 +23,6 @@ For term definitions such as TOC, PDF Index, and bookmarks, see [glossary.md](./
 | `markdownStudio.export.pdfBookmarks.enabled` | boolean | `true` | Generate PDF bookmarks from headings. |
 | `markdownStudio.export.outputFilename` | string | `${filename}` | PDF output filename template. |
 | `markdownStudio.export.diagramTimeout` | number | `0` | Diagram render timeout in seconds. `0` means no timeout. |
-| `markdownStudio.exportProfiles` | array | `[]` | Named export profile subsets for repeatable PDF output. |
-| `markdownStudio.activeExportProfile` | string | `""` | Active export profile name. Empty means no profile overlay. |
 | `markdownStudio.preview.theme` | enum | `auto` | Preview theme mode: auto, light, dark. |
 | `markdownStudio.preview.contentWidth` | enum | `a4` | Preview content width: a4, full. |
 | `markdownStudio.preview.sourceJump.enabled` | boolean | `true` | Double-click preview to jump to source line. |
@@ -77,48 +75,37 @@ code { background: #f0f0f0; color: #d63384; }
 
 Theme samples are available in `examples/custom-styles/`.
 
-## Export Profiles
+## Portable PDF Settings
 
-Export profiles are named, versioned subsets of Markdown Studio settings. They are useful when a team needs repeatable PDF output without asking every user to set page size, style, security mode, bookmarks, and PDF index settings manually.
+Portable PDF settings are versioned JSON files that capture the small subset of Markdown Studio settings most often shared by a team: page size, style preset, security mode, bookmarks, and PDF index.
 
-Add shared profiles to `.vscode/settings.json`:
+Run `Markdown Studio: Export Current Settings to JSON` to write the current portable subset:
 
 ```json
 {
-  "markdownStudio.exportProfiles": [
-    {
-      "schemaVersion": 1,
-      "name": "Company Spec A4",
-      "pageFormat": "A4",
-      "stylePreset": "github",
-      "securityMode": "block-all",
-      "includeBookmarks": true,
-      "includePdfIndex": true
-    }
-  ],
-  "markdownStudio.activeExportProfile": "Company Spec A4"
+  "schemaVersion": 1,
+  "name": "Company Spec A4",
+  "pageFormat": "A4",
+  "stylePreset": "github",
+  "securityMode": "block-all",
+  "includeBookmarks": true,
+  "includePdfIndex": true
 }
 ```
 
-Run `Markdown Studio: Select Export Profile` to choose a profile from the configured list. The active profile is applied only during `Markdown Studio: Export PDF`; it does not rewrite normal `markdownStudio.export.*`, `markdownStudio.style.*`, or security settings.
+Run `Markdown Studio: Import Settings from JSON` to apply a shared JSON file to User or Workspace settings. Import updates the matching real settings such as `markdownStudio.export.pageFormat`, `markdownStudio.style.preset`, and `markdownStudio.security.externalResources.mode`; Markdown Studio does not keep a runtime dependency on the external JSON file.
 
-Run `Markdown Studio: Export PDF with Setting` when you want to choose the setting source for one export. The picker is grouped into named Profiles, Recent Export Snapshots, and Current Settings. Choosing an item exports immediately and does not change `markdownStudio.activeExportProfile`.
-
-Profile v1 fields:
+Settings JSON v1 fields:
 
 | Field | Description |
 | ----- | ----------- |
 | `schemaVersion` | Optional. Missing means version 1. |
-| `name` | Required display name and active profile key. |
-| `pageFormat` | Overrides `markdownStudio.export.pageFormat`. |
-| `stylePreset` | Overrides `markdownStudio.style.preset`. |
-| `securityMode` | Overrides `markdownStudio.security.externalResources.mode`. |
-| `includeBookmarks` | Overrides `markdownStudio.export.pdfBookmarks.enabled`. |
-| `includePdfIndex` | Overrides `markdownStudio.export.pdfIndex.enabled`. |
-
-Every successful command-based PDF export stores a timestamped snapshot of the resolved export subset in VS Code state. Snapshots are internal history records, not committed files. Use them to reproduce a recent export, or run `Markdown Studio: Save Export Snapshot as Profile` to promote a snapshot into a named profile.
-
-Use `Markdown Studio: Export Profile to JSON` to save a configured profile as a portable JSON file, or `Markdown Studio: Export Active Profile to JSON` to save the currently active profile directly. Use `Markdown Studio: Import Profile from JSON` to copy a profile JSON file into User or Workspace settings. Imported profiles are stored in VS Code settings; Markdown Studio does not keep a runtime dependency on the external JSON file.
+| `name` | Required display name for the imported/exported settings. |
+| `pageFormat` | Applies to `markdownStudio.export.pageFormat`. |
+| `stylePreset` | Applies to `markdownStudio.style.preset`. |
+| `securityMode` | Applies to `markdownStudio.security.externalResources.mode`. |
+| `includeBookmarks` | Applies to `markdownStudio.export.pdfBookmarks.enabled`. |
+| `includePdfIndex` | Applies to `markdownStudio.export.pdfIndex.enabled`. |
 
 ## LocalOnly Posture
 

@@ -42,17 +42,11 @@ vi.mock('../../src/deps/dependencyManager', () => ({
 
 // Mock other command imports to avoid side effects
 vi.mock('../../src/commands/exportPdf', () => ({ exportPdfCommand: vi.fn() }));
-vi.mock('../../src/commands/exportPdfWithSetting', () => ({
-  exportPdfWithSettingCommand: vi.fn(),
-  saveSnapshotAsProfileCommand: vi.fn(),
-}));
 vi.mock('../../src/commands/exportProfileToJson', () => ({
-  exportActiveProfileToJsonCommand: vi.fn(),
   exportProfileToJsonCommand: vi.fn(),
 }));
 vi.mock('../../src/commands/importExportProfile', () => ({ importExportProfileCommand: vi.fn() }));
 vi.mock('../../src/commands/openPreview', () => ({ openPreviewCommand: vi.fn() }));
-vi.mock('../../src/commands/selectExportProfile', () => ({ selectExportProfileCommand: vi.fn() }));
 vi.mock('../../src/commands/validateEnvironment', () => ({ validateEnvironmentCommand: vi.fn() }));
 vi.mock('../../src/commands/insertToc', () => ({ insertTocCommand: vi.fn() }));
 vi.mock('../../src/infra/tempFiles', () => ({ cleanupTempFiles: vi.fn().mockResolvedValue(undefined) }));
@@ -99,22 +93,17 @@ describe('extension activation', () => {
     expect(ensureAllMock).toHaveBeenCalledWith(context);
     expect(showWarningMessage).not.toHaveBeenCalled();
 
-    // 14 commands registered: preview variants, PDF export variants, profiles, snapshots, validateEnvironment, reloadPreview, setupDependencies, insertToc
-    expect(registerCommand).toHaveBeenCalledTimes(14);
+    expect(registerCommand).toHaveBeenCalledTimes(10);
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.openPreview', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.openPreviewInCurrentTab', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.openPreviewFullWidth', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.exportPdf', expect.any(Function));
-    expect(registerCommand).toHaveBeenCalledWith('markdownStudio.exportPdfWithSetting', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.validateEnvironment', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.reloadPreview', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.setupDependencies', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.insertToc', expect.any(Function));
-    expect(registerCommand).toHaveBeenCalledWith('markdownStudio.selectExportProfile', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.importExportProfile', expect.any(Function));
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.exportProfileToJson', expect.any(Function));
-    expect(registerCommand).toHaveBeenCalledWith('markdownStudio.exportActiveProfileToJson', expect.any(Function));
-    expect(registerCommand).toHaveBeenCalledWith('markdownStudio.saveSnapshotAsProfile', expect.any(Function));
   });
 
   it('shows warning when ensureAll reports failures', async () => {
@@ -133,7 +122,7 @@ describe('extension activation', () => {
       expect.stringContaining('Setup Dependencies')
     );
     // Commands still registered despite failure
-    expect(registerCommand).toHaveBeenCalledTimes(14);
+    expect(registerCommand).toHaveBeenCalledTimes(10);
   });
 
   it('still activates and registers commands when ensureAll throws', async () => {
@@ -146,7 +135,7 @@ describe('extension activation', () => {
       expect.stringContaining('unexpected crash')
     );
     // All commands still registered
-    expect(registerCommand).toHaveBeenCalledTimes(14);
+    expect(registerCommand).toHaveBeenCalledTimes(10);
   });
 
   it('setupDependencies command calls reinstall and shows success', async () => {

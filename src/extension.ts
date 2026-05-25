@@ -1,10 +1,8 @@
 import * as vscode from 'vscode';
 import { exportPdfCommand } from './commands/exportPdf';
-import { exportPdfWithSettingCommand, saveSnapshotAsProfileCommand } from './commands/exportPdfWithSetting';
-import { exportActiveProfileToJsonCommand, exportProfileToJsonCommand } from './commands/exportProfileToJson';
+import { exportProfileToJsonCommand } from './commands/exportProfileToJson';
 import { importExportProfileCommand } from './commands/importExportProfile';
 import { openPreviewCommand } from './commands/openPreview';
-import { selectExportProfileCommand } from './commands/selectExportProfile';
 import { validateEnvironmentCommand } from './commands/validateEnvironment';
 import { cleanupTempFiles } from './infra/tempFiles';
 import { DependencyManager } from './deps/dependencyManager';
@@ -71,7 +69,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('markdownStudio.openPreviewInCurrentTab', async () => openPreviewCommand(context, { location: 'current' })),
     vscode.commands.registerCommand('markdownStudio.openPreviewFullWidth', async () => openPreviewCommand(context, { location: 'current', previewContentWidth: 'full' })),
     vscode.commands.registerCommand('markdownStudio.exportPdf', async () => exportPdfCommand(context)),
-    vscode.commands.registerCommand('markdownStudio.exportPdfWithSetting', async () => exportPdfWithSettingCommand(context)),
     vscode.commands.registerCommand('markdownStudio.validateEnvironment', async () => validateEnvironmentCommand(context)),
     vscode.commands.registerCommand('markdownStudio.reloadPreview', async () => {
       destroyPreviewPanel();
@@ -92,11 +89,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     }),
     vscode.commands.registerCommand('markdownStudio.insertToc', async () => insertTocCommand()),
-    vscode.commands.registerCommand('markdownStudio.selectExportProfile', async () => selectExportProfileCommand()),
     vscode.commands.registerCommand('markdownStudio.importExportProfile', async () => importExportProfileCommand()),
     vscode.commands.registerCommand('markdownStudio.exportProfileToJson', async () => exportProfileToJsonCommand()),
-    vscode.commands.registerCommand('markdownStudio.exportActiveProfileToJson', async () => exportActiveProfileToJsonCommand()),
-    vscode.commands.registerCommand('markdownStudio.saveSnapshotAsProfile', async () => saveSnapshotAsProfileCommand(context)),
     vscode.workspace.onWillSaveTextDocument((event) => {
       if (event.document.languageId !== 'markdown') return;
 

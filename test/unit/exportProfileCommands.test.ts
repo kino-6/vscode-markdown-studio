@@ -29,6 +29,10 @@ vi.mock('vscode', () => ({
     getConfiguration: () => ({
       get: (key: string, fallback: unknown) =>
         Object.prototype.hasOwnProperty.call(mocks.values, key) ? mocks.values[key] : fallback,
+      inspect: (key: string) =>
+        Object.prototype.hasOwnProperty.call(mocks.values, key)
+          ? { globalValue: mocks.values[key] }
+          : undefined,
       update: vi.fn(async (key: string, value: unknown, target: unknown) => {
         mocks.values[key] = value;
         mocks.updates.push({ key, value, target });
@@ -49,11 +53,10 @@ vi.mock('vscode', () => ({
   },
 }));
 
-import { exportActiveProfileToJsonCommand, exportProfileToJsonCommand } from '../../src/commands/exportProfileToJson';
+import { exportProfileToJsonCommand } from '../../src/commands/exportProfileToJson';
 import { importExportProfileCommand } from '../../src/commands/importExportProfile';
-import { selectExportProfileCommand } from '../../src/commands/selectExportProfile';
 
-describe('export profile commands', () => {
+describe('export settings JSON commands', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.values = {};
@@ -61,46 +64,39 @@ describe('export profile commands', () => {
     mocks.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
   });
 
-  it('selectExportProfileCommand stores the selected profile name', async () => {
+  it('exports the current Markdown Studio settings as JSON', async () => {
     mocks.values = {
-      exportProfiles: [
-        { name: 'Company Spec A4', pageFormat: 'A4' },
-      ],
+      'export.pageFormat': 'A5',
+      'style.preset': 'github',
+      'security.externalResources.mode': 'block-all',
+      'export.pdfBookmarks.enabled': false,
+      'export.pdfIndex.enabled': true,
     };
-    mocks.showQuickPick.mockImplementation(async (items: any[]) => items[1]);
+    mocks.showSaveDialog.mockResolvedValue({ fsPath: '/tmp/settings.json' });
 
-    await selectExportProfileCommand();
+    await exportProfileToJsonCommand();
 
-    expect(mocks.updates).toContainEqual({
-      key: 'activeExportProfile',
-      value: 'Company Spec A4',
-      target: 2,
+    expect(mocks.writeFile).toHaveBeenCalledTimes(1);
+    const [, bytes] = mocks.writeFile.mock.calls[0];
+    expect(JSON.parse(new TextDecoder().decode(bytes))).toEqual({
+      schemaVersion: 1,
+      name: 'Current Settings',
+      pageFormat: 'A5',
+      stylePreset: 'github',
+      securityMode: 'block-all',
+      includeBookmarks: false,
+      includePdfIndex: true,
     });
   });
 
-  it('selectExportProfileCommand clears the active profile', async () => {
-    mocks.values = {
-      activeExportProfile: 'Company Spec A4',
-      exportProfiles: [
-        { name: 'Company Spec A4', pageFormat: 'A4' },
-      ],
-    };
-    mocks.showQuickPick.mockImplementation(async (items: any[]) => items[0]);
-
-    await selectExportProfileCommand();
-
-    expect(mocks.updates).toContainEqual({
-      key: 'activeExportProfile',
-      value: '',
-      target: 2,
-    });
-  });
-
-  it('importExportProfileCommand copies a JSON profile into workspace settings', async () => {
+  it('imports a JSON settings file into workspace settings', async () => {
     const profileJson = JSON.stringify({
       name: 'Company Spec A4',
       pageFormat: 'A4',
       stylePreset: 'github',
+      securityMode: 'block-all',
+      includeBookmarks: true,
+      includePdfIndex: false,
     });
     mocks.showOpenDialog.mockResolvedValue([{ fsPath: '/tmp/profile.json' }]);
     mocks.showQuickPick.mockImplementation(async (items: any[]) => items[0]);
@@ -108,85 +104,32 @@ describe('export profile commands', () => {
 
     await importExportProfileCommand();
 
-    expect(mocks.updates).toHaveLength(1);
-    expect(mocks.updates[0]).toMatchObject({
-      key: 'exportProfiles',
-      target: 2,
-    });
-    expect(mocks.updates[0].value).toEqual([
-      {
-        schemaVersion: 1,
-        name: 'Company Spec A4',
-        pageFormat: 'A4',
-        stylePreset: 'github',
-      },
+    expect(mocks.updates).toEqual([
+      { key: 'export.pageFormat', value: 'A4', target: 2 },
+      { key: 'style.preset', value: 'github', target: 2 },
+      { key: 'security.externalResources.mode', value: 'block-all', target: 2 },
+      { key: 'export.pdfBookmarks.enabled', value: true, target: 2 },
+      { key: 'export.pdfIndex.enabled', value: false, target: 2 },
     ]);
   });
 
-  it('exportProfileToJsonCommand writes selected profile JSON', async () => {
-    mocks.values = {
-      exportProfiles: [
-        {
-          schemaVersion: 1,
-          name: 'Company Spec A4',
-          pageFormat: 'A4',
-        },
+  it('lets the user choose one entry when the JSON contains multiple settings', async () => {
+    const profileJson = JSON.stringify({
+      profiles: [
+        { name: 'A4', pageFormat: 'A4' },
+        { name: 'Letter', pageFormat: 'Letter' },
       ],
-    };
-    mocks.showQuickPick.mockImplementation(async (items: any[]) => items[0]);
-    mocks.showSaveDialog.mockResolvedValue({ fsPath: '/tmp/profile.json' });
+    });
+    mocks.showOpenDialog.mockResolvedValue([{ fsPath: '/tmp/profiles.json' }]);
+    mocks.showQuickPick
+      .mockImplementationOnce(async (items: any[]) => items[1])
+      .mockImplementationOnce(async (items: any[]) => items[0]);
+    mocks.readFile.mockResolvedValue(new TextEncoder().encode(profileJson));
 
-    await exportProfileToJsonCommand();
+    await importExportProfileCommand();
 
-    expect(mocks.writeFile).toHaveBeenCalledTimes(1);
-    const [, bytes] = mocks.writeFile.mock.calls[0];
-    expect(new TextDecoder().decode(bytes)).toBe(
-      '{\n  "schemaVersion": 1,\n  "name": "Company Spec A4",\n  "pageFormat": "A4"\n}\n',
-    );
-  });
-
-  it('exportActiveProfileToJsonCommand writes active profile JSON without a profile picker', async () => {
-    mocks.values = {
-      activeExportProfile: 'Company Spec A4',
-      exportProfiles: [
-        {
-          schemaVersion: 1,
-          name: 'Company Spec A4',
-          pageFormat: 'A4',
-        },
-      ],
-    };
-    mocks.showSaveDialog.mockResolvedValue({ fsPath: '/tmp/profile.json' });
-
-    await exportActiveProfileToJsonCommand();
-
-    expect(mocks.showQuickPick).not.toHaveBeenCalled();
-    expect(mocks.writeFile).toHaveBeenCalledTimes(1);
-    const [, bytes] = mocks.writeFile.mock.calls[0];
-    expect(new TextDecoder().decode(bytes)).toContain('"name": "Company Spec A4"');
-  });
-
-  it('exportActiveProfileToJsonCommand lets the user pick a profile when none is active', async () => {
-    mocks.values = {
-      exportProfiles: [
-        {
-          schemaVersion: 1,
-          name: 'Company Spec A4',
-          pageFormat: 'A4',
-        },
-      ],
-    };
-    mocks.showQuickPick.mockImplementation(async (items: any[]) => items[0]);
-    mocks.showSaveDialog.mockResolvedValue({ fsPath: '/tmp/profile.json' });
-
-    await exportActiveProfileToJsonCommand();
-
-    expect(mocks.showWarningMessage).not.toHaveBeenCalledWith(
-      'Markdown Studio: No active export profile is configured.',
-    );
-    expect(mocks.showQuickPick).toHaveBeenCalledTimes(1);
-    expect(mocks.writeFile).toHaveBeenCalledTimes(1);
-    const [, bytes] = mocks.writeFile.mock.calls[0];
-    expect(new TextDecoder().decode(bytes)).toContain('"name": "Company Spec A4"');
+    expect(mocks.updates).toEqual([
+      { key: 'export.pageFormat', value: 'Letter', target: 2 },
+    ]);
   });
 });

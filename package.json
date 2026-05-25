@@ -60,10 +60,6 @@
         "title": "%command.exportPdf.title%"
       },
       {
-        "command": "markdownStudio.exportPdfWithSetting",
-        "title": "%command.exportPdfWithSetting.title%"
-      },
-      {
         "command": "markdownStudio.validateEnvironment",
         "title": "%command.validateEnvironment.title%"
       },
@@ -80,24 +76,12 @@
         "title": "%command.insertToc.title%"
       },
       {
-        "command": "markdownStudio.selectExportProfile",
-        "title": "%command.selectExportProfile.title%"
-      },
-      {
         "command": "markdownStudio.importExportProfile",
         "title": "%command.importExportProfile.title%"
       },
       {
         "command": "markdownStudio.exportProfileToJson",
         "title": "%command.exportProfileToJson.title%"
-      },
-      {
-        "command": "markdownStudio.exportActiveProfileToJson",
-        "title": "%command.exportActiveProfileToJson.title%"
-      },
-      {
-        "command": "markdownStudio.saveSnapshotAsProfile",
-        "title": "%command.saveSnapshotAsProfile.title%"
       }
     ],
     "configuration": {
@@ -332,66 +316,6 @@
           "type": "number",
           "default": 0,
           "markdownDescription": "%configuration.export.diagramTimeout.markdownDescription%"
-        },
-        "markdownStudio.exportProfiles": {
-          "type": "array",
-          "default": [],
-          "markdownDescription": "%configuration.exportProfiles.markdownDescription%",
-          "items": {
-            "type": "object",
-            "required": [
-              "name"
-            ],
-            "properties": {
-              "schemaVersion": {
-                "type": "number",
-                "default": 1
-              },
-              "name": {
-                "type": "string"
-              },
-              "pageFormat": {
-                "type": "string",
-                "enum": [
-                  "A3",
-                  "A4",
-                  "A5",
-                  "Letter",
-                  "Legal",
-                  "Tabloid"
-                ]
-              },
-              "stylePreset": {
-                "type": "string",
-                "enum": [
-                  "markdown-pdf",
-                  "github",
-                  "minimal",
-                  "academic",
-                  "custom"
-                ]
-              },
-              "securityMode": {
-                "type": "string",
-                "enum": [
-                  "block-all",
-                  "whitelist",
-                  "allow-all"
-                ]
-              },
-              "includeBookmarks": {
-                "type": "boolean"
-              },
-              "includePdfIndex": {
-                "type": "boolean"
-              }
-            }
-          }
-        },
-        "markdownStudio.activeExportProfile": {
-          "type": "string",
-          "default": "",
-          "markdownDescription": "%configuration.activeExportProfile.markdownDescription%"
         },
         "markdownStudio.network.caCertificates": {
           "type": "array",

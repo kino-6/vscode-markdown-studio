@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { CodeBlockConfig, ExportConfigOverlay, ExternalResourceConfig, ExternalResourceMode, PageFormat, PdfBookmarksConfig, PdfHeaderFooterConfig, PdfIndexConfig, PdfTocConfig, PreviewContentWidth, PreviewThemeMode, ResolvedStyleConfig, StyleConfigOverrides, TocConfig } from '../types/models';
 import { CONFIG_DEFAULTS, CONFIG_KEYS, CONFIG_SECTION } from './configurationRegistry';
-import { resolveActiveExportProfile } from './exportProfiles';
 import { resolvePreset } from './presets';
 
 export function clampFontSize(n: number): number {
@@ -163,10 +162,5 @@ export function getConfig(): MarkdownStudioConfig {
 }
 
 export function getExportConfig(overlay?: ExportConfigOverlay): MarkdownStudioConfig {
-  const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
-  if (overlay) {
-    return getConfigFromWorkspace(cfg, overlay);
-  }
-  const { profile } = resolveActiveExportProfile(cfg);
-  return getConfigFromWorkspace(cfg, profile);
+  return getConfigFromWorkspace(vscode.workspace.getConfiguration(CONFIG_SECTION), overlay);
 }

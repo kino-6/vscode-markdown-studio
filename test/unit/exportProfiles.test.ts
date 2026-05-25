@@ -1,15 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  getConfiguredExportProfiles,
   normalizeExportProfile,
-  resolveActiveExportProfile,
+  normalizeExportProfiles,
 } from '../../src/infra/exportProfiles';
-
-function configuration(values: Record<string, unknown>) {
-  return {
-    get: (key: string, fallback: unknown) => values[key] ?? fallback,
-  } as any;
-}
 
 describe('normalizeExportProfile', () => {
   it('normalizes a valid v1 profile', () => {
@@ -93,41 +86,19 @@ describe('normalizeExportProfile', () => {
 });
 
 describe('configured export profiles', () => {
-  it('normalizes profiles from configuration arrays', () => {
-    const cfg = configuration({
-      exportProfiles: [
-        { name: 'A4', pageFormat: 'A4' },
-        { name: 'Letter', pageFormat: 'Letter' },
-      ],
-    });
+  it('normalizes profiles from arrays', () => {
+    const result = normalizeExportProfiles([
+      { name: 'A4', pageFormat: 'A4' },
+      { name: 'Letter', pageFormat: 'Letter' },
+    ]);
 
-    expect(getConfiguredExportProfiles(cfg).profiles.map(profile => profile.name)).toEqual(['A4', 'Letter']);
+    expect(result.profiles.map(profile => profile.name)).toEqual(['A4', 'Letter']);
   });
 
-  it('resolves the active profile by name', () => {
-    const cfg = configuration({
-      activeExportProfile: 'Letter',
-      exportProfiles: [
-        { name: 'A4', pageFormat: 'A4' },
-        { name: 'Letter', pageFormat: 'Letter' },
-      ],
-    });
+  it('warns when array input contains invalid profiles', () => {
+    const result = normalizeExportProfiles([{ name: 'A4' }, { pageFormat: 'A5' }]);
 
-    expect(resolveActiveExportProfile(cfg).profile).toMatchObject({
-      name: 'Letter',
-      pageFormat: 'Letter',
-    });
-  });
-
-  it('warns when active profile is missing', () => {
-    const cfg = configuration({
-      activeExportProfile: 'Missing',
-      exportProfiles: [{ name: 'A4', pageFormat: 'A4' }],
-    });
-
-    const result = resolveActiveExportProfile(cfg);
-
-    expect(result.profile).toBeUndefined();
-    expect(result.warnings[0]).toContain('Missing');
+    expect(result.profiles).toHaveLength(1);
+    expect(result.warnings[0]).toContain('requires a non-empty name');
   });
 });

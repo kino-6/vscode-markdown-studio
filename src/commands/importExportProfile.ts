@@ -1,8 +1,12 @@
 import * as vscode from 'vscode';
 import type { ExportProfile } from '../types/models';
 import { CONFIG_KEYS, CONFIG_SECTION } from '../infra/configurationRegistry';
-import { getConfiguredExportProfiles, normalizeExportProfile } from '../infra/exportProfiles';
+import { normalizeExportProfile } from '../infra/exportProfiles';
 import { RUNTIME_MESSAGES } from '../infra/messages';
+
+interface ProfileQuickPickItem extends vscode.QuickPickItem {
+  profile: ExportProfile;
+}
 
 interface TargetQuickPickItem extends vscode.QuickPickItem {
   target: vscode.ConfigurationTarget;
@@ -39,7 +43,7 @@ function parseProfileJson(text: string): ExportProfile[] {
   }
 
   if (profiles.length === 0) {
-    throw new Error(issues.join(' ') || 'No valid export profile found.');
+    throw new Error(issues.join(' ') || 'No valid Markdown Studio settings found.');
   }
 
   for (const issue of issues) {
@@ -47,6 +51,25 @@ function parseProfileJson(text: string): ExportProfile[] {
   }
 
   return profiles;
+}
+
+async function chooseProfile(profiles: ExportProfile[]): Promise<ExportProfile | undefined> {
+  if (profiles.length === 1) return profiles[0];
+
+  const selected = await vscode.window.showQuickPick<ProfileQuickPickItem>(
+    profiles.map(profile => ({
+      label: profile.name,
+      description: [
+        profile.pageFormat,
+        profile.stylePreset,
+        profile.securityMode,
+      ].filter(Boolean).join(' · '),
+      profile,
+    })),
+    { placeHolder: RUNTIME_MESSAGES.exportProfiles.importProfilePlaceholder },
+  );
+
+  return selected?.profile;
 }
 
 async function chooseTarget(): Promise<vscode.ConfigurationTarget | undefined> {
@@ -58,7 +81,7 @@ async function chooseTarget(): Promise<vscode.ConfigurationTarget | undefined> {
   const items: TargetQuickPickItem[] = [
     {
       label: RUNTIME_MESSAGES.exportProfiles.workspaceSettings,
-      description: 'Share with this workspace',
+      description: 'Save to this workspace',
       target: vscode.ConfigurationTarget.Workspace,
     },
     {
@@ -75,27 +98,32 @@ async function chooseTarget(): Promise<vscode.ConfigurationTarget | undefined> {
   return selected?.target;
 }
 
-async function upsertProfile(
-  profiles: ExportProfile[],
+async function applyImportedSettings(
   profile: ExportProfile,
-): Promise<boolean> {
-  const index = profiles.findIndex(existing => existing.name === profile.name);
+  target: vscode.ConfigurationTarget,
+): Promise<void> {
+  const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
+  const updates: Array<[string, unknown]> = [];
 
-  if (index >= 0) {
-    const replacement = await vscode.window.showWarningMessage(
-      RUNTIME_MESSAGES.exportProfiles.replaceExisting(profile.name),
-      { modal: true },
-      RUNTIME_MESSAGES.exportProfiles.replace,
-    );
-    if (replacement !== RUNTIME_MESSAGES.exportProfiles.replace) {
-      return false;
-    }
-    profiles[index] = profile;
-  } else {
-    profiles.push(profile);
+  if (profile.pageFormat !== undefined) {
+    updates.push([CONFIG_KEYS.pageFormat, profile.pageFormat]);
+  }
+  if (profile.stylePreset !== undefined) {
+    updates.push([CONFIG_KEYS.stylePreset, profile.stylePreset]);
+  }
+  if (profile.securityMode !== undefined) {
+    updates.push([CONFIG_KEYS.externalResourceMode, profile.securityMode]);
+  }
+  if (profile.includeBookmarks !== undefined) {
+    updates.push([CONFIG_KEYS.exportPdfBookmarksEnabled, profile.includeBookmarks]);
+  }
+  if (profile.includePdfIndex !== undefined) {
+    updates.push([CONFIG_KEYS.exportPdfIndexEnabled, profile.includePdfIndex]);
   }
 
-  return true;
+  for (const [key, value] of updates) {
+    await cfg.update(key, value, target);
+  }
 }
 
 export async function importExportProfileCommand(): Promise<void> {
@@ -104,7 +132,7 @@ export async function importExportProfileCommand(): Promise<void> {
     canSelectFolders: false,
     canSelectMany: false,
     filters: { JSON: ['json'] },
-    title: 'Import Markdown Studio Export Profile',
+    title: 'Import Markdown Studio Settings',
   });
 
   const uri = selectedFiles?.[0];
@@ -113,24 +141,14 @@ export async function importExportProfileCommand(): Promise<void> {
   try {
     const bytes = await vscode.workspace.fs.readFile(uri);
     const text = new TextDecoder('utf-8').decode(bytes);
-    const importedProfiles = parseProfileJson(text);
+    const profile = await chooseProfile(parseProfileJson(text));
+    if (!profile) return;
+
     const target = await chooseTarget();
     if (target === undefined) return;
 
-    const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
-    const profiles = getConfiguredExportProfiles(cfg).profiles;
-    let importedCount = 0;
-
-    for (const profile of importedProfiles) {
-      if (await upsertProfile(profiles, profile)) {
-        importedCount += 1;
-        void vscode.window.showInformationMessage(RUNTIME_MESSAGES.exportProfiles.imported(profile.name));
-      }
-    }
-
-    if (importedCount > 0) {
-      await cfg.update(CONFIG_KEYS.exportProfiles, profiles, target);
-    }
+    await applyImportedSettings(profile, target);
+    void vscode.window.showInformationMessage(RUNTIME_MESSAGES.exportProfiles.importedSettings(profile.name));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     void vscode.window.showErrorMessage(RUNTIME_MESSAGES.exportProfiles.importFailed(message));

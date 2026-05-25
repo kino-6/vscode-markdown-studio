@@ -8,11 +8,9 @@ All notable changes to Markdown Studio will be documented in this file.
 
 ### Added
 
-- Added export profiles for repeatable PDF settings shared through VS Code User or Workspace configuration.
-- Added commands to select an active export profile and import/export profile JSON files.
-- Added `Export PDF with Setting` for one-time profile, snapshot, or current-setting PDF exports.
-- Added timestamped export snapshots and snapshot-to-profile promotion.
-- Documented team sharing through `.vscode/settings.json`.
+- Added portable JSON import/export for the current PDF settings subset.
+- Added `Markdown Studio: Export Current Settings to JSON` and `Markdown Studio: Import Settings from JSON` for team sharing.
+- Documented team sharing through a versioned `markdown-studio-settings.json` file.
 
 ## [1.0.1] - 2026-05-18
 

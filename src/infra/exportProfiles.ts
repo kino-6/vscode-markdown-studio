@@ -1,15 +1,8 @@
-import * as vscode from 'vscode';
 import type { ExportProfile, ExternalResourceMode, PageFormat, PresetName } from '../types/models';
-import { CONFIG_DEFAULTS, CONFIG_KEYS } from './configurationRegistry';
 
 export interface ExportProfileValidationResult {
   profile?: ExportProfile;
   errors: string[];
-  warnings: string[];
-}
-
-export interface ExportProfileResolution {
-  profile?: ExportProfile;
   warnings: string[];
 }
 
@@ -109,32 +102,4 @@ export function normalizeExportProfiles(input: unknown): { profiles: ExportProfi
     }
   }
   return { profiles, warnings };
-}
-
-export function getConfiguredExportProfiles(
-  cfg: vscode.WorkspaceConfiguration,
-): { profiles: ExportProfile[]; warnings: string[] } {
-  return normalizeExportProfiles(cfg.get<unknown>(CONFIG_KEYS.exportProfiles, CONFIG_DEFAULTS.exportProfiles));
-}
-
-export function resolveActiveExportProfile(cfg: vscode.WorkspaceConfiguration): ExportProfileResolution {
-  const activeName = cfg.get<string>(CONFIG_KEYS.activeExportProfile, CONFIG_DEFAULTS.activeExportProfile).trim();
-  if (!activeName) {
-    return { warnings: [] };
-  }
-
-  const { profiles, warnings } = getConfiguredExportProfiles(cfg);
-  const matches = profiles.filter(profile => profile.name === activeName);
-
-  if (matches.length === 0) {
-    return {
-      warnings: [...warnings, `Active export profile "${activeName}" was not found.`],
-    };
-  }
-
-  if (matches.length > 1) {
-    warnings.push(`Multiple export profiles named "${activeName}" were found. Using the first match.`);
-  }
-
-  return { profile: matches[0], warnings };
 }

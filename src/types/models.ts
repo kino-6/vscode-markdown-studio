@@ -132,21 +132,6 @@ export interface ExportConfigOverlay {
   includePdfIndex?: boolean;
 }
 
-export type ExportSettingSource =
-  | { kind: 'current' }
-  | { kind: 'profile'; profileName: string }
-  | { kind: 'snapshot'; snapshotId: string };
-
-export interface ExportSnapshot {
-  schemaVersion: 1;
-  id: string;
-  createdAt: string;
-  sourceFile: string;
-  outputFile?: string;
-  source: ExportSettingSource;
-  settings: ExportConfigOverlay;
-}
-
 /** Extracted heading entry. */
 export interface HeadingEntry {
   level: number;       // 1-6
