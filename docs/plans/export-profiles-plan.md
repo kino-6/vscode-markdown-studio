@@ -804,3 +804,102 @@ E2E tests:
   part of the profile subset?
 - Should `Export PDF with Setting` become the recommended command in README, or
   remain an advanced/reproducibility command?
+
+## Growth Ideas Backlog
+
+This section is a memo only. The current branch should finish the export profile
+and configuration workflow first; these ideas are candidates for later planning.
+
+### Current Signal
+
+- v1.0.1 acquisition is showing early organic pull, so the next bets should make
+  the extension easier to recommend in public posts and easier to adopt in teams.
+- Large existing Markdown/PDF extensions already cover basic export, rich
+  preview, and broad format conversion. Markdown Studio should avoid competing
+  only on "exports PDF" and instead lean into local, reproducible, secure,
+  team-shareable output.
+- Marketplace pages and issue trackers suggest common demand clusters:
+  reproducible exports, CSS/theme control, Mermaid/math/diagram support,
+  multi-file workflows, archival/compliance PDFs, and less setup friction.
+
+References checked:
+
+- `yzane.markdown-pdf`: <https://marketplace.visualstudio.com/items?itemName=yzane.markdown-pdf>
+- `shd101wyy.markdown-preview-enhanced`: <https://marketplace.visualstudio.com/items?itemName=shd101wyy.markdown-preview-enhanced>
+- `tomoki1207.pdf`: <https://marketplace.visualstudio.com/items?itemName=tomoki1207.pdf>
+- `goessner.mdmath`: <https://marketplace.visualstudio.com/items?itemName=goessner.mdmath>
+- `JimKuipers.makespdf`: <https://marketplace.visualstudio.com/items?itemName=JimKuipers.makespdf>
+- `ChrisChinchilla.vscode-pandoc`: <https://marketplace.visualstudio.com/items?itemName=ChrisChinchilla.vscode-pandoc>
+- `L-Zhou.markdown-merger`: <https://marketplace.visualstudio.com/items?itemName=L-Zhou.markdown-merger>
+
+### Highest-Leverage Feature Bets
+
+1. One-click "Team PDF Spec" onboarding
+   - Package profile import, export, and selection into a README-friendly team
+     flow: commit `markdown-studio.profiles.json`, import it, pick a profile,
+     export.
+   - Buzz angle: "Make every teammate generate the exact same PDF from the same
+     Markdown."
+   - Fits current branch because profiles are intentionally subset overlays.
+
+2. Export provenance and reproducibility receipt
+   - Add an optional sidecar JSON or embedded PDF metadata with profile name,
+     profile schema version, extension version, timestamp, source hash, and key
+     export settings.
+   - Buzz angle: "PDFs you can audit and reproduce."
+   - Especially useful for specs, internal docs, regulated teams, and release
+     notes.
+
+3. Secure local export badge and diagnostics
+   - Add a command that summarizes whether the current export is fully local,
+     whether remote resources are blocked, and which local assets were used.
+   - Buzz angle: "Know exactly what your Markdown PDF exporter can access."
+   - This differentiates from cloud/remote or opaque export workflows.
+
+4. Multi-file document bundle
+   - Support a simple manifest that exports multiple Markdown files into one
+     PDF with a generated cover, TOC, bookmarks, and stable ordering.
+   - Buzz angle: "Turn a docs folder into a clean PDF package."
+   - Demand likely overlaps with specs, proposals, runbooks, and project docs.
+
+5. Preset gallery for real work
+   - Ship practical presets: GitHub README, Company Spec A4, Academic A4,
+     Proposal Letter, Runbook, Release Notes.
+   - Buzz angle: screenshots and short demos become much easier to understand
+     than raw configuration.
+   - Keep presets transparent by expressing them as profiles, not hidden logic.
+
+6. Export quality checks
+   - Before export, warn about broken local images, missing Mermaid render,
+     remote resources blocked by the selected security mode, and headings that
+     create empty bookmark titles.
+   - Buzz angle: "Catch PDF problems before sending the file."
+   - This turns the extension from an exporter into a production workflow.
+
+7. "Last good export" recovery
+   - Extend snapshots so users can re-run or promote a known-good export when a
+     document has drifted.
+   - Buzz angle: "Regenerate the exact PDF setting that worked yesterday."
+   - This is adjacent to the current snapshot work and should remain internal
+     history unless promoted to a profile.
+
+### Lower-Priority Or Riskier Ideas
+
+- Cloud or sharing service: likely conflicts with the local/security promise.
+- Full Pandoc replacement: broad surface area and crowded positioning.
+- Heavy template marketplace: attractive but expensive to maintain.
+- AI rewriting or summarization: buzzworthy, but not core to trustworthy PDF
+  generation and may dilute the product story.
+
+### Recommended Narrative
+
+Position Markdown Studio as:
+
+> Local, reproducible Markdown-to-PDF for teams that care about security and
+> consistent output.
+
+Short-term release framing after this branch:
+
+- v1.0.2: Team-shareable export profiles and repeatable PDF settings.
+- Next: Provenance receipts, secure export diagnostics, and multi-file PDF
+  bundles.
