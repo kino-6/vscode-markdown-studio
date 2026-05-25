@@ -1,5 +1,6 @@
 export type PreviewThemeMode = 'auto' | 'light' | 'dark';
 export type PreviewContentWidth = 'a4' | 'full';
+export type PageFormat = 'A3' | 'A4' | 'A5' | 'Letter' | 'Legal' | 'Tabloid';
 
 export type FencedBlockKind = 'mermaid' | 'plantuml' | 'puml' | 'svg' | 'wavedrom';
 
@@ -110,6 +111,40 @@ export const DEFAULT_ALLOWED_DOMAINS: readonly string[] = [
 export interface ExternalResourceConfig {
   mode: ExternalResourceMode;
   allowedDomains: string[];
+}
+
+export interface ExportProfile {
+  [key: string]: unknown;
+  schemaVersion: 1;
+  name: string;
+  pageFormat?: PageFormat;
+  stylePreset?: PresetName;
+  securityMode?: ExternalResourceMode;
+  includeBookmarks?: boolean;
+  includePdfIndex?: boolean;
+}
+
+export interface ExportConfigOverlay {
+  pageFormat?: PageFormat;
+  stylePreset?: PresetName;
+  securityMode?: ExternalResourceMode;
+  includeBookmarks?: boolean;
+  includePdfIndex?: boolean;
+}
+
+export type ExportSettingSource =
+  | { kind: 'current' }
+  | { kind: 'profile'; profileName: string }
+  | { kind: 'snapshot'; snapshotId: string };
+
+export interface ExportSnapshot {
+  schemaVersion: 1;
+  id: string;
+  createdAt: string;
+  sourceFile: string;
+  outputFile?: string;
+  source: ExportSettingSource;
+  settings: ExportConfigOverlay;
 }
 
 /** Extracted heading entry. */

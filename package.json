@@ -2,7 +2,7 @@
   "name": "markdown-studio-local",
   "displayName": "Markdown Studio: Local PDF Export",
   "description": "%extension.description%",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "kino6",
   "license": "MIT",
   "repository": {
@@ -60,6 +60,10 @@
         "title": "%command.exportPdf.title%"
       },
       {
+        "command": "markdownStudio.exportPdfWithSetting",
+        "title": "%command.exportPdfWithSetting.title%"
+      },
+      {
         "command": "markdownStudio.validateEnvironment",
         "title": "%command.validateEnvironment.title%"
       },
@@ -74,6 +78,26 @@
       {
         "command": "markdownStudio.insertToc",
         "title": "%command.insertToc.title%"
+      },
+      {
+        "command": "markdownStudio.selectExportProfile",
+        "title": "%command.selectExportProfile.title%"
+      },
+      {
+        "command": "markdownStudio.importExportProfile",
+        "title": "%command.importExportProfile.title%"
+      },
+      {
+        "command": "markdownStudio.exportProfileToJson",
+        "title": "%command.exportProfileToJson.title%"
+      },
+      {
+        "command": "markdownStudio.exportActiveProfileToJson",
+        "title": "%command.exportActiveProfileToJson.title%"
+      },
+      {
+        "command": "markdownStudio.saveSnapshotAsProfile",
+        "title": "%command.saveSnapshotAsProfile.title%"
       }
     ],
     "configuration": {
@@ -309,6 +333,66 @@
           "default": 0,
           "markdownDescription": "%configuration.export.diagramTimeout.markdownDescription%"
         },
+        "markdownStudio.exportProfiles": {
+          "type": "array",
+          "default": [],
+          "markdownDescription": "%configuration.exportProfiles.markdownDescription%",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "schemaVersion": {
+                "type": "number",
+                "default": 1
+              },
+              "name": {
+                "type": "string"
+              },
+              "pageFormat": {
+                "type": "string",
+                "enum": [
+                  "A3",
+                  "A4",
+                  "A5",
+                  "Letter",
+                  "Legal",
+                  "Tabloid"
+                ]
+              },
+              "stylePreset": {
+                "type": "string",
+                "enum": [
+                  "markdown-pdf",
+                  "github",
+                  "minimal",
+                  "academic",
+                  "custom"
+                ]
+              },
+              "securityMode": {
+                "type": "string",
+                "enum": [
+                  "block-all",
+                  "whitelist",
+                  "allow-all"
+                ]
+              },
+              "includeBookmarks": {
+                "type": "boolean"
+              },
+              "includePdfIndex": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "markdownStudio.activeExportProfile": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "%configuration.activeExportProfile.markdownDescription%"
+        },
         "markdownStudio.network.caCertificates": {
           "type": "array",
           "items": {
@@ -332,7 +416,7 @@
     "test:ci": "npm run lint && npm run test:unit && npm run test:integration",
     "test:preview-runtime": "npm run build && node scripts/test/previewRuntimeCheck.js",
     "test:demo-render": "npm run build && node scripts/test/demoRenderCheck.js",
-    "package": "npm run build && rm -f dist/*.vsix && vsce package -o dist/",
+    "package": "npm run build && rm -f dist/*.vsix && npm exec -- vsce package -o dist/",
     "reinstall": "bash scripts/dev/reinstall.sh",
     "demo": "npx tsx scripts/demo/index.ts",
     "demo:marketplace-gif": "npm run build && node scripts/demo/marketplaceGif.js",
@@ -368,6 +452,7 @@
     "@types/vscode": "^1.92.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.9.1",
     "esbuild": "^0.24.0",
     "fast-check": "^4.6.0",
     "mermaid": "^11.12.0",

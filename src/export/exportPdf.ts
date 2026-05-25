@@ -9,10 +9,10 @@ import { buildPdfOptions, injectPageBreakCss, injectTocPageBreakCss } from './pd
 import { buildPdfIndexHtml, estimateIndexPageCount, HeadingPageEntry } from './pdfIndex';
 import { addBookmarks } from './pdfBookmarks';
 import { resolveOutputFilename, extractH1Title, FilenameContext } from './filenameResolver';
-import { getConfig } from '../infra/config';
+import { getExportConfig } from '../infra/config';
 import { loadCustomCss } from '../infra/customCssLoader';
 import { buildHtml } from '../preview/buildHtml';
-import type { BookmarkEntry } from '../types/models';
+import type { BookmarkEntry, ExportConfigOverlay } from '../types/models';
 import { RUNTIME_MESSAGES } from '../infra/messages';
 
 /** Progress reporting abstraction that avoids direct VS Code API coupling. */
@@ -52,7 +52,7 @@ const MIME_TYPES: Record<string, string> = {
   '.ico': 'image/x-icon',
 };
 
-type PdfExportConfig = ReturnType<typeof getConfig>;
+type PdfExportConfig = ReturnType<typeof getExportConfig>;
 type LocalImageRef = { match: string; before: string; fileUri: string };
 type HtmlReplacement = { match: string; replacement: string };
 type PdfAssets = {
@@ -68,6 +68,11 @@ type PdfPageOptions = NonNullable<Parameters<Page['pdf']>[0]>;
 type PdfRenderablePage = Pick<Page, 'pdf' | 'evaluate' | 'setViewportSize'>;
 type PdfHeading = { level: number; text: string; offsetTop: number; anchorId?: string };
 type HeadingDomData = { headings: PdfHeading[]; scrollHeight: number };
+
+export interface ExportToPdfOptions {
+  overlay?: ExportConfigOverlay;
+  config?: PdfExportConfig;
+}
 
 const CLIENT_RENDERED_DIAGRAM_SELECTOR = '.mermaid-host[data-mermaid-src], .wavedrom-host[data-wavedrom-src]';
 
@@ -441,8 +446,9 @@ export async function exportToPdf(
   context: vscode.ExtensionContext,
   progress?: ProgressReporter,
   cancellation?: CancellationChecker,
+  options: ExportToPdfOptions = {},
 ): Promise<string> {
-  const cfg = getConfig();
+  const cfg = options.config ?? getExportConfig(options.overlay);
   const assetsPromise = loadPdfAssets(context, cfg);
 
   // Step 1: Build HTML

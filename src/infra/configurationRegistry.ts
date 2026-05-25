@@ -35,6 +35,8 @@ export const CONFIG_KEYS = {
   codeBlockLineNumbers: 'codeBlock.lineNumbers',
   exportOutputFilename: 'export.outputFilename',
   exportDiagramTimeout: 'export.diagramTimeout',
+  exportProfiles: 'exportProfiles',
+  activeExportProfile: 'activeExportProfile',
   networkCaCertificates: 'network.caCertificates',
 } as const;
 
@@ -70,6 +72,8 @@ export const CONFIG_DEFAULTS = {
   codeBlockLineNumbers: true,
   exportOutputFilename: '${filename}',
   exportDiagramTimeout: 0,
+  exportProfiles: [],
+  activeExportProfile: '',
   networkCaCertificates: [] as string[],
 } as const;
 

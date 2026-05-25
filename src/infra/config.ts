@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
-import { CodeBlockConfig, ExternalResourceConfig, ExternalResourceMode, PdfBookmarksConfig, PdfHeaderFooterConfig, PdfIndexConfig, PdfTocConfig, PreviewContentWidth, PreviewThemeMode, ResolvedStyleConfig, StyleConfigOverrides, TocConfig } from '../types/models';
+import { CodeBlockConfig, ExportConfigOverlay, ExternalResourceConfig, ExternalResourceMode, PageFormat, PdfBookmarksConfig, PdfHeaderFooterConfig, PdfIndexConfig, PdfTocConfig, PreviewContentWidth, PreviewThemeMode, ResolvedStyleConfig, StyleConfigOverrides, TocConfig } from '../types/models';
 import { CONFIG_DEFAULTS, CONFIG_KEYS, CONFIG_SECTION } from './configurationRegistry';
+import { resolveActiveExportProfile } from './exportProfiles';
 import { resolvePreset } from './presets';
 
 export function clampFontSize(n: number): number {
@@ -14,7 +15,7 @@ export function clampLineHeight(n: number): number {
 export interface MarkdownStudioConfig {
   plantUmlMode: 'bundled-jar' | 'external-command' | 'docker';
   javaPath: string;
-  pageFormat: 'A3' | 'A4' | 'A5' | 'Letter' | 'Legal' | 'Tabloid';
+  pageFormat: PageFormat;
   externalResources: ExternalResourceConfig;
   pdfHeaderFooter: PdfHeaderFooterConfig;
   sourceJumpEnabled: boolean;
@@ -60,8 +61,16 @@ function hasUserValue(cfg: vscode.WorkspaceConfiguration, key: string): boolean 
 }
 
 export function resolveExternalResourceConfig(
-  cfg: vscode.WorkspaceConfiguration
+  cfg: vscode.WorkspaceConfiguration,
+  modeOverride?: ExternalResourceMode,
 ): ExternalResourceConfig {
+  if (modeOverride) {
+    return {
+      mode: modeOverride,
+      allowedDomains: cfg.get<string[]>(CONFIG_KEYS.externalResourceAllowedDomains, [...CONFIG_DEFAULTS.externalResourceAllowedDomains]),
+    };
+  }
+
   const hasNewMode = hasUserValue(cfg, CONFIG_KEYS.externalResourceMode);
   const hasLegacy = hasUserValue(cfg, CONFIG_KEYS.legacyBlockExternalLinks);
 
@@ -86,10 +95,11 @@ export function resolveExternalResourceConfig(
   };
 }
 
-export function getConfig(): MarkdownStudioConfig {
-  const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
-
-  const presetName = cfg.get<string>(CONFIG_KEYS.stylePreset, CONFIG_DEFAULTS.stylePreset);
+function getConfigFromWorkspace(
+  cfg: vscode.WorkspaceConfiguration,
+  overlay?: ExportConfigOverlay,
+): MarkdownStudioConfig {
+  const presetName = overlay?.stylePreset ?? cfg.get<string>(CONFIG_KEYS.stylePreset, CONFIG_DEFAULTS.stylePreset);
 
   const overrides: Partial<StyleConfigOverrides> = {};
   if (hasUserValue(cfg, CONFIG_KEYS.styleFontFamily)) {
@@ -110,8 +120,8 @@ export function getConfig(): MarkdownStudioConfig {
   return {
     plantUmlMode: cfg.get(CONFIG_KEYS.plantUmlMode, CONFIG_DEFAULTS.plantUmlMode),
     javaPath: cfg.get(CONFIG_KEYS.javaPath, CONFIG_DEFAULTS.javaPath),
-    pageFormat: cfg.get(CONFIG_KEYS.pageFormat, CONFIG_DEFAULTS.pageFormat),
-    externalResources: resolveExternalResourceConfig(cfg),
+    pageFormat: overlay?.pageFormat ?? cfg.get(CONFIG_KEYS.pageFormat, CONFIG_DEFAULTS.pageFormat),
+    externalResources: resolveExternalResourceConfig(cfg, overlay?.securityMode),
     pdfHeaderFooter: {
       headerEnabled: cfg.get<boolean>(CONFIG_KEYS.exportHeaderEnabled, CONFIG_DEFAULTS.exportHeaderEnabled),
       headerTemplate: cfg.get<string | null>(CONFIG_KEYS.exportHeaderTemplate, CONFIG_DEFAULTS.exportHeaderTemplate),
@@ -130,14 +140,14 @@ export function getConfig(): MarkdownStudioConfig {
       lineNumbers: cfg.get<boolean>(CONFIG_KEYS.codeBlockLineNumbers, CONFIG_DEFAULTS.codeBlockLineNumbers),
     },
     pdfIndex: {
-      enabled: cfg.get<boolean>(CONFIG_KEYS.exportPdfIndexEnabled, CONFIG_DEFAULTS.exportPdfIndexEnabled),
+      enabled: overlay?.includePdfIndex ?? cfg.get<boolean>(CONFIG_KEYS.exportPdfIndexEnabled, CONFIG_DEFAULTS.exportPdfIndexEnabled),
       title: cfg.get<string>(CONFIG_KEYS.exportPdfIndexTitle, CONFIG_DEFAULTS.exportPdfIndexTitle),
     },
     pdfToc: {
       hidden: cfg.get<boolean>(CONFIG_KEYS.exportPdfTocHidden, CONFIG_DEFAULTS.exportPdfTocHidden),
     },
     pdfBookmarks: {
-      enabled: cfg.get<boolean>(CONFIG_KEYS.exportPdfBookmarksEnabled, CONFIG_DEFAULTS.exportPdfBookmarksEnabled),
+      enabled: overlay?.includeBookmarks ?? cfg.get<boolean>(CONFIG_KEYS.exportPdfBookmarksEnabled, CONFIG_DEFAULTS.exportPdfBookmarksEnabled),
     },
     theme: cfg.get<string>(CONFIG_KEYS.styleTheme, CONFIG_DEFAULTS.styleTheme),
     customCss: cfg.get<string>(CONFIG_KEYS.styleCustomCss, CONFIG_DEFAULTS.styleCustomCss),
@@ -146,4 +156,17 @@ export function getConfig(): MarkdownStudioConfig {
     previewContentWidth: cfg.get<PreviewContentWidth>(CONFIG_KEYS.previewContentWidth, CONFIG_DEFAULTS.previewContentWidth),
     diagramTimeout: cfg.get<number>(CONFIG_KEYS.exportDiagramTimeout, CONFIG_DEFAULTS.exportDiagramTimeout),
   };
+}
+
+export function getConfig(): MarkdownStudioConfig {
+  return getConfigFromWorkspace(vscode.workspace.getConfiguration(CONFIG_SECTION));
+}
+
+export function getExportConfig(overlay?: ExportConfigOverlay): MarkdownStudioConfig {
+  const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
+  if (overlay) {
+    return getConfigFromWorkspace(cfg, overlay);
+  }
+  const { profile } = resolveActiveExportProfile(cfg);
+  return getConfigFromWorkspace(cfg, profile);
 }

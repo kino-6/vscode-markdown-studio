@@ -2,9 +2,11 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { PDFDocument } from 'pdf-lib';
 
 suite('Markdown Studio E2E', () => {
   const extensionId = 'kino6.markdown-studio-local';
+  const configSection = 'markdownStudio';
 
   suite('Extension Activation', () => {
     test('extension should be present', () => {
@@ -102,6 +104,71 @@ suite('Markdown Studio E2E', () => {
       // This command checks the local environment (Java, Playwright, etc.)
       // It should run without throwing even if tools are missing
       await vscode.commands.executeCommand('markdownStudio.validateEnvironment');
+    });
+  });
+
+  suite('Export Profile Commands', () => {
+    test('export profile commands should be registered', async () => {
+      const commands = await vscode.commands.getCommands(true);
+      for (const command of [
+        'markdownStudio.selectExportProfile',
+        'markdownStudio.importExportProfile',
+        'markdownStudio.exportProfileToJson',
+        'markdownStudio.exportActiveProfileToJson',
+        'markdownStudio.exportPdfWithSetting',
+        'markdownStudio.saveSnapshotAsProfile',
+      ]) {
+        assert.ok(commands.includes(command), `${command} should be registered`);
+      }
+    });
+
+    test('active export profile should affect PDF export page format', async function () {
+      this.timeout(60000);
+
+      const workspaceFolders = vscode.workspace.workspaceFolders;
+      assert.ok(workspaceFolders && workspaceFolders.length > 0);
+
+      const cfg = vscode.workspace.getConfiguration(configSection);
+      const testFile = path.join(workspaceFolders[0].uri.fsPath, 'test.md');
+      const expectedPdf = testFile.replace(/\.md$/, '.pdf');
+
+      try {
+        await cfg.update(
+          'exportProfiles',
+          [
+            {
+              schemaVersion: 1,
+              name: 'E2E A5 Profile',
+              pageFormat: 'A5',
+              includeBookmarks: false,
+              includePdfIndex: false,
+            },
+          ],
+          vscode.ConfigurationTarget.Workspace,
+        );
+        await cfg.update(
+          'activeExportProfile',
+          'E2E A5 Profile',
+          vscode.ConfigurationTarget.Workspace,
+        );
+
+        const doc = await vscode.workspace.openTextDocument(testFile);
+        await vscode.window.showTextDocument(doc);
+        await vscode.commands.executeCommand('markdownStudio.exportPdf');
+
+        assert.ok(fs.existsSync(expectedPdf), 'Expected PDF should be generated');
+        const pdf = await PDFDocument.load(fs.readFileSync(expectedPdf));
+        const { width, height } = pdf.getPage(0).getSize();
+
+        assert.ok(width < 500, `Expected A5-ish width, got ${width}`);
+        assert.ok(height < 700, `Expected A5-ish height, got ${height}`);
+      } finally {
+        if (fs.existsSync(expectedPdf)) {
+          fs.unlinkSync(expectedPdf);
+        }
+        await cfg.update('activeExportProfile', undefined, vscode.ConfigurationTarget.Workspace);
+        await cfg.update('exportProfiles', undefined, vscode.ConfigurationTarget.Workspace);
+      }
     });
   });
 });
