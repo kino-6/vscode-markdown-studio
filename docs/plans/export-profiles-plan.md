@@ -4,8 +4,10 @@
 
 The first implementation should stay small and predictable:
 
-- Export the current Markdown Studio PDF-related settings to JSON.
-- Import a selected JSON file and apply it to User or Workspace settings.
+- Export the current Markdown Studio PDF-related settings to timestamped JSON.
+- Store workspace exports under `.vscode/` and keep the latest three files.
+- Import from recent workspace exports first, or browse to a selected JSON file,
+  then apply it to User or Workspace settings.
 - Keep normal `Markdown Studio: Export PDF` as the only PDF export path.
 - Do not expose profile selection, active profile state, export snapshots, or
   "export with setting" commands in this branch.
@@ -19,13 +21,19 @@ busy and the first-run experience was unclear when no profiles were configured.
 ```mermaid
 flowchart TD
   A[User configures Markdown Studio settings] --> B[Export Current Settings to JSON]
-  B --> C[Commit or share markdown-studio-settings.json]
-  C --> D[Teammate runs Import Settings from JSON]
-  D --> E{Save target}
-  E -->|Workspace| F[.vscode/settings.json]
-  E -->|User| G[User settings]
-  F --> H[Export PDF]
-  G --> H
+  B --> C[Write .vscode/markdown-studio-settings-YYYYMMDD-HHMMSS.json]
+  C --> D[Keep latest 3 exports]
+  D --> E[Commit or share JSON]
+  E --> F[Teammate runs Import Settings from JSON]
+  F --> G{Source}
+  G -->|Recent .vscode export| H[Choose timestamped settings]
+  G -->|Other file| I[Browse JSON]
+  H --> J{Save target}
+  I --> J
+  J -->|Workspace| K[.vscode/settings.json]
+  J -->|User| L[User settings]
+  K --> M[Export PDF]
+  L --> M
 ```
 
 ## JSON Shape
@@ -62,6 +70,20 @@ Keep only two configuration commands:
 - `Markdown Studio: Export Current Settings to JSON`
 - `Markdown Studio: Import Settings from JSON`
 
+Export behavior:
+
+- Workspace open: write `.vscode/markdown-studio-settings-YYYYMMDD-HHMMSS.json`.
+- Keep at most the latest three matching files.
+- Show a localized notification after writing the settings file.
+- No workspace: fall back to a save dialog.
+
+Import behavior:
+
+- Workspace exports exist: show recent `.vscode/markdown-studio-settings-*.json`
+  files plus a "Choose JSON File..." option.
+- No workspace exports: open the JSON file picker directly.
+- Apply selected JSON to real User or Workspace settings.
+
 Retired from this branch:
 
 - `Markdown Studio: Select Export Profile`
@@ -72,12 +94,14 @@ Retired from this branch:
 ## Acceptance Criteria
 
 - A user with no prior profile setup can export current settings immediately.
+- Workspace exports are timestamped and capped to the latest three files.
 - Importing JSON applies real VS Code settings rather than creating a separate
   profile list.
 - `Markdown Studio: Export PDF` uses the normal current settings.
 - Command Palette remains easy to understand.
 - JSON import/export supports schema version 1 and ignores invalid optional
   fields with warnings.
+- Export completion is surfaced with localized English/Japanese notifications.
 - The docs explain team sharing through a portable JSON file.
 
 ## Growth Ideas Backlog

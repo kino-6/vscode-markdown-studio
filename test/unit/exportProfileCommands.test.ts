@@ -11,6 +11,10 @@ const mocks = vi.hoisted(() => ({
   showErrorMessage: vi.fn(),
   readFile: vi.fn(),
   writeFile: vi.fn(),
+  createDirectory: vi.fn(),
+  readDirectory: vi.fn(),
+  delete: vi.fn(),
+  language: 'en',
   workspaceFolders: [{ uri: { fsPath: '/workspace' } }],
 }));
 
@@ -19,8 +23,20 @@ vi.mock('vscode', () => ({
     Global: 1,
     Workspace: 2,
   },
+  FileType: {
+    File: 1,
+    Directory: 2,
+  },
   Uri: {
     file: (fsPath: string) => ({ fsPath }),
+    joinPath: (base: { fsPath: string }, ...paths: string[]) => ({
+      fsPath: [base.fsPath, ...paths].join('/').replace(/\/+/g, '/'),
+    }),
+  },
+  env: {
+    get language() {
+      return mocks.language;
+    },
   },
   workspace: {
     get workspaceFolders() {
@@ -41,6 +57,9 @@ vi.mock('vscode', () => ({
     fs: {
       readFile: (...args: unknown[]) => mocks.readFile(...args),
       writeFile: (...args: unknown[]) => mocks.writeFile(...args),
+      createDirectory: (...args: unknown[]) => mocks.createDirectory(...args),
+      readDirectory: (...args: unknown[]) => mocks.readDirectory(...args),
+      delete: (...args: unknown[]) => mocks.delete(...args),
     },
   },
   window: {
@@ -61,10 +80,14 @@ describe('export settings JSON commands', () => {
     vi.clearAllMocks();
     mocks.values = {};
     mocks.updates = [];
+    mocks.language = 'en';
     mocks.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+    mocks.createDirectory.mockResolvedValue(undefined);
+    mocks.readDirectory.mockResolvedValue([]);
+    mocks.delete.mockResolvedValue(undefined);
   });
 
-  it('exports the current Markdown Studio settings as JSON', async () => {
+  it('exports the current Markdown Studio settings to .vscode with a timestamped filename', async () => {
     mocks.values = {
       'export.pageFormat': 'A5',
       'style.preset': 'github',
@@ -72,12 +95,14 @@ describe('export settings JSON commands', () => {
       'export.pdfBookmarks.enabled': false,
       'export.pdfIndex.enabled': true,
     };
-    mocks.showSaveDialog.mockResolvedValue({ fsPath: '/tmp/settings.json' });
 
     await exportProfileToJsonCommand();
 
+    expect(mocks.showSaveDialog).not.toHaveBeenCalled();
+    expect(mocks.createDirectory).toHaveBeenCalledWith({ fsPath: '/workspace/.vscode' });
     expect(mocks.writeFile).toHaveBeenCalledTimes(1);
-    const [, bytes] = mocks.writeFile.mock.calls[0];
+    const [uri, bytes] = mocks.writeFile.mock.calls[0];
+    expect(uri.fsPath).toMatch(/^\/workspace\/\.vscode\/markdown-studio-settings-\d{8}-\d{6}\.json$/);
     expect(JSON.parse(new TextDecoder().decode(bytes))).toEqual({
       schemaVersion: 1,
       name: 'Current Settings',
@@ -87,6 +112,49 @@ describe('export settings JSON commands', () => {
       includeBookmarks: false,
       includePdfIndex: true,
     });
+    expect(mocks.showInformationMessage).toHaveBeenCalledWith(
+      expect.stringContaining('Exported settings to /workspace/.vscode/markdown-studio-settings-'),
+    );
+  });
+
+  it('keeps only the latest three workspace settings exports', async () => {
+    mocks.readDirectory.mockResolvedValue([
+      ['markdown-studio-settings-20260526-010000.json', 1],
+      ['markdown-studio-settings-20260526-020000.json', 1],
+      ['markdown-studio-settings-20260526-030000.json', 1],
+      ['markdown-studio-settings-20260526-040000.json', 1],
+      ['other.json', 1],
+    ]);
+
+    await exportProfileToJsonCommand();
+
+    expect(mocks.delete).toHaveBeenCalledWith({
+      fsPath: '/workspace/.vscode/markdown-studio-settings-20260526-020000.json',
+    });
+    expect(mocks.delete).toHaveBeenCalledWith({
+      fsPath: '/workspace/.vscode/markdown-studio-settings-20260526-010000.json',
+    });
+    expect(mocks.delete).toHaveBeenCalledTimes(2);
+  });
+
+  it('falls back to a save dialog when no workspace is open', async () => {
+    mocks.workspaceFolders = [];
+    mocks.showSaveDialog.mockResolvedValue({ fsPath: '/tmp/settings.json' });
+
+    await exportProfileToJsonCommand();
+
+    expect(mocks.showSaveDialog).toHaveBeenCalledTimes(1);
+    expect(mocks.writeFile.mock.calls[0][0]).toEqual({ fsPath: '/tmp/settings.json' });
+  });
+
+  it('uses a Japanese export notification in Japanese locale', async () => {
+    mocks.language = 'ja';
+
+    await exportProfileToJsonCommand();
+
+    expect(mocks.showInformationMessage).toHaveBeenCalledWith(
+      expect.stringContaining('設定を書き出しました'),
+    );
   });
 
   it('imports a JSON settings file into workspace settings', async () => {
@@ -98,6 +166,7 @@ describe('export settings JSON commands', () => {
       includeBookmarks: true,
       includePdfIndex: false,
     });
+    mocks.readDirectory.mockResolvedValue([]);
     mocks.showOpenDialog.mockResolvedValue([{ fsPath: '/tmp/profile.json' }]);
     mocks.showQuickPick.mockImplementation(async (items: any[]) => items[0]);
     mocks.readFile.mockResolvedValue(new TextEncoder().encode(profileJson));
@@ -120,6 +189,7 @@ describe('export settings JSON commands', () => {
         { name: 'Letter', pageFormat: 'Letter' },
       ],
     });
+    mocks.readDirectory.mockResolvedValue([]);
     mocks.showOpenDialog.mockResolvedValue([{ fsPath: '/tmp/profiles.json' }]);
     mocks.showQuickPick
       .mockImplementationOnce(async (items: any[]) => items[1])
@@ -130,6 +200,31 @@ describe('export settings JSON commands', () => {
 
     expect(mocks.updates).toEqual([
       { key: 'export.pageFormat', value: 'Letter', target: 2 },
+    ]);
+  });
+
+  it('lets the user choose a recent workspace settings export when importing', async () => {
+    const profileJson = JSON.stringify({
+      name: 'Recent',
+      pageFormat: 'A5',
+    });
+    mocks.readDirectory.mockResolvedValue([
+      ['markdown-studio-settings-20260526-030000.json', 1],
+      ['markdown-studio-settings-20260526-020000.json', 1],
+    ]);
+    mocks.showQuickPick
+      .mockImplementationOnce(async (items: any[]) => items[0])
+      .mockImplementationOnce(async (items: any[]) => items[0]);
+    mocks.readFile.mockResolvedValue(new TextEncoder().encode(profileJson));
+
+    await importExportProfileCommand();
+
+    expect(mocks.showOpenDialog).not.toHaveBeenCalled();
+    expect(mocks.readFile).toHaveBeenCalledWith({
+      fsPath: '/workspace/.vscode/markdown-studio-settings-20260526-030000.json',
+    });
+    expect(mocks.updates).toEqual([
+      { key: 'export.pageFormat', value: 'A5', target: 2 },
     ]);
   });
 });

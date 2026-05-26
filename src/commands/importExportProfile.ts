@@ -4,8 +4,16 @@ import { CONFIG_KEYS, CONFIG_SECTION } from '../infra/configurationRegistry';
 import { normalizeExportProfile } from '../infra/exportProfiles';
 import { RUNTIME_MESSAGES } from '../infra/messages';
 
+const SETTINGS_FILE_PREFIX = 'markdown-studio-settings-';
+const SETTINGS_FILE_SUFFIX = '.json';
+
 interface ProfileQuickPickItem extends vscode.QuickPickItem {
   profile: ExportProfile;
+}
+
+interface ImportSourceQuickPickItem extends vscode.QuickPickItem {
+  uri?: vscode.Uri;
+  browse?: boolean;
 }
 
 interface TargetQuickPickItem extends vscode.QuickPickItem {
@@ -53,6 +61,22 @@ function parseProfileJson(text: string): ExportProfile[] {
   return profiles;
 }
 
+function isSettingsFile(name: string): boolean {
+  return name.startsWith(SETTINGS_FILE_PREFIX) && name.endsWith(SETTINGS_FILE_SUFFIX);
+}
+
+function basename(fsPath: string): string {
+  return fsPath.split(/[\\/]/).pop() ?? fsPath;
+}
+
+function isJapaneseLocale(): boolean {
+  return vscode.env.language.toLowerCase().startsWith('ja');
+}
+
+function browseLabel(): string {
+  return isJapaneseLocale() ? 'JSON ファイルを選択...' : 'Choose JSON File...';
+}
+
 async function chooseProfile(profiles: ExportProfile[]): Promise<ExportProfile | undefined> {
   if (profiles.length === 1) return profiles[0];
 
@@ -70,6 +94,62 @@ async function chooseProfile(profiles: ExportProfile[]): Promise<ExportProfile |
   );
 
   return selected?.profile;
+}
+
+async function chooseFileWithOpenDialog(): Promise<vscode.Uri | undefined> {
+  const selectedFiles = await vscode.window.showOpenDialog({
+    canSelectFiles: true,
+    canSelectFolders: false,
+    canSelectMany: false,
+    filters: { JSON: ['json'] },
+    title: 'Import Markdown Studio Settings',
+  });
+
+  return selectedFiles?.[0];
+}
+
+async function listWorkspaceSettingsFiles(): Promise<vscode.Uri[]> {
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  if (!workspaceFolder) return [];
+
+  const vscodeDir = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode');
+  let entries: [string, vscode.FileType][];
+  try {
+    entries = await vscode.workspace.fs.readDirectory(vscodeDir);
+  } catch {
+    return [];
+  }
+
+  return entries
+    .filter(([name, type]) => type === vscode.FileType.File && isSettingsFile(name))
+    .map(([name]) => vscode.Uri.joinPath(vscodeDir, name))
+    .sort((a, b) => b.fsPath.localeCompare(a.fsPath));
+}
+
+async function chooseImportSource(): Promise<vscode.Uri | undefined> {
+  const recentFiles = await listWorkspaceSettingsFiles();
+  if (recentFiles.length === 0) {
+    return chooseFileWithOpenDialog();
+  }
+
+  const selected = await vscode.window.showQuickPick<ImportSourceQuickPickItem>(
+    [
+      ...recentFiles.map(uri => ({
+        label: basename(uri.fsPath),
+        description: '.vscode',
+        uri,
+      })),
+      {
+        label: browseLabel(),
+        browse: true,
+      },
+    ],
+    { placeHolder: RUNTIME_MESSAGES.exportProfiles.importSourcePlaceholder },
+  );
+
+  if (!selected) return undefined;
+  if (selected.browse) return chooseFileWithOpenDialog();
+  return selected.uri;
 }
 
 async function chooseTarget(): Promise<vscode.ConfigurationTarget | undefined> {
@@ -127,15 +207,7 @@ async function applyImportedSettings(
 }
 
 export async function importExportProfileCommand(): Promise<void> {
-  const selectedFiles = await vscode.window.showOpenDialog({
-    canSelectFiles: true,
-    canSelectFolders: false,
-    canSelectMany: false,
-    filters: { JSON: ['json'] },
-    title: 'Import Markdown Studio Settings',
-  });
-
-  const uri = selectedFiles?.[0];
+  const uri = await chooseImportSource();
   if (!uri) return;
 
   try {

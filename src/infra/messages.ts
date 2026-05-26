@@ -70,6 +70,7 @@ export const RUNTIME_MESSAGES = {
   },
 
   exportProfiles: {
+    importSourcePlaceholder: 'Choose a recent settings export, or select a JSON file',
     importProfilePlaceholder: 'Choose settings to import',
     importTargetPlaceholder: 'Choose where to save the imported settings',
     userSettings: 'User Settings',
