@@ -89,8 +89,9 @@ Every successful `Markdown Studio: Export PDF` writes the current portable subse
 ```
 
 Manual `Markdown Studio: Export Current Settings to JSON` files use
-`markdown-studio-settings-*.json` and keep their own latest-three retention
-bucket, so manual presets are not pushed out by automatic PDF export history.
+`markdown-studio-settings-*.json`, include creation metadata, and are not
+pruned automatically. Manual presets are kept separate from automatic PDF
+export history.
 
 The JSON content looks like this:
 
@@ -98,6 +99,8 @@ The JSON content looks like this:
 {
   "schemaVersion": 1,
   "name": "Company Spec A4",
+  "createdAt": "2026-05-28T03:20:15.000Z",
+  "source": "manual-export",
   "pageFormat": "A4",
   "stylePreset": "github",
   "securityMode": "block-all",
@@ -114,6 +117,8 @@ Settings JSON v1 fields:
 | ----- | ----------- |
 | `schemaVersion` | Optional. Missing means version 1. |
 | `name` | Required display name for the imported/exported settings. |
+| `createdAt` | Optional ISO 8601 export timestamp. |
+| `source` | Optional source hint: `manual-export` or `pdf-export`. |
 | `pageFormat` | Applies to `markdownStudio.export.pageFormat`. |
 | `stylePreset` | Applies to `markdownStudio.style.preset`. |
 | `securityMode` | Applies to `markdownStudio.security.externalResources.mode`. |

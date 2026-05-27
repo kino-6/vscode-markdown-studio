@@ -74,6 +74,7 @@ vi.mock('vscode', () => ({
 
 import { exportProfileToJsonCommand } from '../../src/commands/exportProfileToJson';
 import { importExportProfileCommand } from '../../src/commands/importExportProfile';
+import { saveCurrentSettingsExport } from '../../src/infra/portableSettings';
 
 describe('export settings JSON commands', () => {
   beforeEach(() => {
@@ -103,21 +104,24 @@ describe('export settings JSON commands', () => {
     expect(mocks.writeFile).toHaveBeenCalledTimes(1);
     const [uri, bytes] = mocks.writeFile.mock.calls[0];
     expect(uri.fsPath).toMatch(/^\/workspace\/\.vscode\/markdown-studio-settings-\d{8}-\d{6}\.json$/);
-    expect(JSON.parse(new TextDecoder().decode(bytes))).toEqual({
+    const profile = JSON.parse(new TextDecoder().decode(bytes));
+    expect(profile).toMatchObject({
       schemaVersion: 1,
       name: 'Current Settings',
+      source: 'manual-export',
       pageFormat: 'A5',
       stylePreset: 'github',
       securityMode: 'block-all',
       includeBookmarks: false,
       includePdfIndex: true,
     });
+    expect(Date.parse(profile.createdAt)).not.toBeNaN();
     expect(mocks.showInformationMessage).toHaveBeenCalledWith(
       expect.stringContaining('Exported settings to /workspace/.vscode/markdown-studio-settings-'),
     );
   });
 
-  it('keeps only the latest three workspace settings exports', async () => {
+  it('does not prune manual settings exports', async () => {
     mocks.readDirectory.mockResolvedValue([
       ['markdown-studio-settings-20260526-010000.json', 1],
       ['markdown-studio-settings-20260526-020000.json', 1],
@@ -129,11 +133,31 @@ describe('export settings JSON commands', () => {
 
     await exportProfileToJsonCommand();
 
+    expect(mocks.readDirectory).not.toHaveBeenCalled();
+    expect(mocks.delete).not.toHaveBeenCalled();
+  });
+
+  it('keeps only the latest three automatic PDF settings exports', async () => {
+    mocks.readDirectory.mockResolvedValue([
+      ['markdown-studio-pdf-settings-20260526-010000.json', 1],
+      ['markdown-studio-pdf-settings-20260526-020000.json', 1],
+      ['markdown-studio-pdf-settings-20260526-030000.json', 1],
+      ['markdown-studio-pdf-settings-20260526-040000.json', 1],
+      ['markdown-studio-settings-20260520-010000.json', 1],
+      ['other.json', 1],
+    ]);
+
+    await saveCurrentSettingsExport({ fallbackToSaveDialog: false, kind: 'pdf' });
+
+    const [, bytes] = mocks.writeFile.mock.calls[0];
+    const profile = JSON.parse(new TextDecoder().decode(bytes));
+    expect(profile.source).toBe('pdf-export');
+    expect(Date.parse(profile.createdAt)).not.toBeNaN();
     expect(mocks.delete).toHaveBeenCalledWith({
-      fsPath: '/workspace/.vscode/markdown-studio-settings-20260526-020000.json',
+      fsPath: '/workspace/.vscode/markdown-studio-pdf-settings-20260526-020000.json',
     });
     expect(mocks.delete).toHaveBeenCalledWith({
-      fsPath: '/workspace/.vscode/markdown-studio-settings-20260526-010000.json',
+      fsPath: '/workspace/.vscode/markdown-studio-pdf-settings-20260526-010000.json',
     });
     expect(mocks.delete).toHaveBeenCalledTimes(2);
   });

@@ -23,11 +23,17 @@ export interface SaveCurrentSettingsExportResult {
   uri?: vscode.Uri;
 }
 
-function currentSettingsProfile(): ExportProfile {
+function profileSource(kind: PortableSettingsExportKind): ExportProfile['source'] {
+  return kind === 'pdf' ? 'pdf-export' : 'manual-export';
+}
+
+function currentSettingsProfile(kind: PortableSettingsExportKind, date: Date): ExportProfile {
   const cfg = getExportConfig();
   return {
     schemaVersion: 1,
     name: 'Current Settings',
+    createdAt: date.toISOString(),
+    source: profileSource(kind),
     pageFormat: cfg.pageFormat,
     stylePreset: cfg.style.presetName,
     securityMode: cfg.externalResources.mode,
@@ -90,12 +96,18 @@ async function chooseFallbackSaveUri(): Promise<vscode.Uri | undefined> {
   });
 }
 
-async function workspaceSettingsUri(kind: PortableSettingsExportKind): Promise<vscode.Uri | undefined> {
+async function workspaceSettingsUri(
+  kind: PortableSettingsExportKind,
+  date: Date,
+): Promise<vscode.Uri | undefined> {
   const vscodeDir = workspaceVscodeDir();
   if (!vscodeDir) return undefined;
 
   await vscode.workspace.fs.createDirectory(vscodeDir);
-  return vscode.Uri.joinPath(vscodeDir, `${settingsFilePrefix(kind)}${timestamp()}${SETTINGS_FILE_SUFFIX}`);
+  return vscode.Uri.joinPath(
+    vscodeDir,
+    `${settingsFilePrefix(kind)}${timestamp(date)}${SETTINGS_FILE_SUFFIX}`,
+  );
 }
 
 async function pruneOldWorkspaceSettingsFiles(
@@ -151,13 +163,17 @@ export async function listWorkspaceSettingsExports(): Promise<WorkspaceSettingsE
 export async function saveCurrentSettingsExport(
   options: SaveCurrentSettingsExportOptions,
 ): Promise<SaveCurrentSettingsExportResult> {
-  const uri = await workspaceSettingsUri(options.kind) ?? (options.fallbackToSaveDialog ? await chooseFallbackSaveUri() : undefined);
+  const createdAt = new Date();
+  const uri = await workspaceSettingsUri(options.kind, createdAt)
+    ?? (options.fallbackToSaveDialog ? await chooseFallbackSaveUri() : undefined);
   if (!uri) return {};
 
-  const profile = currentSettingsProfile();
+  const profile = currentSettingsProfile(options.kind, createdAt);
   const json = `${JSON.stringify(profile, null, 2)}\n`;
   await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(json));
-  await pruneOldWorkspaceSettingsFiles(uri, options.kind);
+  if (options.kind === 'pdf') {
+    await pruneOldWorkspaceSettingsFiles(uri, options.kind);
+  }
 
   return { uri };
 }

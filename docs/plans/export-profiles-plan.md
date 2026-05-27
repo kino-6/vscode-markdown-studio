@@ -7,8 +7,8 @@ The first implementation should stay small and predictable:
 - Export the current Markdown Studio PDF-related settings to timestamped JSON
   automatically after successful PDF export.
 - Store workspace exports under `.vscode/`.
-- Keep automatic PDF export history and manual settings exports in separate
-  latest-three retention buckets.
+- Keep automatic PDF export history capped to the latest three files.
+- Keep manual settings exports separate and do not prune them automatically.
 - Import from recent workspace exports first, or browse to a selected JSON file,
   then apply it to User or Workspace settings.
 - Keep normal `Markdown Studio: Export PDF` as the only PDF export path.
@@ -45,6 +45,8 @@ flowchart TD
 {
   "schemaVersion": 1,
   "name": "Company Spec A4",
+  "createdAt": "2026-05-28T03:20:15.000Z",
+  "source": "manual-export",
   "pageFormat": "A4",
   "stylePreset": "github",
   "securityMode": "block-all",
@@ -81,10 +83,11 @@ Export behavior:
   `.vscode/markdown-studio-pdf-settings-YYYYMMDD-HHMMSS.json`.
 - Manual export writes
   `.vscode/markdown-studio-settings-YYYYMMDD-HHMMSS.json`.
-- Keep at most the latest three matching files per bucket.
+- Keep at most the latest three automatic PDF export history files.
+- Do not prune manual settings exports automatically.
 - Show a localized notification after writing the settings file.
 - Manual `Export Current Settings to JSON` uses the same timestamped storage
-  rules, but the manual filename prefix and retention bucket stay separate.
+  naming, but the manual filename prefix and retention behavior stay separate.
 - No workspace: the manual command falls back to a save dialog; PDF export does
   not open an extra settings save dialog.
 
@@ -105,8 +108,8 @@ Retired from this branch:
 ## Acceptance Criteria
 
 - A user with no prior profile setup can export current settings immediately.
-- Workspace exports are timestamped and capped to the latest three files per
-  automatic/manual bucket.
+- Workspace exports are timestamped; automatic PDF history is capped to the
+  latest three files and manual settings exports are not capped.
 - Importing JSON applies real VS Code settings rather than creating a separate
   profile list.
 - `Markdown Studio: Export PDF` uses the normal current settings.

@@ -117,6 +117,8 @@ export interface ExportProfile {
   [key: string]: unknown;
   schemaVersion: 1;
   name: string;
+  createdAt?: string;
+  source?: 'manual-export' | 'pdf-export';
   pageFormat?: PageFormat;
   stylePreset?: PresetName;
   securityMode?: ExternalResourceMode;
