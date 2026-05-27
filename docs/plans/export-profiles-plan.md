@@ -4,7 +4,8 @@
 
 The first implementation should stay small and predictable:
 
-- Export the current Markdown Studio PDF-related settings to timestamped JSON.
+- Export the current Markdown Studio PDF-related settings to timestamped JSON
+  automatically after successful PDF export.
 - Store workspace exports under `.vscode/` and keep the latest three files.
 - Import from recent workspace exports first, or browse to a selected JSON file,
   then apply it to User or Workspace settings.
@@ -20,7 +21,7 @@ busy and the first-run experience was unclear when no profiles were configured.
 
 ```mermaid
 flowchart TD
-  A[User configures Markdown Studio settings] --> B[Export Current Settings to JSON]
+  A[User configures Markdown Studio settings] --> B[Export PDF]
   B --> C[Write .vscode/markdown-studio-settings-YYYYMMDD-HHMMSS.json]
   C --> D[Keep latest 3 exports]
   D --> E[Commit or share JSON]
@@ -72,10 +73,14 @@ Keep only two configuration commands:
 
 Export behavior:
 
+- Successful `Markdown Studio: Export PDF` writes the current portable settings
+  automatically.
 - Workspace open: write `.vscode/markdown-studio-settings-YYYYMMDD-HHMMSS.json`.
 - Keep at most the latest three matching files.
 - Show a localized notification after writing the settings file.
-- No workspace: fall back to a save dialog.
+- Manual `Export Current Settings to JSON` uses the same storage behavior.
+- No workspace: the manual command falls back to a save dialog; PDF export does
+  not open an extra settings save dialog.
 
 Import behavior:
 

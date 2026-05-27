@@ -8,7 +8,7 @@ All notable changes to Markdown Studio will be documented in this file.
 
 ### Added
 
-- Added timestamped portable JSON export for the current PDF settings subset, stored under `.vscode/` in workspaces.
+- Added automatic timestamped portable JSON export for the current PDF settings subset after successful PDF export, stored under `.vscode/` in workspaces.
 - Added `Markdown Studio: Export Current Settings to JSON` and `Markdown Studio: Import Settings from JSON` for team sharing.
 - Kept the latest three workspace settings exports and let import choose from recent exports before browsing for another JSON file.
 - Documented team sharing through versioned `markdown-studio-settings-*.json` files.

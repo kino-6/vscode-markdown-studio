@@ -132,7 +132,7 @@ Five built-in presets with per-setting overrides:
 | `Markdown Studio: Setup Dependencies` | Install Amazon Corretto JDK and Chromium |
 | `Markdown Studio: Reload Preview (Clear Cache)` | Clear webview cache and reload |
 | `Markdown Studio: Insert TOC` | Insert or update Table of Contents at cursor |
-| `Markdown Studio: Export Current Settings to JSON` | Save the current portable PDF settings as timestamped JSON |
+| `Markdown Studio: Export Current Settings to JSON` | Manually save the current portable PDF settings as timestamped JSON |
 | `Markdown Studio: Import Settings from JSON` | Apply a recent or selected portable settings JSON |
 
 ## Configuration
@@ -156,7 +156,7 @@ Common settings:
 
 The same CSS stack applies to both preview and PDF export. Preview width is controlled separately by `markdownStudio.preview.contentWidth` and does not change PDF page size.
 
-Portable PDF settings can be shared as JSON. In a workspace, `Export Current Settings to JSON` writes a timestamped file under `.vscode/` and keeps the latest three exports:
+Portable PDF settings can be shared as JSON. In a workspace, every successful `Export PDF` writes a timestamped settings file under `.vscode/` and keeps the latest three exports:
 
 ```json
 {
@@ -170,7 +170,7 @@ Portable PDF settings can be shared as JSON. In a workspace, `Export Current Set
 }
 ```
 
-Use `Markdown Studio: Import Settings from JSON` to choose from recent `.vscode/markdown-studio-settings-*.json` exports, or browse to another JSON file. Import applies the selected JSON to User or Workspace settings.
+`Markdown Studio: Export Current Settings to JSON` uses the same storage behavior when you want to save settings without generating a PDF. Use `Markdown Studio: Import Settings from JSON` to choose from recent `.vscode/markdown-studio-settings-*.json` exports, or browse to another JSON file. Import applies the selected JSON to User or Workspace settings.
 
 ## WaveDrom
 

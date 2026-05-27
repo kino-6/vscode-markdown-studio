@@ -79,7 +79,7 @@ Theme samples are available in `examples/custom-styles/`.
 
 Portable PDF settings are versioned JSON files that capture the small subset of Markdown Studio settings most often shared by a team: page size, style preset, security mode, bookmarks, and PDF index.
 
-Run `Markdown Studio: Export Current Settings to JSON` to write the current portable subset. In a workspace, Markdown Studio writes a timestamped file under `.vscode/` and keeps the latest three files:
+Every successful `Markdown Studio: Export PDF` writes the current portable subset automatically. In a workspace, Markdown Studio writes a timestamped file under `.vscode/` and keeps the latest three files:
 
 ```text
 .vscode/
@@ -102,7 +102,7 @@ The JSON content looks like this:
 }
 ```
 
-Run `Markdown Studio: Import Settings from JSON` to choose from recent `.vscode/markdown-studio-settings-*.json` exports, or browse to another JSON file. Import updates the matching real settings such as `markdownStudio.export.pageFormat`, `markdownStudio.style.preset`, and `markdownStudio.security.externalResources.mode`; Markdown Studio does not keep a runtime dependency on the external JSON file.
+Run `Markdown Studio: Export Current Settings to JSON` to write the same timestamped settings file without generating a PDF. Run `Markdown Studio: Import Settings from JSON` to choose from recent `.vscode/markdown-studio-settings-*.json` exports, or browse to another JSON file. Import updates the matching real settings such as `markdownStudio.export.pageFormat`, `markdownStudio.style.preset`, and `markdownStudio.security.externalResources.mode`; Markdown Studio does not keep a runtime dependency on the external JSON file.
 
 Settings JSON v1 fields:
 
