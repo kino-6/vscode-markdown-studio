@@ -50,7 +50,7 @@ describe('exportPdfCommand settings export', () => {
     vi.clearAllMocks();
     exportToPdfMock.mockResolvedValue('/workspace/spec.pdf');
     saveCurrentSettingsExportMock.mockResolvedValue({
-      uri: { fsPath: '/workspace/.vscode/markdown-studio-settings-20260528-123000.json' },
+      uri: { fsPath: '/workspace/.vscode/markdown-studio-pdf-settings-20260528-123000.json' },
     });
   });
 
@@ -58,9 +58,9 @@ describe('exportPdfCommand settings export', () => {
     await exportPdfCommand({} as any);
 
     expect(exportToPdfMock).toHaveBeenCalledTimes(1);
-    expect(saveCurrentSettingsExportMock).toHaveBeenCalledWith({ fallbackToSaveDialog: false });
+    expect(saveCurrentSettingsExportMock).toHaveBeenCalledWith({ fallbackToSaveDialog: false, kind: 'pdf' });
     expect(mocks.showInformationMessage).toHaveBeenCalledWith(
-      'settings saved: /workspace/.vscode/markdown-studio-settings-20260528-123000.json',
+      'settings saved: /workspace/.vscode/markdown-studio-pdf-settings-20260528-123000.json',
     );
   });
 

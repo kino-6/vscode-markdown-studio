@@ -2,12 +2,21 @@ import * as vscode from 'vscode';
 import { getExportConfig } from './config';
 import type { ExportProfile } from '../types/models';
 
-const SETTINGS_FILE_PREFIX = 'markdown-studio-settings-';
+const MANUAL_SETTINGS_FILE_PREFIX = 'markdown-studio-settings-';
+const PDF_SETTINGS_FILE_PREFIX = 'markdown-studio-pdf-settings-';
 const SETTINGS_FILE_SUFFIX = '.json';
 const SETTINGS_FILE_KEEP = 3;
 
+export type PortableSettingsExportKind = 'manual' | 'pdf';
+
+export interface WorkspaceSettingsExportFile {
+  uri: vscode.Uri;
+  kind: PortableSettingsExportKind;
+}
+
 export interface SaveCurrentSettingsExportOptions {
   fallbackToSaveDialog: boolean;
+  kind: PortableSettingsExportKind;
 }
 
 export interface SaveCurrentSettingsExportResult {
@@ -43,8 +52,22 @@ function timestamp(date = new Date()): string {
   ].join('');
 }
 
-function isSettingsFile(name: string): boolean {
-  return name.startsWith(SETTINGS_FILE_PREFIX) && name.endsWith(SETTINGS_FILE_SUFFIX);
+function settingsFilePrefix(kind: PortableSettingsExportKind): string {
+  return kind === 'pdf' ? PDF_SETTINGS_FILE_PREFIX : MANUAL_SETTINGS_FILE_PREFIX;
+}
+
+function settingsFileKind(name: string): PortableSettingsExportKind | undefined {
+  if (!name.endsWith(SETTINGS_FILE_SUFFIX)) return undefined;
+  if (name.startsWith(PDF_SETTINGS_FILE_PREFIX)) return 'pdf';
+  if (name.startsWith(MANUAL_SETTINGS_FILE_PREFIX)) return 'manual';
+  return undefined;
+}
+
+function settingsFileTimestamp(name: string): string {
+  const kind = settingsFileKind(name);
+  if (!kind) return '';
+  return name
+    .slice(settingsFilePrefix(kind).length, -SETTINGS_FILE_SUFFIX.length);
 }
 
 function workspaceVscodeDir(): vscode.Uri | undefined {
@@ -67,15 +90,18 @@ async function chooseFallbackSaveUri(): Promise<vscode.Uri | undefined> {
   });
 }
 
-async function workspaceSettingsUri(): Promise<vscode.Uri | undefined> {
+async function workspaceSettingsUri(kind: PortableSettingsExportKind): Promise<vscode.Uri | undefined> {
   const vscodeDir = workspaceVscodeDir();
   if (!vscodeDir) return undefined;
 
   await vscode.workspace.fs.createDirectory(vscodeDir);
-  return vscode.Uri.joinPath(vscodeDir, `${SETTINGS_FILE_PREFIX}${timestamp()}${SETTINGS_FILE_SUFFIX}`);
+  return vscode.Uri.joinPath(vscodeDir, `${settingsFilePrefix(kind)}${timestamp()}${SETTINGS_FILE_SUFFIX}`);
 }
 
-async function pruneOldWorkspaceSettingsFiles(savedUri: vscode.Uri): Promise<void> {
+async function pruneOldWorkspaceSettingsFiles(
+  savedUri: vscode.Uri,
+  kind: PortableSettingsExportKind,
+): Promise<void> {
   const vscodeDir = workspaceVscodeDir();
   if (!vscodeDir) return;
 
@@ -87,7 +113,7 @@ async function pruneOldWorkspaceSettingsFiles(savedUri: vscode.Uri): Promise<voi
   }
 
   const files = entries
-    .filter(([name, type]) => type === vscode.FileType.File && isSettingsFile(name))
+    .filter(([name, type]) => type === vscode.FileType.File && settingsFileKind(name) === kind)
     .map(([name]) => vscode.Uri.joinPath(vscodeDir, name))
     .concat(savedUri)
     .filter((uri, index, all) => all.findIndex(candidate => candidate.fsPath === uri.fsPath) === index)
@@ -100,16 +126,38 @@ async function pruneOldWorkspaceSettingsFiles(savedUri: vscode.Uri): Promise<voi
   }
 }
 
+export async function listWorkspaceSettingsExports(): Promise<WorkspaceSettingsExportFile[]> {
+  const vscodeDir = workspaceVscodeDir();
+  if (!vscodeDir) return [];
+
+  let entries: [string, vscode.FileType][];
+  try {
+    entries = await vscode.workspace.fs.readDirectory(vscodeDir);
+  } catch {
+    return [];
+  }
+
+  return entries
+    .flatMap(([name, type]) => {
+      if (type !== vscode.FileType.File) return [];
+      const kind = settingsFileKind(name);
+      if (!kind) return [];
+      return [{ uri: vscode.Uri.joinPath(vscodeDir, name), kind, createdKey: settingsFileTimestamp(name) }];
+    })
+    .sort((a, b) => b.createdKey.localeCompare(a.createdKey))
+    .map(({ uri, kind }) => ({ uri, kind }));
+}
+
 export async function saveCurrentSettingsExport(
   options: SaveCurrentSettingsExportOptions,
 ): Promise<SaveCurrentSettingsExportResult> {
-  const uri = await workspaceSettingsUri() ?? (options.fallbackToSaveDialog ? await chooseFallbackSaveUri() : undefined);
+  const uri = await workspaceSettingsUri(options.kind) ?? (options.fallbackToSaveDialog ? await chooseFallbackSaveUri() : undefined);
   if (!uri) return {};
 
   const profile = currentSettingsProfile();
   const json = `${JSON.stringify(profile, null, 2)}\n`;
   await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(json));
-  await pruneOldWorkspaceSettingsFiles(uri);
+  await pruneOldWorkspaceSettingsFiles(uri, options.kind);
 
   return { uri };
 }

@@ -123,6 +123,7 @@ describe('export settings JSON commands', () => {
       ['markdown-studio-settings-20260526-020000.json', 1],
       ['markdown-studio-settings-20260526-030000.json', 1],
       ['markdown-studio-settings-20260526-040000.json', 1],
+      ['markdown-studio-pdf-settings-20260520-010000.json', 1],
       ['other.json', 1],
     ]);
 
@@ -209,6 +210,7 @@ describe('export settings JSON commands', () => {
       pageFormat: 'A5',
     });
     mocks.readDirectory.mockResolvedValue([
+      ['markdown-studio-pdf-settings-20260526-040000.json', 1],
       ['markdown-studio-settings-20260526-030000.json', 1],
       ['markdown-studio-settings-20260526-020000.json', 1],
     ]);
@@ -221,7 +223,7 @@ describe('export settings JSON commands', () => {
 
     expect(mocks.showOpenDialog).not.toHaveBeenCalled();
     expect(mocks.readFile).toHaveBeenCalledWith({
-      fsPath: '/workspace/.vscode/markdown-studio-settings-20260526-030000.json',
+      fsPath: '/workspace/.vscode/markdown-studio-pdf-settings-20260526-040000.json',
     });
     expect(mocks.updates).toEqual([
       { key: 'export.pageFormat', value: 'A5', target: 2 },

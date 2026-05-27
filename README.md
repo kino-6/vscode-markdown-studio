@@ -156,7 +156,7 @@ Common settings:
 
 The same CSS stack applies to both preview and PDF export. Preview width is controlled separately by `markdownStudio.preview.contentWidth` and does not change PDF page size.
 
-Portable PDF settings can be shared as JSON. In a workspace, every successful `Export PDF` writes a timestamped settings file under `.vscode/` and keeps the latest three exports:
+Portable PDF settings can be shared as JSON. In a workspace, every successful `Export PDF` writes a timestamped settings file under `.vscode/` and keeps the latest three PDF-export history files. Manual settings exports use a separate filename prefix and a separate latest-three retention bucket:
 
 ```json
 {
@@ -170,7 +170,7 @@ Portable PDF settings can be shared as JSON. In a workspace, every successful `E
 }
 ```
 
-`Markdown Studio: Export Current Settings to JSON` uses the same storage behavior when you want to save settings without generating a PDF. Use `Markdown Studio: Import Settings from JSON` to choose from recent `.vscode/markdown-studio-settings-*.json` exports, or browse to another JSON file. Import applies the selected JSON to User or Workspace settings.
+PDF export history files are named `.vscode/markdown-studio-pdf-settings-*.json`. Manual settings files are named `.vscode/markdown-studio-settings-*.json`. Use `Markdown Studio: Import Settings from JSON` to choose from either recent list, or browse to another JSON file. Import applies the selected JSON to User or Workspace settings.
 
 ## WaveDrom
 

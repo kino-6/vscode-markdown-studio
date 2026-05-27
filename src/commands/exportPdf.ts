@@ -5,7 +5,7 @@ import { exportedSettingsMessage, saveCurrentSettingsExport } from '../infra/por
 
 async function saveSettingsSnapshotAfterPdfExport(): Promise<void> {
   try {
-    const { uri } = await saveCurrentSettingsExport({ fallbackToSaveDialog: false });
+    const { uri } = await saveCurrentSettingsExport({ fallbackToSaveDialog: false, kind: 'pdf' });
     if (uri) {
       void vscode.window.showInformationMessage(exportedSettingsMessage(uri.fsPath));
     }

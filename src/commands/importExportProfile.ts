@@ -3,9 +3,7 @@ import type { ExportProfile } from '../types/models';
 import { CONFIG_KEYS, CONFIG_SECTION } from '../infra/configurationRegistry';
 import { normalizeExportProfile } from '../infra/exportProfiles';
 import { RUNTIME_MESSAGES } from '../infra/messages';
-
-const SETTINGS_FILE_PREFIX = 'markdown-studio-settings-';
-const SETTINGS_FILE_SUFFIX = '.json';
+import { listWorkspaceSettingsExports, type PortableSettingsExportKind } from '../infra/portableSettings';
 
 interface ProfileQuickPickItem extends vscode.QuickPickItem {
   profile: ExportProfile;
@@ -61,10 +59,6 @@ function parseProfileJson(text: string): ExportProfile[] {
   return profiles;
 }
 
-function isSettingsFile(name: string): boolean {
-  return name.startsWith(SETTINGS_FILE_PREFIX) && name.endsWith(SETTINGS_FILE_SUFFIX);
-}
-
 function basename(fsPath: string): string {
   return fsPath.split(/[\\/]/).pop() ?? fsPath;
 }
@@ -75,6 +69,13 @@ function isJapaneseLocale(): boolean {
 
 function browseLabel(): string {
   return isJapaneseLocale() ? 'JSON ファイルを選択...' : 'Choose JSON File...';
+}
+
+function sourceDescription(kind: PortableSettingsExportKind): string {
+  if (kind === 'pdf') {
+    return isJapaneseLocale() ? 'PDF エクスポート履歴' : 'PDF export history';
+  }
+  return isJapaneseLocale() ? '手動保存' : 'manual export';
 }
 
 async function chooseProfile(profiles: ExportProfile[]): Promise<ExportProfile | undefined> {
@@ -108,36 +109,19 @@ async function chooseFileWithOpenDialog(): Promise<vscode.Uri | undefined> {
   return selectedFiles?.[0];
 }
 
-async function listWorkspaceSettingsFiles(): Promise<vscode.Uri[]> {
-  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-  if (!workspaceFolder) return [];
-
-  const vscodeDir = vscode.Uri.joinPath(workspaceFolder.uri, '.vscode');
-  let entries: [string, vscode.FileType][];
-  try {
-    entries = await vscode.workspace.fs.readDirectory(vscodeDir);
-  } catch {
-    return [];
-  }
-
-  return entries
-    .filter(([name, type]) => type === vscode.FileType.File && isSettingsFile(name))
-    .map(([name]) => vscode.Uri.joinPath(vscodeDir, name))
-    .sort((a, b) => b.fsPath.localeCompare(a.fsPath));
-}
-
 async function chooseImportSource(): Promise<vscode.Uri | undefined> {
-  const recentFiles = await listWorkspaceSettingsFiles();
+  const recentFiles = await listWorkspaceSettingsExports();
   if (recentFiles.length === 0) {
     return chooseFileWithOpenDialog();
   }
 
   const selected = await vscode.window.showQuickPick<ImportSourceQuickPickItem>(
     [
-      ...recentFiles.map(uri => ({
-        label: basename(uri.fsPath),
-        description: '.vscode',
-        uri,
+      ...recentFiles.map(file => ({
+        label: basename(file.uri.fsPath),
+        description: sourceDescription(file.kind),
+        detail: '.vscode',
+        uri: file.uri,
       })),
       {
         label: browseLabel(),

@@ -4,7 +4,7 @@ import { exportedSettingsMessage, saveCurrentSettingsExport } from '../infra/por
 
 export async function exportProfileToJsonCommand(): Promise<void> {
   try {
-    const { uri } = await saveCurrentSettingsExport({ fallbackToSaveDialog: true });
+    const { uri } = await saveCurrentSettingsExport({ fallbackToSaveDialog: true, kind: 'manual' });
     if (uri) {
       void vscode.window.showInformationMessage(exportedSettingsMessage(uri.fsPath));
     }
