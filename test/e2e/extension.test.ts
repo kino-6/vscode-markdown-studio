@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { cleanupWorkspaceExports } from './helpers';
 
 suite('Markdown Studio E2E', () => {
   const extensionId = 'kino6.markdown-studio-local';
@@ -86,6 +87,7 @@ suite('Markdown Studio E2E', () => {
         // Clean up
         fs.unlinkSync(expectedPdf);
       }
+      cleanupWorkspaceExports();
     });
   });
 
