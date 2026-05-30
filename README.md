@@ -166,9 +166,28 @@ Portable PDF settings can be shared as JSON. In a workspace, every successful `E
   "source": "manual-export",
   "pageFormat": "A4",
   "stylePreset": "github",
+  "styleTheme": "markdown-pdf",
+  "fontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+  "fontSize": 14,
+  "lineHeight": 1.6,
+  "margin": "20mm",
+  "customCss": "h1 { color: navy; }",
   "securityMode": "block-all",
+  "allowedDomains": ["github.com", "raw.githubusercontent.com"],
+  "headerEnabled": true,
+  "headerTemplate": null,
+  "footerEnabled": true,
+  "footerTemplate": null,
+  "pageBreakEnabled": true,
   "includeBookmarks": true,
-  "includePdfIndex": true
+  "includePdfIndex": true,
+  "pdfIndexTitle": "Table of Contents",
+  "hidePdfToc": true,
+  "tocLevels": "1-3",
+  "tocOrderedList": false,
+  "tocPageBreak": true,
+  "codeBlockLineNumbers": true,
+  "outputFilename": "${filename}"
 }
 ```
 

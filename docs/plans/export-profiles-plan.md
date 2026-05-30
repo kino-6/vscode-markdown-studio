@@ -49,9 +49,28 @@ flowchart TD
   "source": "manual-export",
   "pageFormat": "A4",
   "stylePreset": "github",
+  "styleTheme": "markdown-pdf",
+  "fontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+  "fontSize": 14,
+  "lineHeight": 1.6,
+  "margin": "20mm",
+  "customCss": "h1 { color: navy; }",
   "securityMode": "block-all",
+  "allowedDomains": ["github.com", "raw.githubusercontent.com"],
+  "headerEnabled": true,
+  "headerTemplate": null,
+  "footerEnabled": true,
+  "footerTemplate": null,
+  "pageBreakEnabled": true,
   "includeBookmarks": true,
-  "includePdfIndex": true
+  "includePdfIndex": true,
+  "pdfIndexTitle": "Table of Contents",
+  "hidePdfToc": true,
+  "tocLevels": "1-3",
+  "tocOrderedList": false,
+  "tocPageBreak": true,
+  "codeBlockLineNumbers": true,
+  "outputFilename": "${filename}"
 }
 ```
 
@@ -64,9 +83,28 @@ requiring teams to share every Markdown Studio setting.
 | ---------- | ---------- |
 | `pageFormat` | `markdownStudio.export.pageFormat` |
 | `stylePreset` | `markdownStudio.style.preset` |
+| `styleTheme` | `markdownStudio.style.theme` |
+| `fontFamily` | `markdownStudio.style.fontFamily` |
+| `fontSize` | `markdownStudio.style.fontSize` |
+| `lineHeight` | `markdownStudio.style.lineHeight` |
+| `margin` | `markdownStudio.export.margin` |
+| `customCss` | `markdownStudio.style.customCss` |
 | `securityMode` | `markdownStudio.security.externalResources.mode` |
+| `allowedDomains` | `markdownStudio.security.externalResources.allowedDomains` |
+| `headerEnabled` | `markdownStudio.export.header.enabled` |
+| `headerTemplate` | `markdownStudio.export.header.template` |
+| `footerEnabled` | `markdownStudio.export.footer.enabled` |
+| `footerTemplate` | `markdownStudio.export.footer.template` |
+| `pageBreakEnabled` | `markdownStudio.export.pageBreak.enabled` |
 | `includeBookmarks` | `markdownStudio.export.pdfBookmarks.enabled` |
 | `includePdfIndex` | `markdownStudio.export.pdfIndex.enabled` |
+| `pdfIndexTitle` | `markdownStudio.export.pdfIndex.title` |
+| `hidePdfToc` | `markdownStudio.export.pdfToc.hidden` |
+| `tocLevels` | `markdownStudio.toc.levels` |
+| `tocOrderedList` | `markdownStudio.toc.orderedList` |
+| `tocPageBreak` | `markdownStudio.toc.pageBreak` |
+| `codeBlockLineNumbers` | `markdownStudio.codeBlock.lineNumbers` |
+| `outputFilename` | `markdownStudio.export.outputFilename` |
 
 ## Commands
 

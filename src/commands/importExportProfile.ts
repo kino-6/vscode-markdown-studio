@@ -18,6 +18,33 @@ interface TargetQuickPickItem extends vscode.QuickPickItem {
   target: vscode.ConfigurationTarget;
 }
 
+const IMPORT_SETTING_MAPPINGS: Array<[keyof ExportProfile, string]> = [
+  ['pageFormat', CONFIG_KEYS.pageFormat],
+  ['stylePreset', CONFIG_KEYS.stylePreset],
+  ['styleTheme', CONFIG_KEYS.styleTheme],
+  ['fontFamily', CONFIG_KEYS.styleFontFamily],
+  ['fontSize', CONFIG_KEYS.styleFontSize],
+  ['lineHeight', CONFIG_KEYS.styleLineHeight],
+  ['margin', CONFIG_KEYS.exportMargin],
+  ['customCss', CONFIG_KEYS.styleCustomCss],
+  ['securityMode', CONFIG_KEYS.externalResourceMode],
+  ['allowedDomains', CONFIG_KEYS.externalResourceAllowedDomains],
+  ['headerEnabled', CONFIG_KEYS.exportHeaderEnabled],
+  ['headerTemplate', CONFIG_KEYS.exportHeaderTemplate],
+  ['footerEnabled', CONFIG_KEYS.exportFooterEnabled],
+  ['footerTemplate', CONFIG_KEYS.exportFooterTemplate],
+  ['pageBreakEnabled', CONFIG_KEYS.exportPageBreakEnabled],
+  ['includeBookmarks', CONFIG_KEYS.exportPdfBookmarksEnabled],
+  ['includePdfIndex', CONFIG_KEYS.exportPdfIndexEnabled],
+  ['pdfIndexTitle', CONFIG_KEYS.exportPdfIndexTitle],
+  ['hidePdfToc', CONFIG_KEYS.exportPdfTocHidden],
+  ['tocLevels', CONFIG_KEYS.tocLevels],
+  ['tocOrderedList', CONFIG_KEYS.tocOrderedList],
+  ['tocPageBreak', CONFIG_KEYS.tocPageBreak],
+  ['codeBlockLineNumbers', CONFIG_KEYS.codeBlockLineNumbers],
+  ['outputFilename', CONFIG_KEYS.exportOutputFilename],
+];
+
 function parseProfileJson(text: string): ExportProfile[] {
   let parsed: unknown;
   try {
@@ -169,20 +196,11 @@ async function applyImportedSettings(
   const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
   const updates: Array<[string, unknown]> = [];
 
-  if (profile.pageFormat !== undefined) {
-    updates.push([CONFIG_KEYS.pageFormat, profile.pageFormat]);
-  }
-  if (profile.stylePreset !== undefined) {
-    updates.push([CONFIG_KEYS.stylePreset, profile.stylePreset]);
-  }
-  if (profile.securityMode !== undefined) {
-    updates.push([CONFIG_KEYS.externalResourceMode, profile.securityMode]);
-  }
-  if (profile.includeBookmarks !== undefined) {
-    updates.push([CONFIG_KEYS.exportPdfBookmarksEnabled, profile.includeBookmarks]);
-  }
-  if (profile.includePdfIndex !== undefined) {
-    updates.push([CONFIG_KEYS.exportPdfIndexEnabled, profile.includePdfIndex]);
+  for (const [profileKey, configKey] of IMPORT_SETTING_MAPPINGS) {
+    const value = profile[profileKey];
+    if (value !== undefined) {
+      updates.push([configKey, value]);
+    }
   }
 
   for (const [key, value] of updates) {

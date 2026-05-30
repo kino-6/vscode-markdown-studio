@@ -10,9 +10,28 @@ describe('normalizeExportProfile', () => {
       name: 'Company Spec A4',
       pageFormat: 'A4',
       stylePreset: 'github',
+      styleTheme: 'modern',
+      fontFamily: 'Inter, sans-serif',
+      fontSize: 15,
+      lineHeight: 1.7,
+      margin: '12mm',
+      customCss: 'h1 { color: navy; }',
       securityMode: 'block-all',
+      allowedDomains: ['docs.example.com'],
+      headerEnabled: false,
+      headerTemplate: null,
+      footerEnabled: true,
+      footerTemplate: '<span class="pageNumber"></span>',
+      pageBreakEnabled: false,
       includeBookmarks: true,
       includePdfIndex: false,
+      pdfIndexTitle: 'Contents',
+      hidePdfToc: false,
+      tocLevels: '1-4',
+      tocOrderedList: true,
+      tocPageBreak: false,
+      codeBlockLineNumbers: false,
+      outputFilename: '${filename}-${datetime}',
     });
 
     expect(result.errors).toEqual([]);
@@ -22,9 +41,28 @@ describe('normalizeExportProfile', () => {
       name: 'Company Spec A4',
       pageFormat: 'A4',
       stylePreset: 'github',
+      styleTheme: 'modern',
+      fontFamily: 'Inter, sans-serif',
+      fontSize: 15,
+      lineHeight: 1.7,
+      margin: '12mm',
+      customCss: 'h1 { color: navy; }',
       securityMode: 'block-all',
+      allowedDomains: ['docs.example.com'],
+      headerEnabled: false,
+      headerTemplate: null,
+      footerEnabled: true,
+      footerTemplate: '<span class="pageNumber"></span>',
+      pageBreakEnabled: false,
       includeBookmarks: true,
       includePdfIndex: false,
+      pdfIndexTitle: 'Contents',
+      hidePdfToc: false,
+      tocLevels: '1-4',
+      tocOrderedList: true,
+      tocPageBreak: false,
+      codeBlockLineNumbers: false,
+      outputFilename: '${filename}-${datetime}',
     });
   });
 
@@ -49,6 +87,8 @@ describe('normalizeExportProfile', () => {
       name: 'Loose',
       pageFormat: 'B4',
       stylePreset: 123,
+      fontSize: 'large',
+      allowedDomains: ['ok.example.com', 123],
       includeBookmarks: 'yes',
     });
 
@@ -56,7 +96,7 @@ describe('normalizeExportProfile', () => {
       schemaVersion: 1,
       name: 'Loose',
     });
-    expect(result.warnings).toHaveLength(3);
+    expect(result.warnings).toHaveLength(5);
   });
 
   it('preserves unknown fields for future compatibility', () => {

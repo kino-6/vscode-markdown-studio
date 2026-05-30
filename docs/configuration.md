@@ -103,13 +103,32 @@ The JSON content looks like this:
   "source": "manual-export",
   "pageFormat": "A4",
   "stylePreset": "github",
+  "styleTheme": "markdown-pdf",
+  "fontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+  "fontSize": 14,
+  "lineHeight": 1.6,
+  "margin": "20mm",
+  "customCss": "h1 { color: navy; }",
   "securityMode": "block-all",
+  "allowedDomains": ["github.com", "raw.githubusercontent.com"],
+  "headerEnabled": true,
+  "headerTemplate": null,
+  "footerEnabled": true,
+  "footerTemplate": null,
+  "pageBreakEnabled": true,
   "includeBookmarks": true,
-  "includePdfIndex": true
+  "includePdfIndex": true,
+  "pdfIndexTitle": "Table of Contents",
+  "hidePdfToc": true,
+  "tocLevels": "1-3",
+  "tocOrderedList": false,
+  "tocPageBreak": true,
+  "codeBlockLineNumbers": true,
+  "outputFilename": "${filename}"
 }
 ```
 
-Run `Markdown Studio: Import Settings from JSON` to choose from recent automatic PDF settings exports, recent manual settings exports, or browse to another JSON file. Import updates the matching real settings such as `markdownStudio.export.pageFormat`, `markdownStudio.style.preset`, and `markdownStudio.security.externalResources.mode`; Markdown Studio does not keep a runtime dependency on the external JSON file.
+Run `Markdown Studio: Import Settings from JSON` to choose from recent automatic PDF settings exports, recent manual settings exports, or browse to another JSON file. Import updates matching real settings such as `markdownStudio.export.pageFormat`, `markdownStudio.style.customCss`, and `markdownStudio.security.externalResources.mode`; Markdown Studio does not keep a runtime dependency on the external JSON file.
 
 Settings JSON v1 fields:
 
@@ -121,9 +140,32 @@ Settings JSON v1 fields:
 | `source` | Optional source hint: `manual-export` or `pdf-export`. |
 | `pageFormat` | Applies to `markdownStudio.export.pageFormat`. |
 | `stylePreset` | Applies to `markdownStudio.style.preset`. |
+| `styleTheme` | Applies to `markdownStudio.style.theme`. |
+| `fontFamily` | Applies to `markdownStudio.style.fontFamily`. |
+| `fontSize` | Applies to `markdownStudio.style.fontSize`. |
+| `lineHeight` | Applies to `markdownStudio.style.lineHeight`. |
+| `margin` | Applies to `markdownStudio.export.margin`. |
+| `customCss` | Applies to `markdownStudio.style.customCss`. |
 | `securityMode` | Applies to `markdownStudio.security.externalResources.mode`. |
+| `allowedDomains` | Applies to `markdownStudio.security.externalResources.allowedDomains`. |
+| `headerEnabled` | Applies to `markdownStudio.export.header.enabled`. |
+| `headerTemplate` | Applies to `markdownStudio.export.header.template`. |
+| `footerEnabled` | Applies to `markdownStudio.export.footer.enabled`. |
+| `footerTemplate` | Applies to `markdownStudio.export.footer.template`. |
+| `pageBreakEnabled` | Applies to `markdownStudio.export.pageBreak.enabled`. |
 | `includeBookmarks` | Applies to `markdownStudio.export.pdfBookmarks.enabled`. |
 | `includePdfIndex` | Applies to `markdownStudio.export.pdfIndex.enabled`. |
+| `pdfIndexTitle` | Applies to `markdownStudio.export.pdfIndex.title`. |
+| `hidePdfToc` | Applies to `markdownStudio.export.pdfToc.hidden`. |
+| `tocLevels` | Applies to `markdownStudio.toc.levels`. |
+| `tocOrderedList` | Applies to `markdownStudio.toc.orderedList`. |
+| `tocPageBreak` | Applies to `markdownStudio.toc.pageBreak`. |
+| `codeBlockLineNumbers` | Applies to `markdownStudio.codeBlock.lineNumbers`. |
+| `outputFilename` | Applies to `markdownStudio.export.outputFilename`. |
+
+Environment-specific settings such as PlantUML mode, Java path, extra CA
+certificates, preview layout, and diagram timeout are intentionally not included
+in portable settings JSON.
 
 ## LocalOnly Posture
 

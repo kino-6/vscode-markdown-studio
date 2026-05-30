@@ -12,6 +12,7 @@ All notable changes to Markdown Studio will be documented in this file.
 - Added `Markdown Studio: Export Current Settings to JSON` and `Markdown Studio: Import Settings from JSON` for team sharing.
 - Kept automatic PDF settings history to the latest three files while leaving manual settings exports uncapped.
 - Added `createdAt` and `source` metadata to exported portable settings JSON.
+- Included portable style, custom CSS, margin, header/footer, TOC, code block, filename, and allowed-domain settings in exported JSON.
 - Let import choose from recent automatic or manual settings exports before browsing for another JSON file.
 - Documented team sharing through versioned `markdown-studio-*-settings-*.json` files.
 

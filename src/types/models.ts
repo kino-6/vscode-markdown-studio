@@ -121,9 +121,28 @@ export interface ExportProfile {
   source?: 'manual-export' | 'pdf-export';
   pageFormat?: PageFormat;
   stylePreset?: PresetName;
+  styleTheme?: string;
+  fontFamily?: string;
+  fontSize?: number;
+  lineHeight?: number;
+  margin?: string;
+  customCss?: string;
   securityMode?: ExternalResourceMode;
+  allowedDomains?: string[];
+  headerEnabled?: boolean;
+  headerTemplate?: string | null;
+  footerEnabled?: boolean;
+  footerTemplate?: string | null;
+  pageBreakEnabled?: boolean;
   includeBookmarks?: boolean;
   includePdfIndex?: boolean;
+  pdfIndexTitle?: string;
+  hidePdfToc?: boolean;
+  tocLevels?: string;
+  tocOrderedList?: boolean;
+  tocPageBreak?: boolean;
+  codeBlockLineNumbers?: boolean;
+  outputFilename?: string;
 }
 
 export interface ExportConfigOverlay {
