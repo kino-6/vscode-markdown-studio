@@ -75,6 +75,98 @@ code { background: #f0f0f0; color: #d63384; }
 
 Theme samples are available in `examples/custom-styles/`.
 
+## Portable PDF Settings
+
+Portable PDF settings are versioned JSON files that capture the small subset of Markdown Studio settings most often shared by a team: page size, style preset, security mode, bookmarks, and PDF index.
+
+Every successful `Markdown Studio: Export PDF` writes the current portable subset automatically. In a workspace, Markdown Studio writes a timestamped file under `.vscode/` and keeps the latest three PDF-export history files:
+
+```text
+.vscode/
+  markdown-studio-pdf-settings-20260526-143022.json
+  markdown-studio-pdf-settings-20260525-181455.json
+  markdown-studio-pdf-settings-20260524-090301.json
+```
+
+Manual `Markdown Studio: Export Current Settings to JSON` files use
+`markdown-studio-settings-*.json`, include creation metadata, and are not
+pruned automatically. Manual presets are kept separate from automatic PDF
+export history.
+
+The JSON content looks like this:
+
+```json
+{
+  "schemaVersion": 1,
+  "name": "Company Spec A4",
+  "createdAt": "2026-05-28T03:20:15.000Z",
+  "source": "manual-export",
+  "pageFormat": "A4",
+  "stylePreset": "github",
+  "styleTheme": "markdown-pdf",
+  "fontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+  "fontSize": 14,
+  "lineHeight": 1.6,
+  "margin": "20mm",
+  "customCss": "h1 { color: navy; }",
+  "securityMode": "block-all",
+  "allowedDomains": ["github.com", "raw.githubusercontent.com"],
+  "headerEnabled": true,
+  "headerTemplate": null,
+  "footerEnabled": true,
+  "footerTemplate": null,
+  "pageBreakEnabled": true,
+  "includeBookmarks": true,
+  "includePdfIndex": true,
+  "pdfIndexTitle": "Table of Contents",
+  "hidePdfToc": true,
+  "tocLevels": "1-3",
+  "tocOrderedList": false,
+  "tocPageBreak": true,
+  "codeBlockLineNumbers": true,
+  "outputFilename": "${filename}"
+}
+```
+
+Run `Markdown Studio: Import Settings from JSON` to choose from recent automatic PDF settings exports, recent manual settings exports, or browse to another JSON file. Import updates matching real settings such as `markdownStudio.export.pageFormat`, `markdownStudio.style.customCss`, and `markdownStudio.security.externalResources.mode`; Markdown Studio does not keep a runtime dependency on the external JSON file.
+
+Settings JSON v1 fields:
+
+| Field | Description |
+| ----- | ----------- |
+| `schemaVersion` | Optional. Missing means version 1. |
+| `name` | Required display name for the imported/exported settings. |
+| `createdAt` | Optional ISO 8601 export timestamp. |
+| `source` | Optional source hint: `manual-export` or `pdf-export`. |
+| `pageFormat` | Applies to `markdownStudio.export.pageFormat`. |
+| `stylePreset` | Applies to `markdownStudio.style.preset`. |
+| `styleTheme` | Applies to `markdownStudio.style.theme`. |
+| `fontFamily` | Applies to `markdownStudio.style.fontFamily`. |
+| `fontSize` | Applies to `markdownStudio.style.fontSize`. |
+| `lineHeight` | Applies to `markdownStudio.style.lineHeight`. |
+| `margin` | Applies to `markdownStudio.export.margin`. |
+| `customCss` | Applies to `markdownStudio.style.customCss`. |
+| `securityMode` | Applies to `markdownStudio.security.externalResources.mode`. |
+| `allowedDomains` | Applies to `markdownStudio.security.externalResources.allowedDomains`. |
+| `headerEnabled` | Applies to `markdownStudio.export.header.enabled`. |
+| `headerTemplate` | Applies to `markdownStudio.export.header.template`. |
+| `footerEnabled` | Applies to `markdownStudio.export.footer.enabled`. |
+| `footerTemplate` | Applies to `markdownStudio.export.footer.template`. |
+| `pageBreakEnabled` | Applies to `markdownStudio.export.pageBreak.enabled`. |
+| `includeBookmarks` | Applies to `markdownStudio.export.pdfBookmarks.enabled`. |
+| `includePdfIndex` | Applies to `markdownStudio.export.pdfIndex.enabled`. |
+| `pdfIndexTitle` | Applies to `markdownStudio.export.pdfIndex.title`. |
+| `hidePdfToc` | Applies to `markdownStudio.export.pdfToc.hidden`. |
+| `tocLevels` | Applies to `markdownStudio.toc.levels`. |
+| `tocOrderedList` | Applies to `markdownStudio.toc.orderedList`. |
+| `tocPageBreak` | Applies to `markdownStudio.toc.pageBreak`. |
+| `codeBlockLineNumbers` | Applies to `markdownStudio.codeBlock.lineNumbers`. |
+| `outputFilename` | Applies to `markdownStudio.export.outputFilename`. |
+
+Environment-specific settings such as PlantUML mode, Java path, extra CA
+certificates, preview layout, and diagram timeout are intentionally not included
+in portable settings JSON.
+
 ## LocalOnly Posture
 
 Preview, PDF export, Mermaid, PlantUML, WaveDrom, SVG handling, syntax highlighting, and math rendering run locally. External Markdown resources are handled separately by `markdownStudio.security.externalResources.mode`:

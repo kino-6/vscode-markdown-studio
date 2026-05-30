@@ -8,6 +8,8 @@
   "command.reloadPreview.title": "Markdown Studio: プレビューを再読み込み（キャッシュをクリア）",
   "command.setupDependencies.title": "Markdown Studio: 依存関係をセットアップ",
   "command.insertToc.title": "Markdown Studio: TOC を挿入",
+  "command.importExportProfile.title": "Markdown Studio: JSON から設定をインポート",
+  "command.exportProfileToJson.title": "Markdown Studio: 現在の設定を JSON にエクスポート",
   "configuration.title": "Markdown Studio",
   "configuration.plantuml.mode.description": "PlantUML のレンダリングモード。既定の bundled JAR モードが最も完全にサポートされています。",
   "configuration.java.path.description": "PlantUML レンダリングに使用する Java 実行ファイルのパス。",

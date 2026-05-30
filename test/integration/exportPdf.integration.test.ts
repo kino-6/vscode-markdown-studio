@@ -37,7 +37,7 @@ vi.mock('playwright-core', () => {
 
 vi.mock('../../src/infra/config', () => {
   const getConfigMock = vi.fn();
-  return { getConfig: getConfigMock, __getConfigMock: getConfigMock };
+  return { getConfig: getConfigMock, getExportConfig: getConfigMock, __getConfigMock: getConfigMock };
 });
 
 vi.mock('../../src/export/pdfBookmarks', () => {

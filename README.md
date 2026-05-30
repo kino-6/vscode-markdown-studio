@@ -8,6 +8,8 @@ Preview modern Markdown and export PDFs locally with Mermaid, PlantUML, WaveDrom
 
 Markdown Studio renders Markdown, diagrams, math, code, local assets, TOCs, PDF indexes, and PDF bookmarks from one VS Code workflow. Core Markdown, diagram rendering, and PDF export run on your machine. External resources use `whitelist` mode by default with GitHub domains allowlisted; switch to `block-all` for strict LocalOnly documents.
 
+New here? Start with [docs/getting-started.md](./docs/getting-started.md) for common Preview, PDF export, diagram, and LocalOnly workflows.
+
 ## Quick Start
 
 1. Open a Markdown file.
@@ -130,6 +132,8 @@ Five built-in presets with per-setting overrides:
 | `Markdown Studio: Setup Dependencies` | Install Amazon Corretto JDK and Chromium |
 | `Markdown Studio: Reload Preview (Clear Cache)` | Clear webview cache and reload |
 | `Markdown Studio: Insert TOC` | Insert or update Table of Contents at cursor |
+| `Markdown Studio: Export Current Settings to JSON` | Manually save the current portable PDF settings as timestamped JSON |
+| `Markdown Studio: Import Settings from JSON` | Apply a recent or selected portable settings JSON |
 
 ## Configuration
 
@@ -151,6 +155,43 @@ Common settings:
 | `markdownStudio.network.caCertificates` | `[]` | Extra CA certificates for proxy/SSL inspection environments. |
 
 The same CSS stack applies to both preview and PDF export. Preview width is controlled separately by `markdownStudio.preview.contentWidth` and does not change PDF page size.
+
+Portable PDF settings can be shared as JSON. In a workspace, every successful `Export PDF` writes a timestamped settings file under `.vscode/` and keeps the latest three PDF-export history files. Manual settings exports use a separate filename prefix, include creation metadata, and are not pruned automatically:
+
+```json
+{
+  "schemaVersion": 1,
+  "name": "Company Spec A4",
+  "createdAt": "2026-05-28T03:20:15.000Z",
+  "source": "manual-export",
+  "pageFormat": "A4",
+  "stylePreset": "github",
+  "styleTheme": "markdown-pdf",
+  "fontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+  "fontSize": 14,
+  "lineHeight": 1.6,
+  "margin": "20mm",
+  "customCss": "h1 { color: navy; }",
+  "securityMode": "block-all",
+  "allowedDomains": ["github.com", "raw.githubusercontent.com"],
+  "headerEnabled": true,
+  "headerTemplate": null,
+  "footerEnabled": true,
+  "footerTemplate": null,
+  "pageBreakEnabled": true,
+  "includeBookmarks": true,
+  "includePdfIndex": true,
+  "pdfIndexTitle": "Table of Contents",
+  "hidePdfToc": true,
+  "tocLevels": "1-3",
+  "tocOrderedList": false,
+  "tocPageBreak": true,
+  "codeBlockLineNumbers": true,
+  "outputFilename": "${filename}"
+}
+```
+
+PDF export history files are named `.vscode/markdown-studio-pdf-settings-*.json`. Manual settings files are named `.vscode/markdown-studio-settings-*.json`. Use `Markdown Studio: Import Settings from JSON` to choose from either recent list, or browse to another JSON file. Import applies the selected JSON to User or Workspace settings.
 
 ## WaveDrom
 

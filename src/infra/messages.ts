@@ -69,6 +69,19 @@ export const RUNTIME_MESSAGES = {
     cancellationError: 'Export cancelled by user',
   },
 
+  exportProfiles: {
+    importSourcePlaceholder: 'Choose a recent settings export, or select a JSON file',
+    importProfilePlaceholder: 'Choose settings to import',
+    importTargetPlaceholder: 'Choose where to save the imported settings',
+    userSettings: 'User Settings',
+    workspaceSettings: 'Workspace Settings',
+    importedSettings: (name: string): string => `Markdown Studio: Imported settings from ${name}.`,
+    exportedSettings: 'Markdown Studio: Exported current settings.',
+    importFailed: (message: string): string => `Markdown Studio settings import failed: ${message}`,
+    exportFailed: (message: string): string => `Markdown Studio settings export failed: ${message}`,
+    invalidJson: 'Invalid JSON file.',
+  },
+
   exportProgress: {
     buildingHtml: 'Building HTML...',
     processingImages: 'Processing images...',

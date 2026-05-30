@@ -40,7 +40,7 @@ rm -rf ~/.vscode/extensions/${EXTENSION_ID}-*
 echo "[5/6] Building VSIX..."
 npm run build
 rm -f dist/*.vsix
-vsce package --githubBranch "$BRANCH" -o dist/
+npm exec -- vsce package --githubBranch "$BRANCH" -o dist/
 
 # 6. 再インストール
 echo "[6/6] Installing ${VSIX_PATH}..."

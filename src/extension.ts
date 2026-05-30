@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { exportPdfCommand } from './commands/exportPdf';
+import { exportProfileToJsonCommand } from './commands/exportProfileToJson';
+import { importExportProfileCommand } from './commands/importExportProfile';
 import { openPreviewCommand } from './commands/openPreview';
 import { validateEnvironmentCommand } from './commands/validateEnvironment';
 import { cleanupTempFiles } from './infra/tempFiles';
@@ -87,6 +89,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     }),
     vscode.commands.registerCommand('markdownStudio.insertToc', async () => insertTocCommand()),
+    vscode.commands.registerCommand('markdownStudio.importExportProfile', async () => importExportProfileCommand()),
+    vscode.commands.registerCommand('markdownStudio.exportProfileToJson', async () => exportProfileToJsonCommand()),
     vscode.workspace.onWillSaveTextDocument((event) => {
       if (event.document.languageId !== 'markdown') return;
 

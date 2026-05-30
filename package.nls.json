@@ -8,6 +8,8 @@
   "command.reloadPreview.title": "Markdown Studio: Reload Preview (Clear Cache)",
   "command.setupDependencies.title": "Markdown Studio: Setup Dependencies",
   "command.insertToc.title": "Markdown Studio: Insert TOC",
+  "command.importExportProfile.title": "Markdown Studio: Import Settings from JSON",
+  "command.exportProfileToJson.title": "Markdown Studio: Export Current Settings to JSON",
   "configuration.title": "Markdown Studio",
   "configuration.plantuml.mode.description": "PlantUML rendering mode. The bundled JAR mode is the default and most complete option.",
   "configuration.java.path.description": "Path to the Java executable used for PlantUML rendering.",

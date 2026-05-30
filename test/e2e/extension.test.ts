@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { cleanupWorkspaceExports } from './helpers';
 
 suite('Markdown Studio E2E', () => {
   const extensionId = 'kino6.markdown-studio-local';
@@ -86,6 +87,7 @@ suite('Markdown Studio E2E', () => {
         // Clean up
         fs.unlinkSync(expectedPdf);
       }
+      cleanupWorkspaceExports();
     });
   });
 
@@ -102,6 +104,18 @@ suite('Markdown Studio E2E', () => {
       // This command checks the local environment (Java, Playwright, etc.)
       // It should run without throwing even if tools are missing
       await vscode.commands.executeCommand('markdownStudio.validateEnvironment');
+    });
+  });
+
+  suite('Export Profile Commands', () => {
+    test('settings JSON commands should be registered', async () => {
+      const commands = await vscode.commands.getCommands(true);
+      for (const command of [
+        'markdownStudio.importExportProfile',
+        'markdownStudio.exportProfileToJson',
+      ]) {
+        assert.ok(commands.includes(command), `${command} should be registered`);
+      }
     });
   });
 });

@@ -1,5 +1,6 @@
 export type PreviewThemeMode = 'auto' | 'light' | 'dark';
 export type PreviewContentWidth = 'a4' | 'full';
+export type PageFormat = 'A3' | 'A4' | 'A5' | 'Letter' | 'Legal' | 'Tabloid';
 
 export type FencedBlockKind = 'mermaid' | 'plantuml' | 'puml' | 'svg' | 'wavedrom';
 
@@ -110,6 +111,46 @@ export const DEFAULT_ALLOWED_DOMAINS: readonly string[] = [
 export interface ExternalResourceConfig {
   mode: ExternalResourceMode;
   allowedDomains: string[];
+}
+
+export interface ExportProfile {
+  [key: string]: unknown;
+  schemaVersion: 1;
+  name: string;
+  createdAt?: string;
+  source?: 'manual-export' | 'pdf-export';
+  pageFormat?: PageFormat;
+  stylePreset?: PresetName;
+  styleTheme?: string;
+  fontFamily?: string;
+  fontSize?: number;
+  lineHeight?: number;
+  margin?: string;
+  customCss?: string;
+  securityMode?: ExternalResourceMode;
+  allowedDomains?: string[];
+  headerEnabled?: boolean;
+  headerTemplate?: string | null;
+  footerEnabled?: boolean;
+  footerTemplate?: string | null;
+  pageBreakEnabled?: boolean;
+  includeBookmarks?: boolean;
+  includePdfIndex?: boolean;
+  pdfIndexTitle?: string;
+  hidePdfToc?: boolean;
+  tocLevels?: string;
+  tocOrderedList?: boolean;
+  tocPageBreak?: boolean;
+  codeBlockLineNumbers?: boolean;
+  outputFilename?: string;
+}
+
+export interface ExportConfigOverlay {
+  pageFormat?: PageFormat;
+  stylePreset?: PresetName;
+  securityMode?: ExternalResourceMode;
+  includeBookmarks?: boolean;
+  includePdfIndex?: boolean;
 }
 
 /** Extracted heading entry. */

@@ -2,7 +2,7 @@
   "name": "markdown-studio-local",
   "displayName": "Markdown Studio: Local PDF Export",
   "description": "%extension.description%",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "kino6",
   "license": "MIT",
   "repository": {
@@ -74,6 +74,14 @@
       {
         "command": "markdownStudio.insertToc",
         "title": "%command.insertToc.title%"
+      },
+      {
+        "command": "markdownStudio.importExportProfile",
+        "title": "%command.importExportProfile.title%"
+      },
+      {
+        "command": "markdownStudio.exportProfileToJson",
+        "title": "%command.exportProfileToJson.title%"
       }
     ],
     "configuration": {
@@ -332,7 +340,7 @@
     "test:ci": "npm run lint && npm run test:unit && npm run test:integration",
     "test:preview-runtime": "npm run build && node scripts/test/previewRuntimeCheck.js",
     "test:demo-render": "npm run build && node scripts/test/demoRenderCheck.js",
-    "package": "npm run build && rm -f dist/*.vsix && vsce package -o dist/",
+    "package": "npm run build && rm -f dist/*.vsix && npm exec -- vsce package -o dist/",
     "reinstall": "bash scripts/dev/reinstall.sh",
     "demo": "npx tsx scripts/demo/index.ts",
     "demo:marketplace-gif": "npm run build && node scripts/demo/marketplaceGif.js",
@@ -368,6 +376,7 @@
     "@types/vscode": "^1.92.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.9.1",
     "esbuild": "^0.24.0",
     "fast-check": "^4.6.0",
     "mermaid": "^11.12.0",
