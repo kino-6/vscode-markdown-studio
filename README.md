@@ -13,10 +13,10 @@ New here? Start with [docs/getting-started.md](./docs/getting-started.md) for co
 ## Quick Start
 
 1. Open a Markdown file.
-2. Run `Markdown Studio: Preview`.
-3. Run `Markdown Studio: Export PDF` when the document is ready.
+2. Run `Markdown Studio: Preview: Open Beside`.
+3. Run `Markdown Studio: PDF: Export` when the document is ready.
 
-For PlantUML and PDF export dependencies, run `Markdown Studio: Setup Dependencies` if prompted.
+For PlantUML and PDF export dependencies, run `Markdown Studio: Tools: Setup Dependencies` if prompted.
 
 ## Why Markdown Studio?
 
@@ -124,16 +124,16 @@ Five built-in presets with per-setting overrides:
 
 | Command | Description |
 | ------- | ----------- |
-| `Markdown Studio: Preview` | Open Markdown preview in side panel |
-| `Markdown Studio: Preview in Current Tab` | Open Markdown preview in the active editor group |
-| `Markdown Studio: Preview Full Width` | Open Markdown preview without the content width limit |
-| `Markdown Studio: Export PDF` | Export current document to PDF |
-| `Markdown Studio: Validate Local Environment` | Check Java, PlantUML JAR, temp directory |
-| `Markdown Studio: Setup Dependencies` | Install Amazon Corretto JDK and Chromium |
-| `Markdown Studio: Reload Preview (Clear Cache)` | Clear webview cache and reload |
-| `Markdown Studio: Insert TOC` | Insert or update Table of Contents at cursor |
-| `Markdown Studio: Export Current Settings to JSON` | Manually save the current portable PDF settings as timestamped JSON |
-| `Markdown Studio: Import Settings from JSON` | Apply a recent or selected portable settings JSON |
+| `Markdown Studio: Preview: Open Beside` | Open Markdown preview in side panel |
+| `Markdown Studio: Preview: Open in Current Tab` | Open Markdown preview in the active editor group |
+| `Markdown Studio: Preview: Open Full Width` | Open Markdown preview without the content width limit |
+| `Markdown Studio: Preview: Reload (Clear Cache)` | Clear webview cache and reload |
+| `Markdown Studio: Edit: Insert TOC` | Insert or update Table of Contents at cursor |
+| `Markdown Studio: PDF: Export` | Export current document to PDF |
+| `Markdown Studio: Settings: Export` | Manually save the current portable PDF settings as timestamped JSON |
+| `Markdown Studio: Settings: Import` | Apply a recent or selected portable settings JSON |
+| `Markdown Studio: Tools: Validate Local Environment` | Check Java, PlantUML JAR, temp directory |
+| `Markdown Studio: Tools: Setup Dependencies` | Install Amazon Corretto JDK and Chromium |
 
 ## Configuration
 
@@ -156,7 +156,11 @@ Common settings:
 
 The same CSS stack applies to both preview and PDF export. Preview width is controlled separately by `markdownStudio.preview.contentWidth` and does not change PDF page size.
 
-Portable PDF settings can be shared as JSON. In a workspace, every successful `Export PDF` writes a timestamped settings file under `.vscode/` and keeps the latest three PDF-export history files. Manual settings exports use a separate filename prefix, include creation metadata, and are not pruned automatically:
+### Team-Shared PDF Settings
+
+Portable PDF settings can be shared as JSON. Commit one JSON file to a repository when a team needs the same PDF page size, CSS, security mode, headers, TOC, PDF index, and bookmarks across contributors.
+
+In a workspace, every successful `Export PDF` writes a timestamped settings snapshot under `.vscode/` and keeps the latest three PDF-export history files. Manual `Export Current Settings to JSON` prompts for a display name, uses a separate filename prefix, includes creation metadata, and is not pruned automatically. `Import Settings from JSON` shows recent exports by display name and metadata before applying the selected JSON to User or Workspace settings.
 
 ```json
 {
@@ -191,7 +195,13 @@ Portable PDF settings can be shared as JSON. In a workspace, every successful `E
 }
 ```
 
-PDF export history files are named `.vscode/markdown-studio-pdf-settings-*.json`. Manual settings files are named `.vscode/markdown-studio-settings-*.json`. Use `Markdown Studio: Import Settings from JSON` to choose from either recent list, or browse to another JSON file. Import applies the selected JSON to User or Workspace settings.
+PDF export history files are named `.vscode/markdown-studio-pdf-settings-*.json`. Manual settings files are named `.vscode/markdown-studio-settings-*.json`. Use `Markdown Studio: Settings: Import` to choose from either recent list, or browse to another JSON file. Import applies the selected JSON to User or Workspace settings.
+
+Example shared settings files are available in `examples/settings/`:
+
+- `company-spec-a4.json` — A4 technical specs with GitHub styling and PDF index.
+- `local-only-a4.json` — strict LocalOnly A4 export with all external resources blocked.
+- `release-notes-letter.json` — Letter-sized release notes with date-based filenames.
 
 ## WaveDrom
 
@@ -293,7 +303,7 @@ See [testing.md](./docs/testing.md) for details.
 
 ## Demo
 
-Open `examples/demo.md` and run `Markdown Studio: Preview` to see all features in action.
+Open `examples/demo.md` and run `Markdown Studio: Preview: Open Beside` to see all features in action.
 Use `examples/demo_win.md` for Windows path/rendering checks, and `examples/demo_load.md` for PDF export load testing.
 
 ## Coexistence

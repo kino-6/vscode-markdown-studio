@@ -18,7 +18,7 @@ If you only need a quick Markdown preview, VS Code's built-in preview may be eno
 ## First Preview
 
 1. Open a Markdown file.
-2. Run `Markdown Studio: Preview`.
+2. Run `Markdown Studio: Preview: Open Beside`.
 3. Edit the Markdown file and keep the preview open.
 4. Double-click rendered content in the preview to jump back to the source line.
 
@@ -27,7 +27,7 @@ Preview rendering runs locally. Mermaid and WaveDrom render inside the webview. 
 ## Export A PDF
 
 1. Open the Markdown file.
-2. Run `Markdown Studio: Export PDF`.
+2. Run `Markdown Studio: PDF: Export`.
 3. Choose the output location.
 
 The PDF export uses the same rendering stack as Preview, so diagrams, math, syntax highlighting, local assets, TOCs, and custom CSS stay consistent between the preview and the exported PDF.
@@ -102,7 +102,7 @@ For strict local-only work, set:
 
 ## Dependency Setup
 
-Run `Markdown Studio: Setup Dependencies` if prompted. The setup installs managed local dependencies used by Markdown Studio:
+Run `Markdown Studio: Tools: Setup Dependencies` if prompted. The setup installs managed local dependencies used by Markdown Studio:
 
 - Amazon Corretto JDK for PlantUML.
 - Playwright Chromium for PDF export.
@@ -114,20 +114,20 @@ For proxy, custom CA, or offline setup notes, see [troubleshooting.md](./trouble
 ### Technical README
 
 1. Write Mermaid, PlantUML, WaveDrom, math, tables, and code in Markdown.
-2. Open `Markdown Studio: Preview`.
+2. Open `Markdown Studio: Preview: Open Beside`.
 3. Check the rendered diagrams and math locally.
 4. Export a PDF when the document is ready.
 
 ### Strict LocalOnly Review
 
 1. Set `markdownStudio.security.externalResources.mode` to `block-all`.
-2. Open the document with `Markdown Studio: Preview`.
+2. Open the document with `Markdown Studio: Preview: Open Beside`.
 3. Confirm blocked remote resources are visible as blocked-resource notices.
 4. Export the PDF from the same document.
 
 ### Polished PDF Handout
 
 1. Add headings for PDF bookmarks.
-2. Add a TOC with `Markdown Studio: Insert TOC` if needed.
+2. Add a TOC with `Markdown Studio: Edit: Insert TOC` if needed.
 3. Use CSS page breaks where the document needs section boundaries.
 4. Export PDF and inspect the index, bookmarks, headers, footers, and page breaks.

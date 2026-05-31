@@ -7,8 +7,8 @@ Markdown Studio auto-installs Amazon Corretto JDK for PlantUML and Playwright Ch
 | Symptom | Cause | Solution |
 | ------- | ----- | -------- |
 | Download timeout or failure | Corporate proxy or firewall | Set `http.proxy` in VS Code settings, or add CA certs with `markdownStudio.network.caCertificates`. |
-| Chromium not available | Browser dependency missing or disk space insufficient | Run `Markdown Studio: Setup Dependencies`; Chromium needs roughly 200 MB. |
-| PlantUML diagrams not rendering | Java is not available | Run `Markdown Studio: Validate Local Environment`, then set `markdownStudio.java.path` if needed. |
+| Chromium not available | Browser dependency missing or disk space insufficient | Run `Markdown Studio: Tools: Setup Dependencies`; Chromium needs roughly 200 MB. |
+| PlantUML diagrams not rendering | Java is not available | Run `Markdown Studio: Tools: Validate Local Environment`, then set `markdownStudio.java.path` if needed. |
 | macOS security block | Gatekeeper blocks an unsigned binary | Open System Settings > Privacy & Security, then allow the blocked app. |
 | ARM/x86 mismatch | Wrong architecture binary downloaded | Delete the extension dependency cache and run setup again. |
 

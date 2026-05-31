@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   values: {} as Record<string, unknown>,
   updates: [] as Array<{ key: string; value: unknown; target: unknown }>,
   showQuickPick: vi.fn(),
+  showInputBox: vi.fn(),
   showOpenDialog: vi.fn(),
   showSaveDialog: vi.fn(),
   showInformationMessage: vi.fn(),
@@ -64,6 +65,7 @@ vi.mock('vscode', () => ({
   },
   window: {
     showQuickPick: (...args: unknown[]) => mocks.showQuickPick(...args),
+    showInputBox: (...args: unknown[]) => mocks.showInputBox(...args),
     showOpenDialog: (...args: unknown[]) => mocks.showOpenDialog(...args),
     showSaveDialog: (...args: unknown[]) => mocks.showSaveDialog(...args),
     showInformationMessage: (...args: unknown[]) => mocks.showInformationMessage(...args),
@@ -83,6 +85,7 @@ describe('export settings JSON commands', () => {
     mocks.updates = [];
     mocks.language = 'en';
     mocks.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+    mocks.showInputBox.mockResolvedValue('Current Settings');
     mocks.createDirectory.mockResolvedValue(undefined);
     mocks.readDirectory.mockResolvedValue([]);
     mocks.delete.mockResolvedValue(undefined);
@@ -118,6 +121,9 @@ describe('export settings JSON commands', () => {
 
     await exportProfileToJsonCommand();
 
+    expect(mocks.showInputBox).toHaveBeenCalledWith(expect.objectContaining({
+      value: 'Current Settings',
+    }));
     expect(mocks.showSaveDialog).not.toHaveBeenCalled();
     expect(mocks.createDirectory).toHaveBeenCalledWith({ fsPath: '/workspace/.vscode' });
     expect(mocks.writeFile).toHaveBeenCalledTimes(1);
@@ -162,6 +168,25 @@ describe('export settings JSON commands', () => {
     expect(mocks.showInformationMessage).toHaveBeenCalledWith(
       expect.stringContaining('Exported settings to /workspace/.vscode/markdown-studio-settings-'),
     );
+  });
+
+  it('uses the manual export name entered by the user', async () => {
+    mocks.showInputBox.mockResolvedValue('Company Spec A4');
+
+    await exportProfileToJsonCommand();
+
+    const [, bytes] = mocks.writeFile.mock.calls[0];
+    const profile = JSON.parse(new TextDecoder().decode(bytes));
+    expect(profile.name).toBe('Company Spec A4');
+  });
+
+  it('cancels manual export when the settings name input is cancelled', async () => {
+    mocks.showInputBox.mockResolvedValue(undefined);
+
+    await exportProfileToJsonCommand();
+
+    expect(mocks.writeFile).not.toHaveBeenCalled();
+    expect(mocks.showInformationMessage).not.toHaveBeenCalled();
   });
 
   it('does not prune manual settings exports', async () => {
@@ -312,7 +337,10 @@ describe('export settings JSON commands', () => {
   it('lets the user choose a recent workspace settings export when importing', async () => {
     const profileJson = JSON.stringify({
       name: 'Recent',
+      createdAt: '2026-05-26T04:00:00.000Z',
       pageFormat: 'A5',
+      stylePreset: 'github',
+      securityMode: 'block-all',
     });
     mocks.readDirectory.mockResolvedValue([
       ['markdown-studio-pdf-settings-20260526-040000.json', 1],
@@ -327,11 +355,18 @@ describe('export settings JSON commands', () => {
     await importExportProfileCommand();
 
     expect(mocks.showOpenDialog).not.toHaveBeenCalled();
+    expect(mocks.showQuickPick.mock.calls[0][0][0]).toMatchObject({
+      label: 'Recent',
+      description: expect.stringContaining('A5 · github · block-all · PDF export history · 2026-05-26'),
+      detail: 'markdown-studio-pdf-settings-20260526-040000.json',
+    });
     expect(mocks.readFile).toHaveBeenCalledWith({
       fsPath: '/workspace/.vscode/markdown-studio-pdf-settings-20260526-040000.json',
     });
     expect(mocks.updates).toEqual([
       { key: 'export.pageFormat', value: 'A5', target: 2 },
+      { key: 'style.preset', value: 'github', target: 2 },
+      { key: 'security.externalResources.mode', value: 'block-all', target: 2 },
     ]);
   });
 });

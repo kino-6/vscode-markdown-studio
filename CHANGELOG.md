@@ -4,6 +4,17 @@ All notable changes to Markdown Studio will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-05-31
+
+### Changed
+
+- Prompt for a display name when manually exporting portable PDF settings to JSON.
+- Show recent settings imports by profile name and metadata instead of timestamped filenames alone.
+- Combine PDF export and automatic settings snapshot success into one notification with open actions.
+- Group command titles by surface area such as Preview, Edit, PDF, Settings, and Tools.
+- Added ready-to-import shared settings examples for company specs, LocalOnly PDFs, and release notes.
+- Documented team-shared PDF settings as a repository-friendly workflow.
+
 ## [1.0.2] - 2026-05-31
 
 ### Added

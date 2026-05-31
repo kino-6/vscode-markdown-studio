@@ -11,7 +11,13 @@ interface ProfileQuickPickItem extends vscode.QuickPickItem {
 
 interface ImportSourceQuickPickItem extends vscode.QuickPickItem {
   uri?: vscode.Uri;
+  profile?: ExportProfile;
   browse?: boolean;
+}
+
+interface ImportSourceSelection {
+  uri: vscode.Uri;
+  profile?: ExportProfile;
 }
 
 interface TargetQuickPickItem extends vscode.QuickPickItem {
@@ -45,7 +51,7 @@ const IMPORT_SETTING_MAPPINGS: Array<[keyof ExportProfile, string]> = [
   ['outputFilename', CONFIG_KEYS.exportOutputFilename],
 ];
 
-function parseProfileJson(text: string): ExportProfile[] {
+function parseProfileJson(text: string, options: { showWarnings?: boolean } = {}): ExportProfile[] {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -79,8 +85,10 @@ function parseProfileJson(text: string): ExportProfile[] {
     throw new Error(issues.join(' ') || 'No valid Markdown Studio settings found.');
   }
 
-  for (const issue of issues) {
-    void vscode.window.showWarningMessage(`Markdown Studio: ${issue}`);
+  if (options.showWarnings !== false) {
+    for (const issue of issues) {
+      void vscode.window.showWarningMessage(`Markdown Studio: ${issue}`);
+    }
   }
 
   return profiles;
@@ -103,6 +111,61 @@ function sourceDescription(kind: PortableSettingsExportKind): string {
     return isJapaneseLocale() ? 'PDF エクスポート履歴' : 'PDF export history';
   }
   return isJapaneseLocale() ? '手動保存' : 'manual export';
+}
+
+function formatCreatedAt(createdAt: unknown): string | undefined {
+  if (typeof createdAt !== 'string') return undefined;
+  const time = Date.parse(createdAt);
+  if (Number.isNaN(time)) return undefined;
+  return new Date(time).toISOString().slice(0, 10);
+}
+
+function profileDescription(
+  profile: ExportProfile,
+  kind: PortableSettingsExportKind,
+): string {
+  return [
+    profile.pageFormat,
+    profile.stylePreset,
+    profile.securityMode,
+    sourceDescription(profile.source === 'pdf-export' ? 'pdf' : kind),
+    formatCreatedAt(profile.createdAt),
+  ].filter(Boolean).join(' · ');
+}
+
+async function readProfilesFromUri(
+  uri: vscode.Uri,
+  options: { showWarnings?: boolean } = {},
+): Promise<ExportProfile[]> {
+  const bytes = await vscode.workspace.fs.readFile(uri);
+  const text = new TextDecoder('utf-8').decode(bytes);
+  return parseProfileJson(text, options);
+}
+
+async function recentImportItems(): Promise<ImportSourceQuickPickItem[]> {
+  const recentFiles = await listWorkspaceSettingsExports();
+  const items: ImportSourceQuickPickItem[] = [];
+
+  for (const file of recentFiles) {
+    let profiles: ExportProfile[];
+    try {
+      profiles = await readProfilesFromUri(file.uri, { showWarnings: false });
+    } catch {
+      continue;
+    }
+
+    for (const profile of profiles) {
+      items.push({
+        label: profile.name,
+        description: profileDescription(profile, file.kind),
+        detail: basename(file.uri.fsPath),
+        uri: file.uri,
+        profile,
+      });
+    }
+  }
+
+  return items;
 }
 
 async function chooseProfile(profiles: ExportProfile[]): Promise<ExportProfile | undefined> {
@@ -136,20 +199,16 @@ async function chooseFileWithOpenDialog(): Promise<vscode.Uri | undefined> {
   return selectedFiles?.[0];
 }
 
-async function chooseImportSource(): Promise<vscode.Uri | undefined> {
-  const recentFiles = await listWorkspaceSettingsExports();
-  if (recentFiles.length === 0) {
-    return chooseFileWithOpenDialog();
+async function chooseImportSource(): Promise<ImportSourceSelection | undefined> {
+  const recentItems = await recentImportItems();
+  if (recentItems.length === 0) {
+    const uri = await chooseFileWithOpenDialog();
+    return uri ? { uri } : undefined;
   }
 
   const selected = await vscode.window.showQuickPick<ImportSourceQuickPickItem>(
     [
-      ...recentFiles.map(file => ({
-        label: basename(file.uri.fsPath),
-        description: sourceDescription(file.kind),
-        detail: '.vscode',
-        uri: file.uri,
-      })),
+      ...recentItems,
       {
         label: browseLabel(),
         browse: true,
@@ -159,8 +218,19 @@ async function chooseImportSource(): Promise<vscode.Uri | undefined> {
   );
 
   if (!selected) return undefined;
-  if (selected.browse) return chooseFileWithOpenDialog();
-  return selected.uri;
+  if (selected.browse) {
+    const uri = await chooseFileWithOpenDialog();
+    return uri ? { uri } : undefined;
+  }
+  if (!selected.uri) return undefined;
+  return { uri: selected.uri, profile: selected.profile };
+}
+
+async function chooseProfileFromFile(selection: ImportSourceSelection): Promise<ExportProfile | undefined> {
+  if (selection.profile) return selection.profile;
+
+  const profiles = await readProfilesFromUri(selection.uri);
+  return chooseProfile(profiles);
 }
 
 async function chooseTarget(): Promise<vscode.ConfigurationTarget | undefined> {
@@ -209,13 +279,11 @@ async function applyImportedSettings(
 }
 
 export async function importExportProfileCommand(): Promise<void> {
-  const uri = await chooseImportSource();
-  if (!uri) return;
+  const selection = await chooseImportSource();
+  if (!selection) return;
 
   try {
-    const bytes = await vscode.workspace.fs.readFile(uri);
-    const text = new TextDecoder('utf-8').decode(bytes);
-    const profile = await chooseProfile(parseProfileJson(text));
+    const profile = await chooseProfileFromFile(selection);
     if (!profile) return;
 
     const target = await chooseTarget();

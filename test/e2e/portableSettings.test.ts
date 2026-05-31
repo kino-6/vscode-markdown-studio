@@ -55,7 +55,9 @@ suite('Markdown Studio Portable Settings E2E', () => {
     const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
     await cfg.update('export.pageFormat', 'A4', vscode.ConfigurationTarget.Workspace);
     await cfg.update('style.customCss', 'h2 { color: teal; }', vscode.ConfigurationTarget.Workspace);
-    await vscode.commands.executeCommand('markdownStudio.exportProfileToJson');
+    const exportPromise = vscode.commands.executeCommand('markdownStudio.exportProfileToJson');
+    await acceptNextQuickPick();
+    await exportPromise;
 
     const manualProfile = latestSettingsExport('markdown-studio-settings-');
     assert.strictEqual(manualProfile.source, 'manual-export');
