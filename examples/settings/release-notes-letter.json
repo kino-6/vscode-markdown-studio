@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "name": "Release Notes Letter",
+  "source": "manual-export",
+  "pageFormat": "Letter",
+  "stylePreset": "github",
+  "styleTheme": "modern",
+  "fontSize": 13,
+  "lineHeight": 1.55,
+  "margin": "0.7in",
+  "customCss": "h1 { color: #0f172a; } .task-list-item { margin: 4px 0; }",
+  "securityMode": "whitelist",
+  "allowedDomains": [
+    "github.com",
+    "raw.githubusercontent.com"
+  ],
+  "headerEnabled": true,
+  "headerTemplate": null,
+  "footerEnabled": true,
+  "footerTemplate": null,
+  "pageBreakEnabled": true,
+  "includeBookmarks": true,
+  "includePdfIndex": false,
+  "pdfIndexTitle": "Release Notes",
+  "hidePdfToc": false,
+  "tocLevels": "1-2",
+  "tocOrderedList": false,
+  "tocPageBreak": false,
+  "codeBlockLineNumbers": false,
+  "outputFilename": "${filename}-${date}"
+}

@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   showInformationMessage: vi.fn(),
   showWarningMessage: vi.fn(),
   showErrorMessage: vi.fn(),
+  executeCommand: vi.fn(),
   activeTextEditor: {
     document: {
       languageId: 'markdown',
@@ -15,6 +16,15 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('vscode', () => ({
   ProgressLocation: { Notification: 15 },
+  Uri: {
+    file: (fsPath: string) => ({ fsPath }),
+  },
+  env: {
+    language: 'en',
+  },
+  commands: {
+    executeCommand: (...args: unknown[]) => mocks.executeCommand(...args),
+  },
   window: {
     get activeTextEditor() {
       return mocks.activeTextEditor;
@@ -60,7 +70,8 @@ describe('exportPdfCommand settings export', () => {
     expect(exportToPdfMock).toHaveBeenCalledTimes(1);
     expect(saveCurrentSettingsExportMock).toHaveBeenCalledWith({ fallbackToSaveDialog: false, kind: 'pdf' });
     expect(mocks.showInformationMessage).toHaveBeenCalledWith(
-      'settings saved: /workspace/.vscode/markdown-studio-pdf-settings-20260528-123000.json',
+      'Markdown Studio: Exported PDF to /workspace/spec.pdf',
+      'Open PDF',
     );
   });
 

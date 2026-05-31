@@ -17,6 +17,7 @@ export interface WorkspaceSettingsExportFile {
 export interface SaveCurrentSettingsExportOptions {
   fallbackToSaveDialog: boolean;
   kind: PortableSettingsExportKind;
+  profileName?: string;
 }
 
 export interface SaveCurrentSettingsExportResult {
@@ -27,11 +28,15 @@ function profileSource(kind: PortableSettingsExportKind): ExportProfile['source'
   return kind === 'pdf' ? 'pdf-export' : 'manual-export';
 }
 
-function currentSettingsProfile(kind: PortableSettingsExportKind, date: Date): ExportProfile {
+function currentSettingsProfile(
+  kind: PortableSettingsExportKind,
+  date: Date,
+  profileName = 'Current Settings',
+): ExportProfile {
   const cfg = getExportConfig();
   return {
     schemaVersion: 1,
-    name: 'Current Settings',
+    name: profileName.trim() || 'Current Settings',
     createdAt: date.toISOString(),
     source: profileSource(kind),
     pageFormat: cfg.pageFormat,
@@ -187,7 +192,7 @@ export async function saveCurrentSettingsExport(
     ?? (options.fallbackToSaveDialog ? await chooseFallbackSaveUri() : undefined);
   if (!uri) return {};
 
-  const profile = currentSettingsProfile(options.kind, createdAt);
+  const profile = currentSettingsProfile(options.kind, createdAt, options.profileName);
   const json = `${JSON.stringify(profile, null, 2)}\n`;
   await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(json));
   if (options.kind === 'pdf') {
