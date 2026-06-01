@@ -498,7 +498,9 @@ describe('exportToPdf smoke/integration', () => {
     writeFileMock.mockResolvedValue(undefined);
     setContentMock.mockResolvedValue(undefined);
     const coverBuffer = Buffer.from('%PDF cover\n/Type /Page\n');
-    const bodyIndexProbeBuffer = Buffer.from('%PDF body-probe\n/Type /Page\n');
+    const bodyIndexProbeBuffer = Buffer.from(`%PDF body-probe
+${Array.from({ length: 15 }, () => '/Type /Page').join('\n')}
+`);
     const bodyFinalBuffer = Buffer.from('%PDF body-final\n/Type /Page\n');
     pdfMock
       .mockResolvedValueOnce(coverBuffer)
@@ -506,8 +508,8 @@ describe('exportToPdf smoke/integration', () => {
       .mockResolvedValueOnce(bodyFinalBuffer);
     closeMock.mockResolvedValue(undefined);
     evaluateMock.mockResolvedValue({
-      headings: [{ level: 1, text: 'Body', anchorId: 'body', offsetTop: 0 }],
-      scrollHeight: 1000,
+      headings: [{ level: 1, text: 'Body', anchorId: 'body', offsetTop: 900 }],
+      scrollHeight: 9000,
     });
     addScriptTagMock.mockResolvedValue(undefined);
     waitForFunctionMock.mockResolvedValue(undefined);
