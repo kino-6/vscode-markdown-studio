@@ -4,8 +4,6 @@ All notable changes to Markdown Studio will be documented in this file.
 
 ## [Unreleased]
 
-## [1.0.4] - 2026-06-01
-
 ### Added
 
 - Added optional Markdown cover pages for PDF export via `markdownStudio.export.cover.enabled` and `markdownStudio.export.cover.path`.
