@@ -51,6 +51,11 @@ vi.mock('../../src/export/pdfBookmarks', () => {
   return { addBookmarks: addBookmarksMock, buildBookmarkTree: vi.fn(), __addBookmarksMock: addBookmarksMock };
 });
 
+vi.mock('../../src/export/pdfAssembly', () => {
+  const mergePdfBuffersMock = vi.fn(async (buffers: Buffer[]) => Buffer.concat(buffers));
+  return { mergePdfBuffers: mergePdfBuffersMock, __mergePdfBuffersMock: mergePdfBuffersMock };
+});
+
 vi.mock('../../src/infra/customCssLoader', () => ({
   loadCustomCss: vi.fn().mockResolvedValue({ css: '', warnings: [] }),
 }));
@@ -435,7 +440,6 @@ describe('exportToPdf smoke/integration', () => {
       }
       return '.hljs { background: #f6f8fa; }';
     });
-    accessMock.mockRejectedValueOnce(new Error('ENOENT'));
     closeMock.mockResolvedValue(undefined);
 
     const document = {
@@ -560,7 +564,7 @@ describe('exportToPdf bookmark integration', () => {
     setContentMock.mockResolvedValue(undefined);
     pdfMock
       .mockResolvedValueOnce(Buffer.from('/Type /Page\n/Type /Page\n'))
-      .mockResolvedValueOnce(Buffer.from('/Type /Page\n'))
+      .mockResolvedValueOnce(Buffer.from('/Type /Page\n/Type /Page\n'))
       .mockResolvedValue(Buffer.from('/Type /Page\n/Type /Page\n'));
     closeMock.mockResolvedValue(undefined);
     evaluateMock.mockResolvedValue({

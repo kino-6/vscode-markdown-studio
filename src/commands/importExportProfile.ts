@@ -44,6 +44,8 @@ const IMPORT_SETTING_MAPPINGS: Array<[keyof ExportProfile, string]> = [
   ['includePdfIndex', CONFIG_KEYS.exportPdfIndexEnabled],
   ['pdfIndexTitle', CONFIG_KEYS.exportPdfIndexTitle],
   ['hidePdfToc', CONFIG_KEYS.exportPdfTocHidden],
+  ['coverEnabled', CONFIG_KEYS.exportCoverEnabled],
+  ['coverPath', CONFIG_KEYS.exportCoverPath],
   ['tocLevels', CONFIG_KEYS.tocLevels],
   ['tocOrderedList', CONFIG_KEYS.tocOrderedList],
   ['tocPageBreak', CONFIG_KEYS.tocPageBreak],

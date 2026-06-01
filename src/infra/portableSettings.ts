@@ -58,6 +58,8 @@ function currentSettingsProfile(
     includePdfIndex: cfg.pdfIndex.enabled,
     pdfIndexTitle: cfg.pdfIndex.title,
     hidePdfToc: cfg.pdfToc.hidden,
+    coverEnabled: cfg.pdfCover.enabled,
+    coverPath: cfg.pdfCover.path,
     tocLevels: `${cfg.toc.minLevel}-${cfg.toc.maxLevel}`,
     tocOrderedList: cfg.toc.orderedList,
     tocPageBreak: cfg.toc.pageBreak,

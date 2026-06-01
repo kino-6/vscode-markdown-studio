@@ -138,6 +138,8 @@ export interface ExportProfile {
   includePdfIndex?: boolean;
   pdfIndexTitle?: string;
   hidePdfToc?: boolean;
+  coverEnabled?: boolean;
+  coverPath?: string;
   tocLevels?: string;
   tocOrderedList?: boolean;
   tocPageBreak?: boolean;
@@ -217,6 +219,12 @@ export interface PdfTocConfig {
 /** PDF bookmark settings. */
 export interface PdfBookmarksConfig {
   enabled: boolean;
+}
+
+/** Optional Markdown cover page settings for PDF export. */
+export interface PdfCoverConfig {
+  enabled: boolean;
+  path: string;
 }
 
 /** Lightweight heading entry for bookmark generation. */

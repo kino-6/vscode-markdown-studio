@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CodeBlockConfig, ExportConfigOverlay, ExternalResourceConfig, ExternalResourceMode, PageFormat, PdfBookmarksConfig, PdfHeaderFooterConfig, PdfIndexConfig, PdfTocConfig, PreviewContentWidth, PreviewThemeMode, ResolvedStyleConfig, StyleConfigOverrides, TocConfig } from '../types/models';
+import { CodeBlockConfig, ExportConfigOverlay, ExternalResourceConfig, ExternalResourceMode, PageFormat, PdfBookmarksConfig, PdfCoverConfig, PdfHeaderFooterConfig, PdfIndexConfig, PdfTocConfig, PreviewContentWidth, PreviewThemeMode, ResolvedStyleConfig, StyleConfigOverrides, TocConfig } from '../types/models';
 import { CONFIG_DEFAULTS, CONFIG_KEYS, CONFIG_SECTION } from './configurationRegistry';
 import { resolvePreset } from './presets';
 
@@ -24,6 +24,7 @@ export interface MarkdownStudioConfig {
   pdfIndex: PdfIndexConfig;
   pdfToc: PdfTocConfig;
   pdfBookmarks: PdfBookmarksConfig;
+  pdfCover: PdfCoverConfig;
   theme: string;
   customCss: string;
   outputFilename: string;
@@ -147,6 +148,10 @@ function getConfigFromWorkspace(
     },
     pdfBookmarks: {
       enabled: overlay?.includeBookmarks ?? cfg.get<boolean>(CONFIG_KEYS.exportPdfBookmarksEnabled, CONFIG_DEFAULTS.exportPdfBookmarksEnabled),
+    },
+    pdfCover: {
+      enabled: cfg.get<boolean>(CONFIG_KEYS.exportCoverEnabled, CONFIG_DEFAULTS.exportCoverEnabled),
+      path: cfg.get<string>(CONFIG_KEYS.exportCoverPath, CONFIG_DEFAULTS.exportCoverPath),
     },
     theme: cfg.get<string>(CONFIG_KEYS.styleTheme, CONFIG_DEFAULTS.styleTheme),
     customCss: cfg.get<string>(CONFIG_KEYS.styleCustomCss, CONFIG_DEFAULTS.styleCustomCss),
