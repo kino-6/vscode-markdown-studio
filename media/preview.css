@@ -381,9 +381,30 @@ body.vscode-high-contrast .ms-toc a {
   color: var(--vscode-textLink-foreground, #58a6ff);
 }
 
+/* ── Embedded cover pages ───────────────────────────── */
+
+.ms-cover-page {
+  margin: 0 0 2rem;
+  padding: 2rem 0;
+}
+
+.ms-cover-page > :first-child {
+  margin-top: 0;
+}
+
+.ms-cover-page > :last-child {
+  margin-bottom: 0;
+}
+
 /* ── TOC print styles ────────────────────────────────── */
 
 @media print {
+  .ms-cover-page {
+    min-height: 80vh;
+    break-after: page;
+    page-break-after: always;
+  }
+
   .ms-toc {
     border: 1px solid #999;
     background: #f6f8fa;

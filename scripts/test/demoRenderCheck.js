@@ -6,7 +6,7 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const esbuild = require('esbuild');
 const { chromium } = require('playwright');
-const { PDFDocument } = require('pdf-lib');
+const { PDFArray, PDFDocument, PDFName } = require('pdf-lib');
 
 const repoRoot = path.resolve(__dirname, '../..');
 const demoMarkdownPath = path.join(repoRoot, 'examples/demo.md');
@@ -255,8 +255,34 @@ async function verifyPdf(exportModule, dependencyStatus, markdown) {
 
   assert.ok(buffer.length > 100 * 1024, `expected a substantial PDF, got ${buffer.length} bytes`);
   assert.ok(pages >= 10, `expected demo PDF to have at least 10 pages, got ${pages}`);
+  verifyPdfIndexLinks(pdf);
 
   return { outputPath, bytes: buffer.length, pages };
+}
+
+function pageNumberForDestination(pdf, destination) {
+  if (!(destination instanceof PDFArray)) {
+    return 0;
+  }
+  const targetRef = destination.get(0).toString();
+  return pdf.getPages().findIndex((page) => page.ref.toString() === targetRef) + 1;
+}
+
+function verifyPdfIndexLinks(pdf) {
+  const indexPage = pdf.getPage(1);
+  const annots = indexPage.node.Annots();
+  assert.ok(annots, 'expected generated PDF index to contain link annotations');
+  assert.ok(annots.size() >= 10, `expected many PDF index links, got ${annots.size()}`);
+
+  for (let i = 0; i < annots.size(); i += 1) {
+    const annot = pdf.context.lookup(annots.get(i));
+    const destination = annot.get(PDFName.of('Dest'));
+    assert.ok(destination instanceof PDFArray, `expected PDF index link ${i} to use a direct destination`);
+  }
+
+  const mathDestination = pdf.context.lookup(annots.get(6)).get(PDFName.of('Dest'));
+  assert.equal(pageNumberForDestination(pdf, mathDestination), 4);
+  assert.equal(mathDestination.get(1).toString(), '/XYZ');
 }
 
 async function main() {

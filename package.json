@@ -199,6 +199,16 @@
           "default": true,
           "markdownDescription": "%configuration.export.pdfBookmarks.enabled.markdownDescription%"
         },
+        "markdownStudio.export.cover.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "%configuration.export.cover.enabled.markdownDescription%"
+        },
+        "markdownStudio.export.cover.path": {
+          "type": "string",
+          "default": "cover.md",
+          "markdownDescription": "%configuration.export.cover.path.markdownDescription%"
+        },
         "markdownStudio.preview.theme": {
           "type": "string",
           "default": "auto",
@@ -383,5 +393,9 @@
     "playwright": "1.59.1",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
+  },
+  "overrides": {
+    "diff": "^8.0.3",
+    "serialize-javascript": "^7.0.5"
   }
 }

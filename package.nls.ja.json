@@ -30,6 +30,8 @@
   "configuration.export.pdfIndex.title.markdownDescription": "PDF 目次ページ上部に表示するタイトル。",
   "configuration.export.pdfToc.hidden.markdownDescription": "PDF エクスポート時に認識済みの本文内 TOC マーカーを非表示にします。",
   "configuration.export.pdfBookmarks.enabled.markdownDescription": "PDF ビューアーのサイドバーに表示されるブックマーク（アウトライン）を見出しから生成します。",
+  "configuration.export.cover.enabled.markdownDescription": "PDF エクスポート時に、同一ファイル内または設定済みの Markdown 表紙ページを先頭に結合します。",
+  "configuration.export.cover.path.markdownDescription": "高度なフォールバック用の表紙 Markdown パス。相対パスはエクスポート対象 Markdown と同じディレクトリを基準に解決します。",
   "configuration.preview.theme.description": "プレビューのテーマモード。auto は VS Code のカラーテーマに追従します。",
   "configuration.preview.theme.enum.auto": "VS Code のカラーテーマに自動で追従します。",
   "configuration.preview.theme.enum.light": "常にライトモードでプレビューを表示します。",

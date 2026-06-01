@@ -1,3 +1,29 @@
+<!-- markdown-studio:cover -->
+<svg width="100%" height="760" viewBox="0 0 640 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Markdown Studio embedded cover demo">
+  <rect width="640" height="760" fill="#FFFFFF"/>
+  <g transform="translate(48 60) scale(0.72)">
+    <rect x="0.5" y="0.5" width="127" height="127" rx="20" fill="#0B1220"/>
+    <rect x="8" y="8" width="112" height="112" rx="14" fill="#F8FAFC"/>
+    <path d="M20 68V20H30L42 44L54 20H64V68H54V36L42 56L30 36V68Z" fill="#111827"/>
+    <path d="M84 20H92V56H104L88 76L72 56H84Z" fill="#A855F7"/>
+    <path d="M52 89H76" stroke="#2563EB" stroke-width="4" stroke-linecap="round"/>
+    <path d="M42 96L64 106" stroke="#2563EB" stroke-width="4" stroke-linecap="round"/>
+    <path d="M86 96L64 106" stroke="#2563EB" stroke-width="4" stroke-linecap="round"/>
+    <rect x="30" y="82" width="24" height="14" rx="3" fill="#2563EB"/>
+    <rect x="74" y="82" width="24" height="14" rx="3" fill="#2563EB"/>
+    <rect x="52" y="100" width="24" height="12" rx="3" fill="#2563EB"/>
+  </g>
+  <text x="48" y="235" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="2.4" fill="#2563EB">EMBEDDED COVER DEMO</text>
+  <text x="48" y="318" font-family="Arial, Helvetica, sans-serif" font-size="56" font-weight="800" fill="#0F172A">Markdown Studio</text>
+  <text x="48" y="378" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="650" fill="#1E3A8A">Local PDF Export</text>
+  <rect x="48" y="430" width="96" height="5" fill="#2563EB"/>
+  <text x="48" y="610" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#0F172A">Feature Demo PDF</text>
+  <text x="48" y="646" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#475569">Cover, PDF index links, bookmarks, diagrams, math, and local assets.</text>
+  <line x1="48" y1="700" x2="592" y2="700" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="48" y="730" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#64748B">Source: embedded Markdown cover block</text>
+</svg>
+<!-- /markdown-studio:cover -->
+
 # Markdown Studio — Feature Demo
 
 Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).

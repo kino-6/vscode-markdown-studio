@@ -10,7 +10,7 @@ Markdown Studio is a good fit when your Markdown includes:
 
 - Mermaid, PlantUML, WaveDrom, SVG, or KaTeX math.
 - Local images and other workspace assets.
-- Long technical documents that need TOCs, page breaks, page numbers, or PDF bookmarks.
+- Long technical documents that need TOCs, cover pages, page breaks, page numbers, or PDF bookmarks.
 - Documents that should render without a remote diagram service.
 
 If you only need a quick Markdown preview, VS Code's built-in preview may be enough. Use Markdown Studio when the preview needs to match the exported PDF, especially for diagrams and document navigation.
@@ -36,6 +36,7 @@ PDF-specific features include:
 
 - PDF index pages with page numbers.
 - PDF bookmarks from document headings.
+- Optional Markdown cover pages prepended before the body PDF, either embedded in the same file or loaded from a shared cover file.
 - Headers, footers, page formats, margins, and page breaks.
 - Output filename templates.
 
@@ -130,4 +131,5 @@ For proxy, custom CA, or offline setup notes, see [troubleshooting.md](./trouble
 1. Add headings for PDF bookmarks.
 2. Add a TOC with `Markdown Studio: Edit: Insert TOC` if needed.
 3. Use CSS page breaks where the document needs section boundaries.
-4. Export PDF and inspect the index, bookmarks, headers, footers, and page breaks.
+4. If the PDF needs a cover, add a `<!-- markdown-studio:cover -->` block near the top of the same Markdown file. Use `cover.md` or `markdownStudio.export.cover.path` only when the cover is a shared template.
+5. Export PDF and inspect the cover, index, bookmarks, headers, footers, and page breaks.

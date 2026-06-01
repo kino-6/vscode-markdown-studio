@@ -23,6 +23,8 @@
   "includePdfIndex": false,
   "pdfIndexTitle": "Release Notes",
   "hidePdfToc": false,
+  "coverEnabled": false,
+  "coverPath": "cover.md",
   "tocLevels": "1-2",
   "tocOrderedList": false,
   "tocPageBreak": false,

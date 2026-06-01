@@ -3,7 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('node:fs/promises', () => {
   const accessMock = vi.fn();
   const readFileMock = vi.fn();
-  return { default: { access: accessMock, readFile: readFileMock }, __accessMock: accessMock, __readFileMock: readFileMock };
+  const writeFileMock = vi.fn();
+  return {
+    default: { access: accessMock, readFile: readFileMock, writeFile: writeFileMock },
+    __accessMock: accessMock,
+    __readFileMock: readFileMock,
+    __writeFileMock: writeFileMock,
+  };
 });
 
 vi.mock('../../src/preview/buildHtml', () => {
@@ -45,6 +51,11 @@ vi.mock('../../src/export/pdfBookmarks', () => {
   return { addBookmarks: addBookmarksMock, buildBookmarkTree: vi.fn(), __addBookmarksMock: addBookmarksMock };
 });
 
+vi.mock('../../src/export/pdfAssembly', () => {
+  const mergePdfBuffersMock = vi.fn(async (buffers: Buffer[]) => Buffer.concat(buffers));
+  return { mergePdfBuffers: mergePdfBuffersMock, __mergePdfBuffersMock: mergePdfBuffersMock };
+});
+
 vi.mock('../../src/infra/customCssLoader', () => ({
   loadCustomCss: vi.fn().mockResolvedValue({ css: '', warnings: [] }),
 }));
@@ -54,10 +65,12 @@ import * as buildHtmlModule from '../../src/preview/buildHtml';
 import * as playwrightModule from 'playwright-core';
 import * as configModule from '../../src/infra/config';
 import * as pdfBookmarksModule from '../../src/export/pdfBookmarks';
+import * as pdfAssemblyModule from '../../src/export/pdfAssembly';
 import { exportToPdf, inlineLocalImages } from '../../src/export/exportPdf';
 
 const accessMock = (fsModule as any).__accessMock as ReturnType<typeof vi.fn>;
 const readFileMock = (fsModule as any).__readFileMock as ReturnType<typeof vi.fn>;
+const writeFileMock = (fsModule as any).__writeFileMock as ReturnType<typeof vi.fn>;
 const buildHtmlMock = (buildHtmlModule as any).__buildHtmlMock as ReturnType<typeof vi.fn>;
 const setContentMock = (playwrightModule as any).__setContentMock as ReturnType<typeof vi.fn>;
 const pdfMock = (playwrightModule as any).__pdfMock as ReturnType<typeof vi.fn>;
@@ -70,6 +83,7 @@ const waitForFunctionMock = (playwrightModule as any).__waitForFunctionMock as R
 const setViewportSizeMock = (playwrightModule as any).__setViewportSizeMock as ReturnType<typeof vi.fn>;
 const getConfigMock = (configModule as any).__getConfigMock as ReturnType<typeof vi.fn>;
 const addBookmarksMock = (pdfBookmarksModule as any).__addBookmarksMock as ReturnType<typeof vi.fn>;
+const mergePdfBuffersMock = (pdfAssemblyModule as any).__mergePdfBuffersMock as ReturnType<typeof vi.fn>;
 
 describe('inlineLocalImages', () => {
   beforeEach(() => {
@@ -156,6 +170,7 @@ function makeDefaultConfig(overrides: Record<string, any> = {}) {
     pdfIndex: { enabled: false, title: 'Table of Contents' },
     pdfToc: { hidden: true },
     pdfBookmarks: { enabled: false },
+    pdfCover: { enabled: false, path: 'cover.md' },
     theme: 'default',
     customCss: '',
     outputFilename: '${filename}',
@@ -375,6 +390,215 @@ describe('exportToPdf smoke/integration', () => {
     expect(addScriptTagMock).toHaveBeenCalledTimes(2);
     expect(evaluateMock).toHaveBeenCalledWith(expect.any(Function), expect.stringContaining('ms-pdf-index'));
   });
+
+  it('renders a configured cover Markdown before the body PDF', async () => {
+    getConfigMock.mockReturnValue(makeDefaultConfig({
+      pdfCover: { enabled: true, path: 'cover.md' },
+    }));
+    buildHtmlMock
+      .mockResolvedValueOnce('<html><head></head><body><h1>Body</h1></body></html>')
+      .mockResolvedValueOnce('<html><head></head><body><h1>Cover</h1></body></html>');
+    readFileMock.mockImplementation(async (filePath: string) => {
+      if (filePath === '/tmp/cover.md') return '# Cover';
+      return '.hljs { background: #f6f8fa; }';
+    });
+    accessMock.mockResolvedValue(undefined);
+    writeFileMock.mockResolvedValue(undefined);
+    setContentMock.mockResolvedValue(undefined);
+    pdfMock.mockResolvedValue(Buffer.from('%PDF fake\n/Type /Page\n'));
+    closeMock.mockResolvedValue(undefined);
+    evaluateMock.mockResolvedValue(undefined);
+    addScriptTagMock.mockResolvedValue(undefined);
+    waitForFunctionMock.mockResolvedValue(undefined);
+    setViewportSizeMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({
+      setContent: setContentMock, pdf: pdfMock,
+      evaluate: evaluateMock, addScriptTag: addScriptTagMock,
+      waitForFunction: waitForFunctionMock, setViewportSize: setViewportSizeMock,
+    });
+    launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
+
+    const document = {
+      getText: () => '# Body',
+      uri: { fsPath: '/tmp/sample.md' }
+    } as any;
+
+    const output = await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+
+    expect(buildHtmlMock).toHaveBeenNthCalledWith(1, '# Body', expect.anything(), undefined, undefined, expect.anything());
+    expect(buildHtmlMock).toHaveBeenNthCalledWith(2, '# Cover', expect.anything(), undefined, undefined, expect.objectContaining({ fsPath: '/tmp/cover.md' }));
+    expect(writeFileMock).toHaveBeenCalledWith('/tmp/sample.pdf', expect.any(Buffer));
+    expect(output).toBe('/tmp/sample.pdf');
+  });
+
+  it('uses an embedded cover block before falling back to adjacent cover Markdown', async () => {
+    getConfigMock.mockReturnValue(makeDefaultConfig({
+      pdfCover: { enabled: true, path: 'cover.md' },
+    }));
+    buildHtmlMock
+      .mockResolvedValueOnce('<html><head></head><body><h1>Body</h1></body></html>')
+      .mockResolvedValueOnce('<html><head></head><body><h1>Inline Cover</h1><svg></svg></body></html>');
+    readFileMock.mockResolvedValue('.hljs { background: #f6f8fa; }');
+    accessMock.mockResolvedValue(undefined);
+    writeFileMock.mockResolvedValue(undefined);
+    setContentMock.mockResolvedValue(undefined);
+    pdfMock.mockResolvedValue(Buffer.from('%PDF fake\n/Type /Page\n'));
+    closeMock.mockResolvedValue(undefined);
+    evaluateMock.mockResolvedValue(undefined);
+    addScriptTagMock.mockResolvedValue(undefined);
+    waitForFunctionMock.mockResolvedValue(undefined);
+    setViewportSizeMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({
+      setContent: setContentMock, pdf: pdfMock,
+      evaluate: evaluateMock, addScriptTag: addScriptTagMock,
+      waitForFunction: waitForFunctionMock, setViewportSize: setViewportSizeMock,
+    });
+    launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
+
+    const document = {
+      getText: () => [
+        '<!-- markdown-studio:cover -->',
+        '# Inline Cover',
+        '',
+        '<svg viewBox="0 0 120 24"><text x="0" y="18">Enterprise</text></svg>',
+        '<!-- /markdown-studio:cover -->',
+        '',
+        '# Body',
+      ].join('\n'),
+      uri: { fsPath: '/tmp/sample.md' }
+    } as any;
+
+    const output = await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+
+    expect(readFileMock).not.toHaveBeenCalledWith('/tmp/cover.md', 'utf-8');
+    expect(buildHtmlMock).toHaveBeenNthCalledWith(1, '# Body', expect.anything(), undefined, undefined, expect.anything());
+    expect(buildHtmlMock).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('<svg viewBox="0 0 120 24">'),
+      expect.anything(),
+      undefined,
+      undefined,
+      expect.objectContaining({ fsPath: '/tmp/sample.md' }),
+    );
+    expect(writeFileMock).toHaveBeenCalledWith('/tmp/sample.pdf', expect.any(Buffer));
+    expect(output).toBe('/tmp/sample.pdf');
+  });
+
+  it('keeps an embedded cover before the generated PDF index', async () => {
+    getConfigMock.mockReturnValue(makeDefaultConfig({
+      pdfCover: { enabled: true, path: 'cover.md' },
+      pdfIndex: { enabled: true, title: 'Table of Contents' },
+      pdfBookmarks: { enabled: true },
+    }));
+    buildHtmlMock
+      .mockResolvedValueOnce('<html><head></head><body><h1 id="body">Body</h1></body></html>')
+      .mockResolvedValueOnce('<html><head></head><body><h1 id="cover">Cover</h1></body></html>');
+    readFileMock.mockResolvedValue('.hljs { background: #f6f8fa; }');
+    accessMock.mockResolvedValue(undefined);
+    writeFileMock.mockResolvedValue(undefined);
+    setContentMock.mockResolvedValue(undefined);
+    const coverBuffer = Buffer.from('%PDF cover\n/Type /Page\n');
+    const bodyIndexProbeBuffer = Buffer.from(`%PDF body-probe
+${Array.from({ length: 15 }, () => '/Type /Page').join('\n')}
+`);
+    const bodyWithIndexBuffer = Buffer.from(`%PDF body-with-index
+${Array.from({ length: 16 }, () => '/Type /Page').join('\n')}
+`);
+    const bodyFinalBuffer = Buffer.from('%PDF body-final\n/Type /Page\n');
+    pdfMock
+      .mockResolvedValueOnce(coverBuffer)
+      .mockResolvedValueOnce(bodyIndexProbeBuffer)
+      .mockResolvedValueOnce(bodyWithIndexBuffer)
+      .mockResolvedValueOnce(bodyFinalBuffer);
+    closeMock.mockResolvedValue(undefined);
+    const headings = [
+      { level: 1, text: 'Body', anchorId: 'body', offsetTop: 900 },
+      ...Array.from({ length: 30 }, (_, index) => ({
+        level: 2,
+        text: `Section ${index + 1}`,
+        anchorId: `section-${index + 1}`,
+        offsetTop: 2000 + index * 10,
+      })),
+    ];
+    evaluateMock.mockResolvedValue({
+      headings,
+      scrollHeight: 9000,
+    });
+    addScriptTagMock.mockResolvedValue(undefined);
+    waitForFunctionMock.mockResolvedValue(undefined);
+    setViewportSizeMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({
+      setContent: setContentMock, pdf: pdfMock,
+      evaluate: evaluateMock, addScriptTag: addScriptTagMock,
+      waitForFunction: waitForFunctionMock, setViewportSize: setViewportSizeMock,
+    });
+    launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
+
+    const document = {
+      getText: () => [
+        '<!-- markdown-studio:cover -->',
+        '# Cover',
+        '<!-- /markdown-studio:cover -->',
+        '',
+        '# Body',
+      ].join('\n'),
+      uri: { fsPath: '/tmp/sample.md' }
+    } as any;
+
+    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+
+    expect(mergePdfBuffersMock).toHaveBeenCalledWith([coverBuffer, bodyFinalBuffer]);
+    expect(writeFileMock.mock.calls[0][0]).toBe('/tmp/sample.pdf');
+    expect((writeFileMock.mock.calls[0][1] as Buffer).toString()).toContain('%PDF cover');
+    const renderedBodyHtml = setContentMock.mock.calls[0][0] as string;
+    expect(renderedBodyHtml).not.toContain('Cover');
+    const indexHtmlArgs = evaluateMock.mock.calls
+      .map((call) => call[1])
+      .filter((arg) => typeof arg === 'string' && arg.includes('ms-pdf-index')) as string[];
+    const indexHtmlArg = indexHtmlArgs[indexHtmlArgs.length - 1];
+    expect(indexHtmlArgs.length).toBeGreaterThanOrEqual(2);
+    expect(indexHtmlArg).toContain('Table of Contents');
+    expect(indexHtmlArg).toContain('href="#body"');
+    expect(indexHtmlArg).toContain('>p.3<');
+  });
+
+  it('skips the cover and exports the body PDF when the cover Markdown file is missing', async () => {
+    getConfigMock.mockReturnValue(makeDefaultConfig({
+      pdfCover: { enabled: true, path: 'missing-cover.md' },
+    }));
+    buildHtmlMock.mockResolvedValue('<html><head></head><body><h1>Body</h1></body></html>');
+    readFileMock.mockImplementation(async (filePath: string) => {
+      if (filePath === '/tmp/missing-cover.md') {
+        throw new Error('ENOENT');
+      }
+      return '.hljs { background: #f6f8fa; }';
+    });
+    accessMock.mockResolvedValue(undefined);
+    setContentMock.mockResolvedValue(undefined);
+    pdfMock.mockResolvedValue(undefined);
+    closeMock.mockResolvedValue(undefined);
+    evaluateMock.mockResolvedValue(undefined);
+    addScriptTagMock.mockResolvedValue(undefined);
+    waitForFunctionMock.mockResolvedValue(undefined);
+    setViewportSizeMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({
+      setContent: setContentMock, pdf: pdfMock,
+      evaluate: evaluateMock, addScriptTag: addScriptTagMock,
+      waitForFunction: waitForFunctionMock, setViewportSize: setViewportSizeMock,
+    });
+    launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
+
+    const document = {
+      getText: () => '# Body',
+      uri: { fsPath: '/tmp/sample.md' }
+    } as any;
+
+    const output = await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+
+    expect(buildHtmlMock).toHaveBeenCalledTimes(1);
+    expect(pdfMock).toHaveBeenCalledWith(expect.objectContaining({ path: '/tmp/sample.pdf' }));
+    expect(output).toBe('/tmp/sample.pdf');
+  });
 });
 
 describe('exportToPdf bookmark integration', () => {
@@ -391,9 +615,9 @@ describe('exportToPdf bookmark integration', () => {
     evaluateMock.mockResolvedValue({
       headings: [
         { level: 1, text: 'Title', offsetTop: 0 },
-        { level: 2, text: 'Section', offsetTop: 500 },
+        { level: 2, text: 'Section', offsetTop: 1600 },
       ],
-      scrollHeight: 1000,
+      scrollHeight: 3000,
     });
     addScriptTagMock.mockResolvedValue(undefined);
     waitForFunctionMock.mockResolvedValue(undefined);
@@ -469,5 +693,58 @@ describe('exportToPdf bookmark integration', () => {
     for (const entry of entries) {
       expect(entry.pageNumber).toBeGreaterThanOrEqual(1);
     }
+  });
+
+  it('offsets body bookmarks by the generated cover page count', async () => {
+    getConfigMock.mockReturnValue(makeDefaultConfig({
+      pdfCover: { enabled: true, path: 'cover.md' },
+      pdfBookmarks: { enabled: true },
+      pdfIndex: { enabled: false, title: 'Table of Contents' },
+    }));
+    buildHtmlMock
+      .mockResolvedValueOnce('<html><head></head><body><h1>Title</h1><h2>Section</h2></body></html>')
+      .mockResolvedValueOnce('<html><head></head><body><h1>Cover</h1></body></html>');
+    readFileMock.mockImplementation(async (filePath: string) => {
+      if (filePath === '/tmp/cover.md') return '# Cover';
+      return '.hljs { background: #f6f8fa; }';
+    });
+    accessMock.mockResolvedValue(undefined);
+    writeFileMock.mockResolvedValue(undefined);
+    setContentMock.mockResolvedValue(undefined);
+    pdfMock
+      .mockResolvedValueOnce(Buffer.from('/Type /Page\n/Type /Page\n'))
+      .mockResolvedValueOnce(Buffer.from('/Type /Page\n/Type /Page\n'))
+      .mockResolvedValue(Buffer.from('/Type /Page\n/Type /Page\n'));
+    closeMock.mockResolvedValue(undefined);
+    evaluateMock.mockResolvedValue({
+      headings: [
+        { level: 1, text: 'Title', offsetTop: 0 },
+        { level: 2, text: 'Section', offsetTop: 1600 },
+      ],
+      scrollHeight: 3000,
+    });
+    addScriptTagMock.mockResolvedValue(undefined);
+    waitForFunctionMock.mockResolvedValue(undefined);
+    setViewportSizeMock.mockResolvedValue(undefined);
+    addBookmarksMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({
+      setContent: setContentMock, pdf: pdfMock,
+      evaluate: evaluateMock, addScriptTag: addScriptTagMock,
+      waitForFunction: waitForFunctionMock, setViewportSize: setViewportSizeMock,
+    });
+    launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
+
+    const document = { getText: () => '# Title\n## Section', uri: { fsPath: '/tmp/sample.md' } } as any;
+    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+
+    expect(addBookmarksMock).toHaveBeenCalledWith(
+      '/tmp/sample.pdf',
+      expect.arrayContaining([
+        expect.objectContaining({ level: 1, text: 'Title', pageNumber: 3 }),
+        expect.objectContaining({ level: 2, text: 'Section', pageNumber: 4 }),
+      ]),
+      1,
+      3,
+    );
   });
 });

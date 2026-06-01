@@ -23,6 +23,8 @@ const PORTABLE_SETTING_KEYS = [
   'export.pdfIndex.enabled',
   'export.pdfIndex.title',
   'export.pdfToc.hidden',
+  'export.cover.enabled',
+  'export.cover.path',
   'toc.levels',
   'toc.orderedList',
   'toc.pageBreak',

@@ -9,6 +9,7 @@ test/**
 config/**
 out/**
 examples/**
+!examples/cover.md
 !examples/settings/**
 ignore/**
 icon/*.svg

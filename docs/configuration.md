@@ -21,6 +21,8 @@ For term definitions such as TOC, PDF Index, and bookmarks, see [glossary.md](./
 | `markdownStudio.export.pdfIndex.title` | string | `Table of Contents` | PDF index page title. |
 | `markdownStudio.export.pdfToc.hidden` | boolean | `true` | Hide inline TOC markers in PDF export. |
 | `markdownStudio.export.pdfBookmarks.enabled` | boolean | `true` | Generate PDF bookmarks from headings. |
+| `markdownStudio.export.cover.enabled` | boolean | `true` | Prepend an embedded or configured Markdown cover page during PDF export. |
+| `markdownStudio.export.cover.path` | string | `cover.md` | Advanced fallback cover Markdown path, relative to the exported Markdown file when not absolute. |
 | `markdownStudio.export.outputFilename` | string | `${filename}` | PDF output filename template. |
 | `markdownStudio.export.diagramTimeout` | number | `0` | Diagram render timeout in seconds. `0` means no timeout. |
 | `markdownStudio.preview.theme` | enum | `auto` | Preview theme mode: auto, light, dark. |
@@ -75,9 +77,34 @@ code { background: #f0f0f0; color: #d63384; }
 
 Theme samples are available in `examples/custom-styles/`.
 
+## Cover Pages
+
+The default cover workflow keeps the cover inside the exported Markdown file:
+
+```md
+<!-- markdown-studio:cover -->
+# Company Spec A4
+
+<svg viewBox="0 0 240 80" xmlns="http://www.w3.org/2000/svg">
+  <rect width="240" height="80" fill="#123b6d" />
+  <text x="24" y="50" fill="white">Enterprise PDF</text>
+</svg>
+
+Prepared for Markdown Studio
+<!-- /markdown-studio:cover -->
+
+# Main Document
+```
+
+PDF export renders the `markdown-studio:cover` block with the same PDF style stack, prepends it before the body PDF, and removes the block from the body pages. The block can include Markdown, raw HTML, and inline SVG.
+
+If no embedded cover block exists, Markdown Studio looks for `cover.md` next to the Markdown file being exported. When that file exists, it is rendered and prepended before the body PDF. When it does not exist, export continues normally without a cover page.
+
+Set `markdownStudio.export.cover.enabled` to `false` to disable cover assembly, or set `markdownStudio.export.cover.path` to another Markdown file for shared cover templates.
+
 ## Portable PDF Settings
 
-Portable PDF settings are versioned JSON files that capture the Markdown Studio settings most often shared by a team: page size, style, custom CSS, security mode, headers, TOC, PDF index, bookmarks, code block line numbers, and output filename.
+Portable PDF settings are versioned JSON files that capture the Markdown Studio settings most often shared by a team: page size, style, custom CSS, security mode, headers, cover behavior, TOC, PDF index, bookmarks, code block line numbers, and output filename.
 
 Every successful `Markdown Studio: PDF: Export` writes the current portable subset automatically. In a workspace, Markdown Studio writes a timestamped file under `.vscode/` and keeps the latest three PDF-export history files:
 
@@ -120,6 +147,8 @@ The JSON content looks like this:
   "includePdfIndex": true,
   "pdfIndexTitle": "Table of Contents",
   "hidePdfToc": true,
+  "coverEnabled": true,
+  "coverPath": "cover.md",
   "tocLevels": "1-3",
   "tocOrderedList": false,
   "tocPageBreak": true,
@@ -137,6 +166,7 @@ Ready-to-import examples live under `examples/settings/`:
 | `company-spec-a4.json` | Team A4 specifications with GitHub styling, PDF index, and bookmarks. |
 | `local-only-a4.json` | Strict LocalOnly PDFs where external resources are blocked. |
 | `release-notes-letter.json` | Letter-sized release notes with date-based filenames. |
+| `covered-spec-a4.json` | A4 specifications that prepend `examples/cover.md` before the body PDF. |
 
 Settings JSON v1 fields:
 
@@ -165,6 +195,8 @@ Settings JSON v1 fields:
 | `includePdfIndex` | Applies to `markdownStudio.export.pdfIndex.enabled`. |
 | `pdfIndexTitle` | Applies to `markdownStudio.export.pdfIndex.title`. |
 | `hidePdfToc` | Applies to `markdownStudio.export.pdfToc.hidden`. |
+| `coverEnabled` | Applies to `markdownStudio.export.cover.enabled`. |
+| `coverPath` | Applies to `markdownStudio.export.cover.path`. |
 | `tocLevels` | Applies to `markdownStudio.toc.levels`. |
 | `tocOrderedList` | Applies to `markdownStudio.toc.orderedList`. |
 | `tocPageBreak` | Applies to `markdownStudio.toc.pageBreak`. |

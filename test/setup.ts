@@ -35,6 +35,9 @@ vi.mock('vscode', () => {
     workspace: {
       getConfiguration: () => configuration
     },
+    Uri: {
+      file: (fsPath: string) => ({ fsPath }),
+    },
     window: {
       showInformationMessage: vi.fn(),
       showWarningMessage: vi.fn()

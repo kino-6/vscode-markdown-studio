@@ -27,6 +27,7 @@ describe('getExportConfig', () => {
 
     expect(normalConfig.pageFormat).toBe('Letter');
     expect(exportConfig.pageFormat).toBe('Letter');
+    expect(exportConfig.pdfCover).toEqual({ enabled: true, path: 'cover.md' });
   });
 
   it('applies an explicit one-time overlay', () => {

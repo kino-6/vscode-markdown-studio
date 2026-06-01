@@ -3,11 +3,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as vscode from 'vscode';
 import type { Page } from 'playwright-core';
+import { PDFArray, PDFDict, PDFDocument, PDFName } from 'pdf-lib';
 import { dependencyStatus } from '../extension';
 import { mapWithConcurrency } from '../infra/async';
 import { buildPdfOptions, injectPageBreakCss, injectTocPageBreakCss } from './pdfHeaderFooter';
 import { buildPdfIndexHtml, estimateIndexPageCount, HeadingPageEntry } from './pdfIndex';
 import { addBookmarks } from './pdfBookmarks';
+import { mergePdfBuffers } from './pdfAssembly';
+import { resolveCoverMarkdownPath, splitEmbeddedCoverMarkdown } from './pdfCover';
 import { resolveOutputFilename, extractH1Title, FilenameContext } from './filenameResolver';
 import { getExportConfig } from '../infra/config';
 import { loadCustomCss } from '../infra/customCssLoader';
@@ -68,6 +71,7 @@ type PdfPageOptions = NonNullable<Parameters<Page['pdf']>[0]>;
 type PdfRenderablePage = Pick<Page, 'pdf' | 'evaluate' | 'setViewportSize'>;
 type PdfHeading = { level: number; text: string; offsetTop: number; anchorId?: string };
 type HeadingDomData = { headings: PdfHeading[]; scrollHeight: number };
+type CoverMarkdown = { markdown: string; uri: vscode.Uri };
 
 export interface ExportToPdfOptions {
   overlay?: ExportConfigOverlay;
@@ -75,6 +79,17 @@ export interface ExportToPdfOptions {
 }
 
 const CLIENT_RENDERED_DIAGRAM_SELECTOR = '.mermaid-host[data-mermaid-src], .wavedrom-host[data-wavedrom-src]';
+const CSS_PX_PER_INCH = 96;
+const MM_PER_INCH = 25.4;
+const PDF_VIEWPORT_WIDTH_PX = 980;
+const PAGE_FORMAT_SIZE_MM: Record<string, { width: number; height: number }> = {
+  A3: { width: 297, height: 420 },
+  A4: { width: 210, height: 297 },
+  A5: { width: 148, height: 210 },
+  Letter: { width: 215.9, height: 279.4 },
+  Legal: { width: 215.9, height: 355.6 },
+  Tabloid: { width: 279.4, height: 431.8 },
+};
 
 /**
  * Converts local image file:// URIs in HTML to inline Base64 data URIs.
@@ -216,8 +231,70 @@ function preparePdfHtml(html: string, cfg: PdfExportConfig): string {
   return result;
 }
 
-async function insertPdfIndexIntoRenderedPage(page: Pick<Page, 'evaluate'>, indexHtml: string): Promise<void> {
+async function buildPreparedPdfHtml(
+  markdown: string,
+  uri: vscode.Uri,
+  context: vscode.ExtensionContext,
+  assets: PdfAssets,
+  cfg: PdfExportConfig,
+): Promise<string> {
+  const html = await buildHtml(markdown, context, undefined, undefined, uri);
+  const inlined = await inlineLocalImages(html);
+  return preparePdfHtml(injectPdfAssets(inlined, assets), cfg);
+}
+
+async function preparePageForPdf(
+  page: Page,
+  html: string,
+  cfg: PdfExportConfig,
+  assets: PdfAssets,
+  progress?: ProgressReporter,
+): Promise<void> {
+  if (typeof page.emulateMedia === 'function') {
+    await page.emulateMedia({ media: 'print' });
+  }
+  await page.setContent(html, { waitUntil: 'networkidle' });
+  await forceLightMode(page);
+
+  if (assets.previewJsContent) {
+    await injectPreviewRuntime(page, assets.previewJsContent);
+    const diagramTimeoutMs = cfg.diagramTimeout > 0 ? cfg.diagramTimeout * 1000 : 0;
+    await waitForClientRenderedDiagrams(
+      page,
+      diagramTimeoutMs,
+      (elapsed) => progress?.report(RUNTIME_MESSAGES.exportProgress.diagramTimeoutProceeding(elapsed)),
+      (elapsed) => progress?.report(RUNTIME_MESSAGES.exportProgress.renderingDiagramsElapsed(elapsed)),
+    );
+  }
+
+  await page.setViewportSize({ width: 980, height: 1400 });
+}
+
+async function loadCoverMarkdownIfNeeded(
+  document: vscode.TextDocument,
+  cfg: PdfExportConfig,
+): Promise<CoverMarkdown | undefined> {
+  const coverPath = resolveCoverMarkdownPath(document.uri.fsPath, cfg.pdfCover);
+  if (!coverPath) return undefined;
+
+  let markdown: string;
+  try {
+    markdown = await fs.readFile(coverPath, 'utf-8');
+  } catch {
+    return undefined;
+  }
+
+  return {
+    markdown,
+    uri: typeof (vscode as unknown as { Uri?: { file?: (fsPath: string) => vscode.Uri } }).Uri?.file === 'function'
+      ? (vscode as unknown as { Uri: { file: (fsPath: string) => vscode.Uri } }).Uri.file(coverPath)
+      : ({ fsPath: coverPath } as vscode.Uri),
+  };
+}
+
+async function setPdfIndexInRenderedPage(page: Pick<Page, 'evaluate'>, indexHtml: string): Promise<void> {
   await page.evaluate((html: string) => {
+    document.querySelector('.ms-pdf-index')?.remove();
     document.body.insertAdjacentHTML('afterbegin', html);
   }, indexHtml);
 }
@@ -262,10 +339,61 @@ async function waitForClientRenderedDiagrams(
   }
 }
 
-function countPdfPages(pdfBuffer: Buffer): number {
-  const pdfStr = pdfBuffer.toString('latin1');
-  const pageMatches = pdfStr.match(/\/Type\s*\/Page(?!s)/g);
-  return pageMatches ? pageMatches.length : 1;
+async function countPdfPages(pdfBuffer: Buffer): Promise<number> {
+  try {
+    const pdf = await PDFDocument.load(pdfBuffer);
+    return pdf.getPageCount();
+  } catch {
+    const pdfStr = pdfBuffer.toString('latin1');
+    const pageMatches = pdfStr.match(/\/Type\s*\/Page(?!s)/g);
+    return pageMatches ? pageMatches.length : 1;
+  }
+}
+
+async function collectPdfDestinationPages(pdfBuffer: Buffer): Promise<Map<string, number>> {
+  const pageMap = new Map<string, number>();
+
+  try {
+    const pdf = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
+    const pageRefToNumber = new Map<string, number>();
+    pdf.getPages().forEach((page, index) => {
+      pageRefToNumber.set(page.ref.toString(), index + 1);
+    });
+
+    const destsRef = pdf.catalog.get(PDFName.of('Dests'));
+    const dests = destsRef ? pdf.context.lookup(destsRef) : undefined;
+    if (!(dests instanceof PDFDict)) {
+      return pageMap;
+    }
+
+    for (const key of dests.keys()) {
+      const destination = pdf.context.lookup(dests.get(key));
+      if (!(destination instanceof PDFArray) || destination.size() === 0) {
+        continue;
+      }
+
+      const targetPage = destination.get(0);
+      const pageNumber = pageRefToNumber.get(targetPage.toString());
+      if (!pageNumber) {
+        continue;
+      }
+
+      pageMap.set(key.decodeText(), pageNumber);
+      pageMap.set(key.toString().replace(/^\//, ''), pageNumber);
+    }
+  } catch {
+    return pageMap;
+  }
+
+  return pageMap;
+}
+
+function destinationPageForAnchor(destinationPages: Map<string, number>, anchorId: string): number | undefined {
+  if (!anchorId) return undefined;
+  const pdfName = PDFName.of(anchorId);
+  return destinationPages.get(anchorId)
+    ?? destinationPages.get(pdfName.decodeText())
+    ?? destinationPages.get(pdfName.toString().replace(/^\//, ''));
 }
 
 function buildPdfPageOptions(cfg: PdfExportConfig, pdfOptions: PdfOptions): PdfPageOptions {
@@ -297,16 +425,56 @@ async function writePdfFile(
   await fs.access(outputPath);
 }
 
-function pageNumberForOffset(offsetTop: number, scrollHeight: number, totalPages: number): number {
-  const ratio = scrollHeight > 0 ? offsetTop / scrollHeight : 0;
-  return Math.min(Math.floor(ratio * totalPages) + 1, totalPages);
+function cssLengthToPx(value: string | undefined): number {
+  if (!value) return 0;
+  const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*(px|mm|cm|in|pt)?$/i);
+  if (!match) return 0;
+
+  const amount = Number(match[1]);
+  const unit = (match[2] ?? 'px').toLowerCase();
+  switch (unit) {
+    case 'px':
+      return amount;
+    case 'mm':
+      return (amount / MM_PER_INCH) * CSS_PX_PER_INCH;
+    case 'cm':
+      return ((amount * 10) / MM_PER_INCH) * CSS_PX_PER_INCH;
+    case 'in':
+      return amount * CSS_PX_PER_INCH;
+    case 'pt':
+      return (amount / 72) * CSS_PX_PER_INCH;
+    default:
+      return 0;
+  }
 }
 
-function mapDomHeadingsToEntries(domData: HeadingDomData, totalPages: number): HeadingPageEntry[] {
+function printablePageHeightPx(cfg: PdfExportConfig, pdfOptions: PdfOptions): number {
+  const pageSize = PAGE_FORMAT_SIZE_MM[cfg.pageFormat] ?? PAGE_FORMAT_SIZE_MM.A4;
+  const pageWidthPx = (pageSize.width / MM_PER_INCH) * CSS_PX_PER_INCH;
+  const pageHeightPx = (pageSize.height / MM_PER_INCH) * CSS_PX_PER_INCH;
+  const horizontalMarginsPx = cssLengthToPx(pdfOptions.margin.left) + cssLengthToPx(pdfOptions.margin.right);
+  const verticalMarginsPx = cssLengthToPx(pdfOptions.margin.top) + cssLengthToPx(pdfOptions.margin.bottom);
+  const printableWidthPx = Math.max(1, pageWidthPx - horizontalMarginsPx);
+  const printableHeightPx = Math.max(1, pageHeightPx - verticalMarginsPx);
+  const scale = Math.min(1, printableWidthPx / PDF_VIEWPORT_WIDTH_PX);
+  return printableHeightPx / scale;
+}
+
+function pageNumberForOffset(offsetTop: number, printableHeightPx: number, totalPages: number): number {
+  const safeOffset = Math.max(0, offsetTop);
+  const safePageHeight = Math.max(1, printableHeightPx);
+  return Math.min(Math.floor(safeOffset / safePageHeight) + 1, totalPages);
+}
+
+function mapDomHeadingsToEntries(
+  domData: HeadingDomData,
+  totalPages: number,
+  printableHeightPx: number,
+): HeadingPageEntry[] {
   return domData.headings.map((h) => ({
     level: h.level,
     text: h.text,
-    pageNumber: pageNumberForOffset(h.offsetTop, domData.scrollHeight, totalPages),
+    pageNumber: pageNumberForOffset(h.offsetTop, printableHeightPx, totalPages),
     anchorId: h.anchorId ?? '',
   }));
 }
@@ -355,34 +523,56 @@ async function preparePdfIndex(
   page: PdfRenderablePage,
   cfg: PdfExportConfig,
   pdfOptions: PdfOptions,
+  pageOffset = 0,
 ): Promise<BookmarkEntry[]> {
-  const totalPages = countPdfPages(await renderPdfBuffer(page, cfg, pdfOptions));
+  const totalPages = await countPdfPages(await renderPdfBuffer(page, cfg, pdfOptions));
   const domData = await collectPdfIndexHeadingData(page, cfg);
   if (domData.headings.length === 0) {
     return [];
   }
 
-  const headingEntries = mapDomHeadingsToEntries(domData, totalPages);
-  const indexPageCount = estimateIndexPageCount(headingEntries.length);
-  const indexHtml = buildPdfIndexHtml(headingEntries, cfg.pdfIndex.title, indexPageCount);
+  const headingEntries = mapDomHeadingsToEntries(domData, totalPages, printablePageHeightPx(cfg, pdfOptions));
+  const estimatedIndexPageCount = estimateIndexPageCount(headingEntries.length);
+  let indexPageCount = estimatedIndexPageCount;
+  let indexHtml = buildPdfIndexHtml(headingEntries, cfg.pdfIndex.title, indexPageCount + pageOffset);
 
-  await insertPdfIndexIntoRenderedPage(page, indexHtml);
+  await setPdfIndexInRenderedPage(page, indexHtml);
   await page.setViewportSize({ width: 980, height: 1400 });
 
-  return mapHeadingEntriesToBookmarks(headingEntries, indexPageCount);
+  const bodyWithIndexBuffer = await renderPdfBuffer(page, cfg, pdfOptions);
+  const totalPagesWithIndex = await countPdfPages(bodyWithIndexBuffer);
+  const actualIndexPageCount = Math.max(1, totalPagesWithIndex - totalPages);
+  indexPageCount = actualIndexPageCount;
+
+  const destinationPages = await collectPdfDestinationPages(bodyWithIndexBuffer);
+  const resolvedHeadingEntries = headingEntries.map((entry) => ({
+    ...entry,
+    pageNumber: destinationPageForAnchor(destinationPages, entry.anchorId)
+      ?? entry.pageNumber + indexPageCount,
+  }));
+
+  indexHtml = buildPdfIndexHtml(resolvedHeadingEntries, cfg.pdfIndex.title, pageOffset);
+  await setPdfIndexInRenderedPage(page, indexHtml);
+  await page.setViewportSize({ width: 980, height: 1400 });
+
+  return mapHeadingEntriesToBookmarks(resolvedHeadingEntries, pageOffset);
 }
 
 async function collectBookmarkEntries(
   page: PdfRenderablePage,
   cfg: PdfExportConfig,
   pdfOptions: PdfOptions,
+  pageOffset = 0,
 ): Promise<BookmarkEntry[]> {
-  const totalPages = countPdfPages(await renderPdfBuffer(page, cfg, pdfOptions));
+  const totalPages = await countPdfPages(await renderPdfBuffer(page, cfg, pdfOptions));
   const domData = await collectBookmarkHeadingData(page);
   if (domData.headings.length === 0) {
     return [];
   }
-  return mapHeadingEntriesToBookmarks(mapDomHeadingsToEntries(domData, totalPages));
+  return mapHeadingEntriesToBookmarks(
+    mapDomHeadingsToEntries(domData, totalPages, printablePageHeightPx(cfg, pdfOptions)),
+    pageOffset,
+  );
 }
 
 async function prepareBookmarkEntries(
@@ -390,14 +580,15 @@ async function prepareBookmarkEntries(
   cfg: PdfExportConfig,
   pdfOptions: PdfOptions,
   progress?: ProgressReporter,
+  pageOffset = 0,
 ): Promise<BookmarkEntry[]> {
   if (cfg.pdfIndex.enabled) {
     progress?.report(RUNTIME_MESSAGES.exportProgress.generatingTableOfContents, 15);
-    return await preparePdfIndex(page, cfg, pdfOptions);
+    return await preparePdfIndex(page, cfg, pdfOptions, pageOffset);
   }
 
   if (cfg.pdfBookmarks.enabled) {
-    return await collectBookmarkEntries(page, cfg, pdfOptions);
+    return await collectBookmarkEntries(page, cfg, pdfOptions, pageOffset);
   }
 
   return [];
@@ -420,6 +611,15 @@ async function addPdfBookmarksIfNeeded(
   } else {
     console.log('[Markdown Studio] Bookmarks skipped: enabled=%s, entries=%d', cfg.pdfBookmarks.enabled, bookmarkEntries.length);
   }
+}
+
+async function writeMergedPdfFile(
+  outputPath: string,
+  buffers: Buffer[],
+): Promise<void> {
+  const merged = await mergePdfBuffers(buffers);
+  await fs.writeFile(outputPath, merged);
+  await fs.access(outputPath);
 }
 
 function resolvePdfOutputPath(document: vscode.TextDocument, cfg: PdfExportConfig): string {
@@ -449,23 +649,28 @@ export async function exportToPdf(
   options: ExportToPdfOptions = {},
 ): Promise<string> {
   const cfg = options.config ?? getExportConfig(options.overlay);
+  const sourceMarkdown = document.getText();
+  const embeddedCover = splitEmbeddedCoverMarkdown(sourceMarkdown);
+  const coverMarkdown = cfg.pdfCover.enabled && embeddedCover.coverMarkdown !== undefined
+    ? { markdown: embeddedCover.coverMarkdown, uri: document.uri }
+    : await loadCoverMarkdownIfNeeded(document, cfg);
   const assetsPromise = loadPdfAssets(context, cfg);
 
   // Step 1: Build HTML
   progress?.report(RUNTIME_MESSAGES.exportProgress.buildingHtml, 15);
-  let html = await buildHtml(document.getText(), context, undefined, undefined, document.uri);
-
-  checkCancellation(cancellation);
-
-  // Step 2: Inline local images as Base64 data URIs for Playwright rendering
-  progress?.report(RUNTIME_MESSAGES.exportProgress.processingImages, 15);
-  html = await inlineLocalImages(html);
-
   const assets = await assetsPromise;
   for (const w of assets.customCssWarnings) {
     console.warn(w);
   }
-  html = preparePdfHtml(injectPdfAssets(html, assets), cfg);
+  const html = await buildPreparedPdfHtml(embeddedCover.bodyMarkdown, document.uri, context, assets, cfg);
+
+  checkCancellation(cancellation);
+
+  // Step 2: Prepare optional cover HTML with the same renderer and styling.
+  progress?.report(RUNTIME_MESSAGES.exportProgress.processingImages, 15);
+  const coverHtml = coverMarkdown
+    ? await buildPreparedPdfHtml(coverMarkdown.markdown, coverMarkdown.uri, context, assets, cfg)
+    : undefined;
 
   checkCancellation(cancellation);
 
@@ -498,28 +703,10 @@ export async function exportToPdf(
   try {
     checkCancellation(cancellation);
 
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle' });
-    await forceLightMode(page);
-
     // Step 4: client-side diagram rendering
     progress?.report(RUNTIME_MESSAGES.exportProgress.renderingDiagrams, 15);
-
-    // Inject the bundled preview script (contains client-side diagram renderers) into the Playwright page.
-    // We use addScriptTag after setContent so the DOM is ready.
-    // First, stub acquireVsCodeApi which only exists in VS Code webviews.
-    if (assets.previewJsContent) {
-      await injectPreviewRuntime(page, assets.previewJsContent);
-      const diagramTimeoutMs = cfg.diagramTimeout > 0 ? cfg.diagramTimeout * 1000 : 0;
-      await waitForClientRenderedDiagrams(
-        page,
-        diagramTimeoutMs,
-        (elapsed) => progress?.report(RUNTIME_MESSAGES.exportProgress.diagramTimeoutProceeding(elapsed)),
-        (elapsed) => progress?.report(RUNTIME_MESSAGES.exportProgress.renderingDiagramsElapsed(elapsed)),
-      );
-    }
-
-    await page.setViewportSize({ width: 980, height: 1400 });
+    const page = await browser.newPage();
+    await preparePageForPdf(page, html, cfg, assets, progress);
 
     checkCancellation(cancellation);
 
@@ -527,13 +714,27 @@ export async function exportToPdf(
     const documentTitle = path.basename(document.uri.fsPath, '.md');
     const pdfOptions = buildPdfOptions(cfg.pdfHeaderFooter, documentTitle, cfg.style.margin);
 
-    const bookmarkEntries = await prepareBookmarkEntries(page, cfg, pdfOptions, progress);
+    let coverBuffer: Buffer | undefined;
+    let coverPageCount = 0;
+    if (coverHtml) {
+      const coverPage = await browser.newPage();
+      await preparePageForPdf(coverPage, coverHtml, cfg, assets, progress);
+      coverBuffer = await renderPdfBuffer(coverPage, cfg, pdfOptions);
+      coverPageCount = await countPdfPages(coverBuffer);
+    }
+
+    const bookmarkEntries = await prepareBookmarkEntries(page, cfg, pdfOptions, progress, coverPageCount);
 
     // Step 5: Generate PDF
     checkCancellation(cancellation);
     progress?.report(RUNTIME_MESSAGES.exportProgress.generatingPdf, 20);
 
-    await writePdfFile(page, outputPath, cfg, pdfOptions);
+    if (coverBuffer) {
+      const bodyBuffer = await renderPdfBuffer(page, cfg, pdfOptions);
+      await writeMergedPdfFile(outputPath, [coverBuffer, bodyBuffer]);
+    } else {
+      await writePdfFile(page, outputPath, cfg, pdfOptions);
+    }
     await addPdfBookmarksIfNeeded(outputPath, bookmarkEntries, cfg, progress);
 
     return outputPath;
