@@ -76,6 +76,25 @@ describe('renderMarkdownDocument integration', () => {
     expect(result.htmlBody).toContain('<svg>');
   });
 
+  it('wraps embedded cover blocks for preview and print page breaks', async () => {
+    const markdown = [
+      '<!-- markdown-studio:cover -->',
+      '# Cover',
+      '',
+      '<svg viewBox="0 0 120 32"><text x="0" y="20">Enterprise</text></svg>',
+      '<!-- /markdown-studio:cover -->',
+      '',
+      '# Body',
+    ].join('\n');
+
+    const result = await renderMarkdownDocument(markdown, fakeContext);
+
+    expect(result.htmlBody).toContain('<div class="ms-cover-page">');
+    expect(result.htmlBody).toContain('<svg viewBox="0 0 120 32">');
+    expect(result.htmlBody).toContain('</div>');
+    expect(result.htmlBody).toContain('<h1 id="body"');
+  });
+
   it('surfaces Mermaid and PlantUML syntax errors with graceful degradation', async () => {
     renderMermaidBlockMock.mockResolvedValue({ ok: false, error: 'Mermaid syntax error: bad token' });
     renderPlantUmlMock.mockResolvedValue({ ok: false, error: 'PlantUML rendering failed: syntax issue' });
