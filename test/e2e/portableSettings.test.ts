@@ -10,6 +10,7 @@ import {
   CONFIG_SECTION,
   latestSettingsExport,
   openWorkspaceMarkdown,
+  workspacePath,
   workspaceVscodeDir,
 } from './helpers';
 
@@ -125,6 +126,47 @@ suite('Markdown Studio Portable Settings E2E', () => {
       cleanupGeneratedPdf(testFile);
       if (fs.existsSync(coverFile)) {
         fs.unlinkSync(coverFile);
+      }
+    }
+  });
+
+  test('exports an embedded Markdown cover block before the body PDF', async function () {
+    this.timeout(60000);
+
+    const testFile = path.join(workspacePath(), 'embedded-cover.md');
+    fs.writeFileSync(testFile, [
+      '<!-- markdown-studio:cover -->',
+      '# Embedded Cover',
+      '',
+      '<svg viewBox="0 0 120 32" xmlns="http://www.w3.org/2000/svg">',
+      '  <rect width="120" height="32" fill="#123b6d" />',
+      '  <text x="10" y="22" fill="white">Enterprise PDF</text>',
+      '</svg>',
+      '<!-- /markdown-studio:cover -->',
+      '',
+      '# Body',
+      '',
+      'The exported body should start after the cover block.',
+    ].join('\n'));
+
+    await openWorkspaceMarkdown('embedded-cover.md');
+
+    const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
+    await cfg.update('export.pdfIndex.enabled', false, vscode.ConfigurationTarget.Workspace);
+    await cfg.update('export.pdfBookmarks.enabled', false, vscode.ConfigurationTarget.Workspace);
+
+    try {
+      await vscode.commands.executeCommand('markdownStudio.exportPdf');
+
+      const expectedPdf = testFile.replace(/\.md$/, '.pdf');
+      assert.ok(fs.existsSync(expectedPdf), 'Expected embedded-cover PDF export to create a PDF');
+
+      const pdf = await PDFDocument.load(fs.readFileSync(expectedPdf));
+      assert.ok(pdf.getPageCount() >= 2, 'Expected PDF to include at least embedded cover and body pages');
+    } finally {
+      cleanupGeneratedPdf(testFile);
+      if (fs.existsSync(testFile)) {
+        fs.unlinkSync(testFile);
       }
     }
   });

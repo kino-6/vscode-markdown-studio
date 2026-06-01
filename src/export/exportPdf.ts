@@ -9,7 +9,7 @@ import { buildPdfOptions, injectPageBreakCss, injectTocPageBreakCss } from './pd
 import { buildPdfIndexHtml, estimateIndexPageCount, HeadingPageEntry } from './pdfIndex';
 import { addBookmarks } from './pdfBookmarks';
 import { mergePdfBuffers } from './pdfAssembly';
-import { resolveCoverMarkdownPath } from './pdfCover';
+import { resolveCoverMarkdownPath, splitEmbeddedCoverMarkdown } from './pdfCover';
 import { resolveOutputFilename, extractH1Title, FilenameContext } from './filenameResolver';
 import { getExportConfig } from '../infra/config';
 import { loadCustomCss } from '../infra/customCssLoader';
@@ -522,7 +522,11 @@ export async function exportToPdf(
   options: ExportToPdfOptions = {},
 ): Promise<string> {
   const cfg = options.config ?? getExportConfig(options.overlay);
-  const coverMarkdown = await loadCoverMarkdownIfNeeded(document, cfg);
+  const sourceMarkdown = document.getText();
+  const embeddedCover = splitEmbeddedCoverMarkdown(sourceMarkdown);
+  const coverMarkdown = cfg.pdfCover.enabled && embeddedCover.coverMarkdown !== undefined
+    ? { markdown: embeddedCover.coverMarkdown, uri: document.uri }
+    : await loadCoverMarkdownIfNeeded(document, cfg);
   const assetsPromise = loadPdfAssets(context, cfg);
 
   // Step 1: Build HTML
@@ -531,7 +535,7 @@ export async function exportToPdf(
   for (const w of assets.customCssWarnings) {
     console.warn(w);
   }
-  const html = await buildPreparedPdfHtml(document.getText(), document.uri, context, assets, cfg);
+  const html = await buildPreparedPdfHtml(embeddedCover.bodyMarkdown, document.uri, context, assets, cfg);
 
   checkCancellation(cancellation);
 

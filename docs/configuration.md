@@ -21,8 +21,8 @@ For term definitions such as TOC, PDF Index, and bookmarks, see [glossary.md](./
 | `markdownStudio.export.pdfIndex.title` | string | `Table of Contents` | PDF index page title. |
 | `markdownStudio.export.pdfToc.hidden` | boolean | `true` | Hide inline TOC markers in PDF export. |
 | `markdownStudio.export.pdfBookmarks.enabled` | boolean | `true` | Generate PDF bookmarks from headings. |
-| `markdownStudio.export.cover.enabled` | boolean | `true` | Prepend the configured Markdown cover page when the file exists. |
-| `markdownStudio.export.cover.path` | string | `cover.md` | Cover Markdown path, relative to the exported Markdown file when not absolute. |
+| `markdownStudio.export.cover.enabled` | boolean | `true` | Prepend an embedded or configured Markdown cover page during PDF export. |
+| `markdownStudio.export.cover.path` | string | `cover.md` | Advanced fallback cover Markdown path, relative to the exported Markdown file when not absolute. |
 | `markdownStudio.export.outputFilename` | string | `${filename}` | PDF output filename template. |
 | `markdownStudio.export.diagramTimeout` | number | `0` | Diagram render timeout in seconds. `0` means no timeout. |
 | `markdownStudio.preview.theme` | enum | `auto` | Preview theme mode: auto, light, dark. |
@@ -79,9 +79,28 @@ Theme samples are available in `examples/custom-styles/`.
 
 ## Cover Pages
 
-By default, Markdown Studio looks for `cover.md` next to the Markdown file being exported. When that file exists, it is rendered with the same PDF style stack and prepended before the body PDF. When it does not exist, export continues normally without a cover page.
+The default cover workflow keeps the cover inside the exported Markdown file:
 
-Set `markdownStudio.export.cover.enabled` to `false` to disable this convention, or set `markdownStudio.export.cover.path` to another Markdown file.
+```md
+<!-- markdown-studio:cover -->
+# Company Spec A4
+
+<svg viewBox="0 0 240 80" xmlns="http://www.w3.org/2000/svg">
+  <rect width="240" height="80" fill="#123b6d" />
+  <text x="24" y="50" fill="white">Enterprise PDF</text>
+</svg>
+
+Prepared for Markdown Studio
+<!-- /markdown-studio:cover -->
+
+# Main Document
+```
+
+PDF export renders the `markdown-studio:cover` block with the same PDF style stack, prepends it before the body PDF, and removes the block from the body pages. The block can include Markdown, raw HTML, and inline SVG.
+
+If no embedded cover block exists, Markdown Studio looks for `cover.md` next to the Markdown file being exported. When that file exists, it is rendered and prepended before the body PDF. When it does not exist, export continues normally without a cover page.
+
+Set `markdownStudio.export.cover.enabled` to `false` to disable cover assembly, or set `markdownStudio.export.cover.path` to another Markdown file for shared cover templates.
 
 ## Portable PDF Settings
 

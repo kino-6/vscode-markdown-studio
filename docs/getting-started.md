@@ -36,7 +36,7 @@ PDF-specific features include:
 
 - PDF index pages with page numbers.
 - PDF bookmarks from document headings.
-- Optional Markdown cover pages prepended before the body PDF.
+- Optional Markdown cover pages prepended before the body PDF, either embedded in the same file or loaded from a shared cover file.
 - Headers, footers, page formats, margins, and page breaks.
 - Output filename templates.
 
@@ -131,5 +131,5 @@ For proxy, custom CA, or offline setup notes, see [troubleshooting.md](./trouble
 1. Add headings for PDF bookmarks.
 2. Add a TOC with `Markdown Studio: Edit: Insert TOC` if needed.
 3. Use CSS page breaks where the document needs section boundaries.
-4. If the PDF needs a cover, create `cover.md` next to the body file, or set `markdownStudio.export.cover.path` to another Markdown file.
+4. If the PDF needs a cover, add a `<!-- markdown-studio:cover -->` block near the top of the same Markdown file. Use `cover.md` or `markdownStudio.export.cover.path` only when the cover is a shared template.
 5. Export PDF and inspect the cover, index, bookmarks, headers, footers, and page breaks.

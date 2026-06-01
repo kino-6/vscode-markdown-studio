@@ -1,3 +1,20 @@
+<!-- markdown-studio:cover -->
+# Markdown Studio
+
+<svg viewBox="0 0 640 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Markdown Studio PDF export cover">
+  <rect width="640" height="180" rx="18" fill="#123b6d" />
+  <path d="M52 122 L110 58 L168 122" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="220" y="82" fill="#ffffff" font-family="Arial, sans-serif" font-size="34" font-weight="700">Local PDF Export</text>
+  <text x="220" y="124" fill="#dbeafe" font-family="Arial, sans-serif" font-size="20">Preview, diagrams, CSS, TOC, bookmarks, and cover pages</text>
+</svg>
+
+<div class="cover-meta">
+
+Prepared as an embedded Markdown cover page.
+
+</div>
+<!-- /markdown-studio:cover -->
+
 # Markdown Studio — Feature Demo
 
 Open this file and run **Markdown Studio: Preview** (`Cmd+Shift+P`).

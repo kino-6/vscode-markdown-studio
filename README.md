@@ -52,7 +52,7 @@ For PlantUML and PDF export dependencies, run `Markdown Studio: Tools: Setup Dep
 - Configurable page margins (CSS units)
 - PDF Index with page numbers — "Chapter ... p.N" style TOC page with dot leaders and anchor links
 - PDF Bookmarks (outlines) — heading-based bookmark tree for PDF viewer sidebar navigation
-- Optional Markdown cover page — render `cover.md` with the same PDF styling and prepend it to the exported PDF
+- Optional Markdown cover page — write a cover block in the same file, or use `cover.md` as an advanced shared template
 - Customizable output filename via template variables (`${filename}`, `${date}`, `${title}`, etc.)
 
 ### Syntax Highlighting
@@ -152,14 +152,31 @@ Common settings:
 | `markdownStudio.style.customCss` | `""` | Final CSS override layer. |
 | `markdownStudio.export.pageFormat` | `A4` | PDF page size. |
 | `markdownStudio.export.outputFilename` | `${filename}` | PDF filename template. |
-| `markdownStudio.export.cover.enabled` | `true` | Prepend the configured Markdown cover page when the file exists. |
-| `markdownStudio.export.cover.path` | `cover.md` | Cover Markdown path, relative to the exported Markdown file. |
+| `markdownStudio.export.cover.enabled` | `true` | Prepend an embedded or configured Markdown cover page during PDF export. |
+| `markdownStudio.export.cover.path` | `cover.md` | Advanced fallback cover Markdown path, relative to the exported Markdown file. |
 | `markdownStudio.security.externalResources.mode` | `whitelist` | External resource policy. Use `block-all` for strict LocalOnly documents. |
 | `markdownStudio.network.caCertificates` | `[]` | Extra CA certificates for proxy/SSL inspection environments. |
 
 The same CSS stack applies to both preview and PDF export. Preview width is controlled separately by `markdownStudio.preview.contentWidth` and does not change PDF page size.
 
-By default, Markdown Studio looks for `cover.md` next to the exported Markdown file. If it exists, it is rendered with the same PDF settings and prepended before the body PDF; if it does not exist, export continues normally. Set `markdownStudio.export.cover.enabled` to `false` to disable this convention.
+For the simplest cover page, keep the cover content in the same Markdown file:
+
+```md
+<!-- markdown-studio:cover -->
+# Company Spec A4
+
+<svg viewBox="0 0 240 80" xmlns="http://www.w3.org/2000/svg">
+  <rect width="240" height="80" fill="#123b6d" />
+  <text x="24" y="50" fill="white">Enterprise PDF</text>
+</svg>
+
+Prepared for Markdown Studio
+<!-- /markdown-studio:cover -->
+
+# Main Document
+```
+
+PDF export renders the cover block first and removes it from the body pages. Raw HTML and inline SVG can be used in the cover when your workspace security settings allow them. If no embedded cover block exists, Markdown Studio falls back to `cover.md` next to the exported Markdown file. Set `markdownStudio.export.cover.enabled` to `false` to disable cover assembly.
 
 ### Team-Shared PDF Settings
 
