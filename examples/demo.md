@@ -1,22 +1,25 @@
 <!-- markdown-studio:cover -->
-# Markdown Studio Cover Demo
+# Markdown Studio: Local PDF Export
 
-<svg viewBox="0 0 640 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Markdown Studio embedded cover page demo">
-  <rect width="640" height="300" rx="20" fill="#123b6d" />
-  <rect x="28" y="28" width="584" height="244" rx="16" fill="#1e4f8f" opacity="0.72" />
-  <path d="M64 112 L118 56 L172 112" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
-  <text x="220" y="72" fill="#bfdbfe" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="1">EMBEDDED COVER DEMO</text>
-  <text x="220" y="124" fill="#ffffff" font-family="Arial, sans-serif" font-size="36" font-weight="700">Markdown Studio</text>
-  <text x="220" y="166" fill="#ffffff" font-family="Arial, sans-serif" font-size="30" font-weight="700">Local PDF Export</text>
-  <text x="220" y="212" fill="#dbeafe" font-family="Arial, sans-serif" font-size="18">Cover page + generated PDF index + bookmarks</text>
-  <text x="220" y="242" fill="#dbeafe" font-family="Arial, sans-serif" font-size="18">All rendered from this single Markdown file</text>
-</svg>
-
-<div class="cover-meta">
-
-This first page is generated from the embedded `markdown-studio:cover` block.
-
+<div style="margin: 56px 0 40px; padding: 44px 48px; border-radius: 18px; background: #123b6d; color: #ffffff;">
+  <div style="display: flex; align-items: center; gap: 28px;">
+    <img src="../icon/icon.png" width="96" height="96" alt="Markdown Studio extension icon" style="border-radius: 20px; background: #ffffff;" />
+    <div>
+      <div style="font-size: 14px; font-weight: 700; letter-spacing: 1.6px; color: #bfdbfe;">EMBEDDED COVER PAGE DEMO</div>
+      <div style="font-size: 38px; font-weight: 800; line-height: 1.15; margin-top: 14px;">Markdown Studio</div>
+      <div style="font-size: 28px; font-weight: 700; line-height: 1.25; margin-top: 8px;">Local Preview and PDF Export</div>
+    </div>
+  </div>
+  <div style="height: 1px; background: rgba(255,255,255,0.28); margin: 34px 0 28px;"></div>
+  <div style="font-size: 18px; line-height: 1.65; color: #dbeafe;">
+    This first page is generated from an embedded cover block in this same Markdown file.
+    The exported PDF continues with an auto-generated index, bookmarks, diagrams, math, CSS, and local assets.
+  </div>
 </div>
+
+**Demo document:** Markdown Studio feature tour  
+**Cover source:** Embedded Markdown cover block  
+**Navigation:** PDF index links and bookmarks
 <!-- /markdown-studio:cover -->
 
 # Markdown Studio — Feature Demo
