@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveCoverMarkdownPath } from '../../src/export/pdfCover';
+import { resolveCoverMarkdownPath, splitEmbeddedCoverMarkdown } from '../../src/export/pdfCover';
 
 describe('PDF cover path resolution', () => {
   it('returns undefined when cover export is disabled', () => {
@@ -21,5 +21,59 @@ describe('PDF cover path resolution', () => {
       enabled: true,
       path: './spec.md',
     })).toThrow(/cannot use the source Markdown file/i);
+  });
+});
+
+describe('embedded PDF cover block parsing', () => {
+  it('extracts a cover block from the same Markdown file and removes it from the body', () => {
+    const markdown = [
+      '<!-- markdown-studio:cover -->',
+      '# Proposal Cover',
+      '',
+      '<svg viewBox="0 0 120 24"><text x="0" y="18">Enterprise</text></svg>',
+      '<!-- /markdown-studio:cover -->',
+      '',
+      '# Body',
+      '',
+      'Main content.',
+    ].join('\n');
+
+    expect(splitEmbeddedCoverMarkdown(markdown)).toEqual({
+      coverMarkdown: [
+        '# Proposal Cover',
+        '',
+        '<svg viewBox="0 0 120 24"><text x="0" y="18">Enterprise</text></svg>',
+      ].join('\n'),
+      bodyMarkdown: '# Body\n\nMain content.',
+    });
+  });
+
+  it('ignores cover markers inside fenced code blocks', () => {
+    const markdown = [
+      '# Body',
+      '',
+      '```md',
+      '<!-- markdown-studio:cover -->',
+      '# Not a cover',
+      '<!-- /markdown-studio:cover -->',
+      '```',
+    ].join('\n');
+
+    expect(splitEmbeddedCoverMarkdown(markdown)).toEqual({
+      bodyMarkdown: markdown,
+    });
+  });
+
+  it('leaves the document unchanged when the embedded cover end marker is missing', () => {
+    const markdown = [
+      '<!-- markdown-studio:cover -->',
+      '# Draft Cover',
+      '',
+      '# Body',
+    ].join('\n');
+
+    expect(splitEmbeddedCoverMarkdown(markdown)).toEqual({
+      bodyMarkdown: markdown,
+    });
   });
 });

@@ -429,6 +429,59 @@ describe('exportToPdf smoke/integration', () => {
     expect(output).toBe('/tmp/sample.pdf');
   });
 
+  it('uses an embedded cover block before falling back to adjacent cover Markdown', async () => {
+    getConfigMock.mockReturnValue(makeDefaultConfig({
+      pdfCover: { enabled: true, path: 'cover.md' },
+    }));
+    buildHtmlMock
+      .mockResolvedValueOnce('<html><head></head><body><h1>Body</h1></body></html>')
+      .mockResolvedValueOnce('<html><head></head><body><h1>Inline Cover</h1><svg></svg></body></html>');
+    readFileMock.mockResolvedValue('.hljs { background: #f6f8fa; }');
+    accessMock.mockResolvedValue(undefined);
+    writeFileMock.mockResolvedValue(undefined);
+    setContentMock.mockResolvedValue(undefined);
+    pdfMock.mockResolvedValue(Buffer.from('%PDF fake\n/Type /Page\n'));
+    closeMock.mockResolvedValue(undefined);
+    evaluateMock.mockResolvedValue(undefined);
+    addScriptTagMock.mockResolvedValue(undefined);
+    waitForFunctionMock.mockResolvedValue(undefined);
+    setViewportSizeMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({
+      setContent: setContentMock, pdf: pdfMock,
+      evaluate: evaluateMock, addScriptTag: addScriptTagMock,
+      waitForFunction: waitForFunctionMock, setViewportSize: setViewportSizeMock,
+    });
+    launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
+
+    const document = {
+      getText: () => [
+        '<!-- markdown-studio:cover -->',
+        '# Inline Cover',
+        '',
+        '<svg viewBox="0 0 120 24"><text x="0" y="18">Enterprise</text></svg>',
+        '<!-- /markdown-studio:cover -->',
+        '',
+        '# Body',
+      ].join('\n'),
+      uri: { fsPath: '/tmp/sample.md' }
+    } as any;
+
+    const output = await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+
+    expect(readFileMock).not.toHaveBeenCalledWith('/tmp/cover.md', 'utf-8');
+    expect(buildHtmlMock).toHaveBeenNthCalledWith(1, '# Body', expect.anything(), undefined, undefined, expect.anything());
+    expect(buildHtmlMock).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('<svg viewBox="0 0 120 24">'),
+      expect.anything(),
+      undefined,
+      undefined,
+      expect.objectContaining({ fsPath: '/tmp/sample.md' }),
+    );
+    expect(writeFileMock).toHaveBeenCalledWith('/tmp/sample.pdf', expect.any(Buffer));
+    expect(output).toBe('/tmp/sample.pdf');
+  });
+
   it('skips the cover and exports the body PDF when the cover Markdown file is missing', async () => {
     getConfigMock.mockReturnValue(makeDefaultConfig({
       pdfCover: { enabled: true, path: 'missing-cover.md' },
