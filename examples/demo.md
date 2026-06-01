@@ -1,16 +1,20 @@
 <!-- markdown-studio:cover -->
-# Markdown Studio
+# Markdown Studio Cover Demo
 
-<svg viewBox="0 0 640 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Markdown Studio PDF export cover">
-  <rect width="640" height="180" rx="18" fill="#123b6d" />
-  <path d="M52 122 L110 58 L168 122" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
-  <text x="220" y="82" fill="#ffffff" font-family="Arial, sans-serif" font-size="34" font-weight="700">Local PDF Export</text>
-  <text x="220" y="124" fill="#dbeafe" font-family="Arial, sans-serif" font-size="20">Preview, diagrams, CSS, TOC, bookmarks, and cover pages</text>
+<svg viewBox="0 0 640 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Markdown Studio embedded cover page demo">
+  <rect width="640" height="300" rx="20" fill="#123b6d" />
+  <rect x="28" y="28" width="584" height="244" rx="16" fill="#1e4f8f" opacity="0.72" />
+  <path d="M64 112 L118 56 L172 112" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="220" y="72" fill="#bfdbfe" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="1">EMBEDDED COVER DEMO</text>
+  <text x="220" y="124" fill="#ffffff" font-family="Arial, sans-serif" font-size="36" font-weight="700">Markdown Studio</text>
+  <text x="220" y="166" fill="#ffffff" font-family="Arial, sans-serif" font-size="30" font-weight="700">Local PDF Export</text>
+  <text x="220" y="212" fill="#dbeafe" font-family="Arial, sans-serif" font-size="18">Cover page + generated PDF index + bookmarks</text>
+  <text x="220" y="242" fill="#dbeafe" font-family="Arial, sans-serif" font-size="18">All rendered from this single Markdown file</text>
 </svg>
 
 <div class="cover-meta">
 
-Prepared as an embedded Markdown cover page.
+This first page is generated from the embedded `markdown-studio:cover` block.
 
 </div>
 <!-- /markdown-studio:cover -->
