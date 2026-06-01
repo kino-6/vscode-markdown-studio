@@ -541,6 +541,8 @@ describe('exportToPdf smoke/integration', () => {
       .map((call) => call[1])
       .find((arg) => typeof arg === 'string' && arg.includes('ms-pdf-index')) as string | undefined;
     expect(indexHtmlArg).toContain('Table of Contents');
+    expect(indexHtmlArg).toContain('href="#body"');
+    expect(indexHtmlArg).toContain('>p.3<');
   });
 
   it('skips the cover and exports the body PDF when the cover Markdown file is missing', async () => {
