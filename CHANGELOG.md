@@ -4,6 +4,16 @@ All notable changes to Markdown Studio will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-06-01
+
+### Added
+
+- Added optional Markdown cover pages for PDF export via `markdownStudio.export.cover.enabled` and `markdownStudio.export.cover.path`.
+- Render cover Markdown with the same PDF style stack and prepend it before the body PDF without adding a new command.
+- Offset PDF index and bookmark page numbers when a cover page is included.
+- Included cover settings in portable settings export/import and ready-to-import examples.
+- Added unit, integration, and E2E coverage for cover path resolution, PDF assembly, settings export/import, and cover-enabled PDF export.
+
 ## [1.0.3] - 2026-05-31
 
 ### Changed

@@ -20,6 +20,8 @@
   "includePdfIndex": true,
   "pdfIndexTitle": "Contents",
   "hidePdfToc": true,
+  "coverEnabled": false,
+  "coverPath": "cover.md",
   "tocLevels": "1-3",
   "tocOrderedList": false,
   "tocPageBreak": true,

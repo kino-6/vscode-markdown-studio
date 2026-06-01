@@ -23,7 +23,7 @@ For PlantUML and PDF export dependencies, run `Markdown Studio: Tools: Setup Dep
 - Local-first by default: Markdown, diagrams, syntax highlighting, math, and PDF export run on your machine.
 - Technical-document ready: Mermaid, PlantUML, WaveDrom, SVG, code highlighting, KaTeX, TOC, PDF index, and bookmarks are integrated.
 - Security-aware: external resources default to a GitHub allowlist and can be blocked or allowed explicitly.
-- Practical PDF output: page formats, margins, headers/footers, filenames, TOC handling, page breaks, and bookmarks are configurable.
+- Practical PDF output: page formats, margins, headers/footers, filenames, cover pages, TOC handling, page breaks, and bookmarks are configurable.
 
 ## Features
 
@@ -52,6 +52,7 @@ For PlantUML and PDF export dependencies, run `Markdown Studio: Tools: Setup Dep
 - Configurable page margins (CSS units)
 - PDF Index with page numbers — "Chapter ... p.N" style TOC page with dot leaders and anchor links
 - PDF Bookmarks (outlines) — heading-based bookmark tree for PDF viewer sidebar navigation
+- Optional Markdown cover page — render `cover.md` with the same PDF styling and prepend it to the exported PDF
 - Customizable output filename via template variables (`${filename}`, `${date}`, `${title}`, etc.)
 
 ### Syntax Highlighting
@@ -151,6 +152,8 @@ Common settings:
 | `markdownStudio.style.customCss` | `""` | Final CSS override layer. |
 | `markdownStudio.export.pageFormat` | `A4` | PDF page size. |
 | `markdownStudio.export.outputFilename` | `${filename}` | PDF filename template. |
+| `markdownStudio.export.cover.enabled` | `false` | Prepend a Markdown cover page to PDF export. |
+| `markdownStudio.export.cover.path` | `cover.md` | Cover Markdown path, relative to the exported Markdown file. |
 | `markdownStudio.security.externalResources.mode` | `whitelist` | External resource policy. Use `block-all` for strict LocalOnly documents. |
 | `markdownStudio.network.caCertificates` | `[]` | Extra CA certificates for proxy/SSL inspection environments. |
 
@@ -158,7 +161,7 @@ The same CSS stack applies to both preview and PDF export. Preview width is cont
 
 ### Team-Shared PDF Settings
 
-Portable PDF settings can be shared as JSON. Commit one JSON file to a repository when a team needs the same PDF page size, CSS, security mode, headers, TOC, PDF index, and bookmarks across contributors.
+Portable PDF settings can be shared as JSON. Commit one JSON file to a repository when a team needs the same PDF page size, CSS, security mode, headers, cover behavior, TOC, PDF index, and bookmarks across contributors.
 
 In a workspace, every successful `Export PDF` writes a timestamped settings snapshot under `.vscode/` and keeps the latest three PDF-export history files. Manual `Export Current Settings to JSON` prompts for a display name, uses a separate filename prefix, includes creation metadata, and is not pruned automatically. `Import Settings from JSON` shows recent exports by display name and metadata before applying the selected JSON to User or Workspace settings.
 
@@ -187,6 +190,8 @@ In a workspace, every successful `Export PDF` writes a timestamped settings snap
   "includePdfIndex": true,
   "pdfIndexTitle": "Table of Contents",
   "hidePdfToc": true,
+  "coverEnabled": false,
+  "coverPath": "cover.md",
   "tocLevels": "1-3",
   "tocOrderedList": false,
   "tocPageBreak": true,
@@ -202,6 +207,7 @@ Example shared settings files are available in `examples/settings/`:
 - `company-spec-a4.json` — A4 technical specs with GitHub styling and PDF index.
 - `local-only-a4.json` — strict LocalOnly A4 export with all external resources blocked.
 - `release-notes-letter.json` — Letter-sized release notes with date-based filenames.
+- `covered-spec-a4.json` — A4 specs that prepend `examples/cover.md` before the body PDF.
 
 ## WaveDrom
 

@@ -531,7 +531,7 @@ export async function exportToPdf(
   for (const w of assets.customCssWarnings) {
     console.warn(w);
   }
-  let html = await buildPreparedPdfHtml(document.getText(), document.uri, context, assets, cfg);
+  const html = await buildPreparedPdfHtml(document.getText(), document.uri, context, assets, cfg);
 
   checkCancellation(cancellation);
 
@@ -572,11 +572,10 @@ export async function exportToPdf(
   try {
     checkCancellation(cancellation);
 
-    const page = await browser.newPage();
-    await preparePageForPdf(page, html, cfg, assets, progress);
-
     // Step 4: client-side diagram rendering
     progress?.report(RUNTIME_MESSAGES.exportProgress.renderingDiagrams, 15);
+    const page = await browser.newPage();
+    await preparePageForPdf(page, html, cfg, assets, progress);
 
     checkCancellation(cancellation);
 

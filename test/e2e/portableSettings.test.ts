@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { PDFDocument } from 'pdf-lib';
 import {
   acceptNextQuickPick,
   cleanupGeneratedPdf,
@@ -90,5 +91,43 @@ suite('Markdown Studio Portable Settings E2E', () => {
     assert.strictEqual(updated.get('style.customCss'), 'body { color: rgb(1, 2, 3); }');
     assert.strictEqual(updated.get('style.fontSize'), 18);
     assert.strictEqual(updated.get('export.pdfIndex.enabled'), false);
+  });
+
+  test('exports a configured Markdown cover page before the body PDF', async function () {
+    this.timeout(60000);
+
+    const testFile = await openWorkspaceMarkdown();
+    const coverFile = path.join(path.dirname(testFile), 'cover.md');
+    fs.writeFileSync(coverFile, [
+      '# E2E Cover',
+      '',
+      'Prepared for Markdown Studio cover export.',
+      '',
+    ].join('\n'));
+
+    const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
+    await cfg.update('export.cover.enabled', true, vscode.ConfigurationTarget.Workspace);
+    await cfg.update('export.cover.path', 'cover.md', vscode.ConfigurationTarget.Workspace);
+    await cfg.update('export.pdfIndex.enabled', false, vscode.ConfigurationTarget.Workspace);
+    await cfg.update('export.pdfBookmarks.enabled', false, vscode.ConfigurationTarget.Workspace);
+
+    try {
+      await vscode.commands.executeCommand('markdownStudio.exportPdf');
+
+      const expectedPdf = testFile.replace(/\.md$/, '.pdf');
+      assert.ok(fs.existsSync(expectedPdf), 'Expected cover-enabled PDF export to create a PDF');
+
+      const pdf = await PDFDocument.load(fs.readFileSync(expectedPdf));
+      assert.ok(pdf.getPageCount() >= 2, 'Expected PDF to include at least cover and body pages');
+
+      const profile = latestSettingsExport('markdown-studio-pdf-settings-');
+      assert.strictEqual(profile.coverEnabled, true);
+      assert.strictEqual(profile.coverPath, 'cover.md');
+    } finally {
+      cleanupGeneratedPdf(testFile);
+      if (fs.existsSync(coverFile)) {
+        fs.unlinkSync(coverFile);
+      }
+    }
   });
 });
