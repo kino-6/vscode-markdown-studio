@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { PDFDocument } from 'pdf-lib';
+import { PDFArray, PDFDict, PDFDocument, PDFName } from 'pdf-lib';
 import {
   acceptNextQuickPick,
   cleanupGeneratedPdf,
@@ -13,6 +13,26 @@ import {
   workspacePath,
   workspaceVscodeDir,
 } from './helpers';
+
+function pageNumberForDestination(pdf: PDFDocument, destination: unknown): number {
+  if (!(destination instanceof PDFArray)) {
+    return 0;
+  }
+  const targetRef = destination.get(0).toString();
+  return pdf.getPages().findIndex(page => page.ref.toString() === targetRef) + 1;
+}
+
+function directDestinationForAnnotation(pdf: PDFDocument, pageIndex: number, annotationIndex: number): PDFArray {
+  const annots = pdf.getPage(pageIndex).node.Annots();
+  assert.ok(annots, `Expected page ${pageIndex + 1} to have annotations`);
+  assert.ok(annots.size() > annotationIndex, `Expected annotation ${annotationIndex} on page ${pageIndex + 1}`);
+
+  const annot = pdf.context.lookup(annots.get(annotationIndex));
+  assert.ok(annot instanceof PDFDict, `Expected annotation ${annotationIndex} to be a PDF dictionary`);
+  const destination = annot.get(PDFName.of('Dest'));
+  assert.ok(destination instanceof PDFArray, `Expected annotation ${annotationIndex} to use a direct PDF destination`);
+  return destination;
+}
 
 suite('Markdown Studio Portable Settings E2E', () => {
   setup(async () => {
@@ -163,6 +183,61 @@ suite('Markdown Studio Portable Settings E2E', () => {
 
       const pdf = await PDFDocument.load(fs.readFileSync(expectedPdf));
       assert.ok(pdf.getPageCount() >= 2, 'Expected PDF to include at least embedded cover and body pages');
+    } finally {
+      cleanupGeneratedPdf(testFile);
+      if (fs.existsSync(testFile)) {
+        fs.unlinkSync(testFile);
+      }
+    }
+  });
+
+  test('exports generated PDF index links as direct page destinations after an embedded cover', async function () {
+    this.timeout(60000);
+
+    const testFile = path.join(workspacePath(), 'pdf-index-links.md');
+    fs.writeFileSync(testFile, [
+      '<!-- markdown-studio:cover -->',
+      '# Link Cover',
+      '',
+      'Cover page for PDF index link validation.',
+      '<!-- /markdown-studio:cover -->',
+      '',
+      '# Body',
+      '',
+      'The body starts after the generated PDF index.',
+      '',
+      '## Alpha',
+      '',
+      'A short section before the forced print page break.',
+      '',
+      '<div style="page-break-before: always;"></div>',
+      '',
+      '## Math (KaTeX)',
+      '',
+      'Inline math: $E = mc^2$',
+    ].join('\n'));
+
+    await openWorkspaceMarkdown('pdf-index-links.md');
+
+    const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
+    await cfg.update('export.pdfIndex.enabled', true, vscode.ConfigurationTarget.Workspace);
+    await cfg.update('export.pdfBookmarks.enabled', false, vscode.ConfigurationTarget.Workspace);
+    await cfg.update('export.cover.enabled', true, vscode.ConfigurationTarget.Workspace);
+
+    try {
+      await vscode.commands.executeCommand('markdownStudio.exportPdf');
+
+      const expectedPdf = testFile.replace(/\.md$/, '.pdf');
+      assert.ok(fs.existsSync(expectedPdf), 'Expected PDF index link export to create a PDF');
+
+      const pdf = await PDFDocument.load(fs.readFileSync(expectedPdf));
+      assert.ok(pdf.getPageCount() >= 4, 'Expected cover, generated PDF index, body, and forced Math page');
+
+      const bodyDestination = directDestinationForAnnotation(pdf, 1, 0);
+      const mathDestination = directDestinationForAnnotation(pdf, 1, 2);
+      assert.strictEqual(pageNumberForDestination(pdf, bodyDestination), 3);
+      assert.strictEqual(pageNumberForDestination(pdf, mathDestination), 4);
+      assert.strictEqual(mathDestination.get(1).toString(), '/XYZ');
     } finally {
       cleanupGeneratedPdf(testFile);
       if (fs.existsSync(testFile)) {
