@@ -21,7 +21,7 @@ For term definitions such as TOC, PDF Index, and bookmarks, see [glossary.md](./
 | `markdownStudio.export.pdfIndex.title` | string | `Table of Contents` | PDF index page title. |
 | `markdownStudio.export.pdfToc.hidden` | boolean | `true` | Hide inline TOC markers in PDF export. |
 | `markdownStudio.export.pdfBookmarks.enabled` | boolean | `true` | Generate PDF bookmarks from headings. |
-| `markdownStudio.export.cover.enabled` | boolean | `false` | Prepend a Markdown cover page to PDF export. |
+| `markdownStudio.export.cover.enabled` | boolean | `true` | Prepend the configured Markdown cover page when the file exists. |
 | `markdownStudio.export.cover.path` | string | `cover.md` | Cover Markdown path, relative to the exported Markdown file when not absolute. |
 | `markdownStudio.export.outputFilename` | string | `${filename}` | PDF output filename template. |
 | `markdownStudio.export.diagramTimeout` | number | `0` | Diagram render timeout in seconds. `0` means no timeout. |
@@ -77,6 +77,12 @@ code { background: #f0f0f0; color: #d63384; }
 
 Theme samples are available in `examples/custom-styles/`.
 
+## Cover Pages
+
+By default, Markdown Studio looks for `cover.md` next to the Markdown file being exported. When that file exists, it is rendered with the same PDF style stack and prepended before the body PDF. When it does not exist, export continues normally without a cover page.
+
+Set `markdownStudio.export.cover.enabled` to `false` to disable this convention, or set `markdownStudio.export.cover.path` to another Markdown file.
+
 ## Portable PDF Settings
 
 Portable PDF settings are versioned JSON files that capture the Markdown Studio settings most often shared by a team: page size, style, custom CSS, security mode, headers, cover behavior, TOC, PDF index, bookmarks, code block line numbers, and output filename.
@@ -122,7 +128,7 @@ The JSON content looks like this:
   "includePdfIndex": true,
   "pdfIndexTitle": "Table of Contents",
   "hidePdfToc": true,
-  "coverEnabled": false,
+  "coverEnabled": true,
   "coverPath": "cover.md",
   "tocLevels": "1-3",
   "tocOrderedList": false,

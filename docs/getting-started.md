@@ -131,5 +131,5 @@ For proxy, custom CA, or offline setup notes, see [troubleshooting.md](./trouble
 1. Add headings for PDF bookmarks.
 2. Add a TOC with `Markdown Studio: Edit: Insert TOC` if needed.
 3. Use CSS page breaks where the document needs section boundaries.
-4. If the PDF needs a cover, create `cover.md` next to the body file and set `markdownStudio.export.cover.enabled` to `true`.
+4. If the PDF needs a cover, create `cover.md` next to the body file, or set `markdownStudio.export.cover.path` to another Markdown file.
 5. Export PDF and inspect the cover, index, bookmarks, headers, footers, and page breaks.

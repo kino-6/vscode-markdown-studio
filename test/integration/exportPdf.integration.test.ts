@@ -429,7 +429,7 @@ describe('exportToPdf smoke/integration', () => {
     expect(output).toBe('/tmp/sample.pdf');
   });
 
-  it('fails clearly when a configured cover Markdown file is missing', async () => {
+  it('skips the cover and exports the body PDF when the cover Markdown file is missing', async () => {
     getConfigMock.mockReturnValue(makeDefaultConfig({
       pdfCover: { enabled: true, path: 'missing-cover.md' },
     }));
@@ -440,15 +440,31 @@ describe('exportToPdf smoke/integration', () => {
       }
       return '.hljs { background: #f6f8fa; }';
     });
+    accessMock.mockResolvedValue(undefined);
+    setContentMock.mockResolvedValue(undefined);
+    pdfMock.mockResolvedValue(undefined);
     closeMock.mockResolvedValue(undefined);
+    evaluateMock.mockResolvedValue(undefined);
+    addScriptTagMock.mockResolvedValue(undefined);
+    waitForFunctionMock.mockResolvedValue(undefined);
+    setViewportSizeMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({
+      setContent: setContentMock, pdf: pdfMock,
+      evaluate: evaluateMock, addScriptTag: addScriptTagMock,
+      waitForFunction: waitForFunctionMock, setViewportSize: setViewportSizeMock,
+    });
+    launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
 
     const document = {
       getText: () => '# Body',
       uri: { fsPath: '/tmp/sample.md' }
     } as any;
 
-    await expect(exportToPdf(document, { extensionPath: '/tmp/ext' } as any))
-      .rejects.toThrow(/cover Markdown file was not found/i);
+    const output = await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+
+    expect(buildHtmlMock).toHaveBeenCalledTimes(1);
+    expect(pdfMock).toHaveBeenCalledWith(expect.objectContaining({ path: '/tmp/sample.pdf' }));
+    expect(output).toBe('/tmp/sample.pdf');
   });
 });
 

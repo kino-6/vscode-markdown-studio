@@ -201,7 +201,7 @@
         },
         "markdownStudio.export.cover.enabled": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "markdownDescription": "%configuration.export.cover.enabled.markdownDescription%"
         },
         "markdownStudio.export.cover.path": {

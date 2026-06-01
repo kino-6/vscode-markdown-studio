@@ -266,7 +266,7 @@ async function loadCoverMarkdownIfNeeded(
   try {
     markdown = await fs.readFile(coverPath, 'utf-8');
   } catch {
-    throw new Error(`Markdown Studio: Cover Markdown file was not found: ${coverPath}`);
+    return undefined;
   }
 
   return {

@@ -56,7 +56,7 @@ export const CONFIG_DEFAULTS = {
   exportPdfIndexTitle: 'Table of Contents',
   exportPdfTocHidden: true,
   exportPdfBookmarksEnabled: true,
-  exportCoverEnabled: false,
+  exportCoverEnabled: true,
   exportCoverPath: 'cover.md',
   previewTheme: 'auto' as PreviewThemeMode,
   previewContentWidth: 'a4' as PreviewContentWidth,

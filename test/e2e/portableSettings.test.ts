@@ -93,7 +93,7 @@ suite('Markdown Studio Portable Settings E2E', () => {
     assert.strictEqual(updated.get('export.pdfIndex.enabled'), false);
   });
 
-  test('exports a configured Markdown cover page before the body PDF', async function () {
+  test('exports an adjacent Markdown cover page before the body PDF by default', async function () {
     this.timeout(60000);
 
     const testFile = await openWorkspaceMarkdown();
@@ -106,8 +106,6 @@ suite('Markdown Studio Portable Settings E2E', () => {
     ].join('\n'));
 
     const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
-    await cfg.update('export.cover.enabled', true, vscode.ConfigurationTarget.Workspace);
-    await cfg.update('export.cover.path', 'cover.md', vscode.ConfigurationTarget.Workspace);
     await cfg.update('export.pdfIndex.enabled', false, vscode.ConfigurationTarget.Workspace);
     await cfg.update('export.pdfBookmarks.enabled', false, vscode.ConfigurationTarget.Workspace);
 

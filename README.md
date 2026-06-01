@@ -152,12 +152,14 @@ Common settings:
 | `markdownStudio.style.customCss` | `""` | Final CSS override layer. |
 | `markdownStudio.export.pageFormat` | `A4` | PDF page size. |
 | `markdownStudio.export.outputFilename` | `${filename}` | PDF filename template. |
-| `markdownStudio.export.cover.enabled` | `false` | Prepend a Markdown cover page to PDF export. |
+| `markdownStudio.export.cover.enabled` | `true` | Prepend the configured Markdown cover page when the file exists. |
 | `markdownStudio.export.cover.path` | `cover.md` | Cover Markdown path, relative to the exported Markdown file. |
 | `markdownStudio.security.externalResources.mode` | `whitelist` | External resource policy. Use `block-all` for strict LocalOnly documents. |
 | `markdownStudio.network.caCertificates` | `[]` | Extra CA certificates for proxy/SSL inspection environments. |
 
 The same CSS stack applies to both preview and PDF export. Preview width is controlled separately by `markdownStudio.preview.contentWidth` and does not change PDF page size.
+
+By default, Markdown Studio looks for `cover.md` next to the exported Markdown file. If it exists, it is rendered with the same PDF settings and prepended before the body PDF; if it does not exist, export continues normally. Set `markdownStudio.export.cover.enabled` to `false` to disable this convention.
 
 ### Team-Shared PDF Settings
 
@@ -190,7 +192,7 @@ In a workspace, every successful `Export PDF` writes a timestamped settings snap
   "includePdfIndex": true,
   "pdfIndexTitle": "Table of Contents",
   "hidePdfToc": true,
-  "coverEnabled": false,
+  "coverEnabled": true,
   "coverPath": "cover.md",
   "tocLevels": "1-3",
   "tocOrderedList": false,
