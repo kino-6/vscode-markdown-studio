@@ -4,6 +4,7 @@ import { mapWithConcurrency } from '../infra/async';
 import { getConfig } from '../infra/config';
 import { countLineBreaks, detectLineEnding } from '../infra/lineEndings';
 import { RUNTIME_MESSAGES } from '../infra/messages';
+import { splitEmbeddedCoverMarkdown } from '../markdown/embeddedCover';
 import { createMarkdownParser } from '../parser/parseMarkdown';
 import { scanFencedBlocks } from '../parser/scanFencedBlocks';
 import { extractHeadings } from '../toc/extractHeadings';
@@ -227,6 +228,13 @@ export async function renderMarkdownDocument(
     htmlBody = htmlBody
       .replace(/<!--\s*TOC\s*-->/, '<div class="ms-toc-comment">')
       .replace(/<!--\s*\/TOC\s*-->/, '</div>');
+  }
+
+  const embeddedCover = splitEmbeddedCoverMarkdown(markdown);
+  if (embeddedCover.coverMarkdown !== undefined) {
+    htmlBody = htmlBody
+      .replace(/<!--\s*markdown-studio:cover\s*-->/i, '<div class="ms-cover-page">')
+      .replace(/<!--\s*\/markdown-studio:cover\s*-->/i, '</div>');
   }
 
   return { htmlBody, errors };

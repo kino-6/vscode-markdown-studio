@@ -65,6 +65,7 @@ import * as buildHtmlModule from '../../src/preview/buildHtml';
 import * as playwrightModule from 'playwright-core';
 import * as configModule from '../../src/infra/config';
 import * as pdfBookmarksModule from '../../src/export/pdfBookmarks';
+import * as pdfAssemblyModule from '../../src/export/pdfAssembly';
 import { exportToPdf, inlineLocalImages } from '../../src/export/exportPdf';
 
 const accessMock = (fsModule as any).__accessMock as ReturnType<typeof vi.fn>;
@@ -82,6 +83,7 @@ const waitForFunctionMock = (playwrightModule as any).__waitForFunctionMock as R
 const setViewportSizeMock = (playwrightModule as any).__setViewportSizeMock as ReturnType<typeof vi.fn>;
 const getConfigMock = (configModule as any).__getConfigMock as ReturnType<typeof vi.fn>;
 const addBookmarksMock = (pdfBookmarksModule as any).__addBookmarksMock as ReturnType<typeof vi.fn>;
+const mergePdfBuffersMock = (pdfAssemblyModule as any).__mergePdfBuffersMock as ReturnType<typeof vi.fn>;
 
 describe('inlineLocalImages', () => {
   beforeEach(() => {
@@ -480,6 +482,65 @@ describe('exportToPdf smoke/integration', () => {
     );
     expect(writeFileMock).toHaveBeenCalledWith('/tmp/sample.pdf', expect.any(Buffer));
     expect(output).toBe('/tmp/sample.pdf');
+  });
+
+  it('keeps an embedded cover before the generated PDF index', async () => {
+    getConfigMock.mockReturnValue(makeDefaultConfig({
+      pdfCover: { enabled: true, path: 'cover.md' },
+      pdfIndex: { enabled: true, title: 'Table of Contents' },
+      pdfBookmarks: { enabled: true },
+    }));
+    buildHtmlMock
+      .mockResolvedValueOnce('<html><head></head><body><h1 id="body">Body</h1></body></html>')
+      .mockResolvedValueOnce('<html><head></head><body><h1 id="cover">Cover</h1></body></html>');
+    readFileMock.mockResolvedValue('.hljs { background: #f6f8fa; }');
+    accessMock.mockResolvedValue(undefined);
+    writeFileMock.mockResolvedValue(undefined);
+    setContentMock.mockResolvedValue(undefined);
+    const coverBuffer = Buffer.from('%PDF cover\n/Type /Page\n');
+    const bodyIndexProbeBuffer = Buffer.from('%PDF body-probe\n/Type /Page\n');
+    const bodyFinalBuffer = Buffer.from('%PDF body-final\n/Type /Page\n');
+    pdfMock
+      .mockResolvedValueOnce(coverBuffer)
+      .mockResolvedValueOnce(bodyIndexProbeBuffer)
+      .mockResolvedValueOnce(bodyFinalBuffer);
+    closeMock.mockResolvedValue(undefined);
+    evaluateMock.mockResolvedValue({
+      headings: [{ level: 1, text: 'Body', anchorId: 'body', offsetTop: 0 }],
+      scrollHeight: 1000,
+    });
+    addScriptTagMock.mockResolvedValue(undefined);
+    waitForFunctionMock.mockResolvedValue(undefined);
+    setViewportSizeMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({
+      setContent: setContentMock, pdf: pdfMock,
+      evaluate: evaluateMock, addScriptTag: addScriptTagMock,
+      waitForFunction: waitForFunctionMock, setViewportSize: setViewportSizeMock,
+    });
+    launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
+
+    const document = {
+      getText: () => [
+        '<!-- markdown-studio:cover -->',
+        '# Cover',
+        '<!-- /markdown-studio:cover -->',
+        '',
+        '# Body',
+      ].join('\n'),
+      uri: { fsPath: '/tmp/sample.md' }
+    } as any;
+
+    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+
+    expect(mergePdfBuffersMock).toHaveBeenCalledWith([coverBuffer, bodyFinalBuffer]);
+    expect(writeFileMock.mock.calls[0][0]).toBe('/tmp/sample.pdf');
+    expect((writeFileMock.mock.calls[0][1] as Buffer).toString()).toContain('%PDF cover');
+    const renderedBodyHtml = setContentMock.mock.calls[0][0] as string;
+    expect(renderedBodyHtml).not.toContain('Cover');
+    const indexHtmlArg = evaluateMock.mock.calls
+      .map((call) => call[1])
+      .find((arg) => typeof arg === 'string' && arg.includes('ms-pdf-index')) as string | undefined;
+    expect(indexHtmlArg).toContain('Table of Contents');
   });
 
   it('skips the cover and exports the body PDF when the cover Markdown file is missing', async () => {
