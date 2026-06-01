@@ -501,14 +501,27 @@ describe('exportToPdf smoke/integration', () => {
     const bodyIndexProbeBuffer = Buffer.from(`%PDF body-probe
 ${Array.from({ length: 15 }, () => '/Type /Page').join('\n')}
 `);
+    const bodyWithIndexBuffer = Buffer.from(`%PDF body-with-index
+${Array.from({ length: 16 }, () => '/Type /Page').join('\n')}
+`);
     const bodyFinalBuffer = Buffer.from('%PDF body-final\n/Type /Page\n');
     pdfMock
       .mockResolvedValueOnce(coverBuffer)
       .mockResolvedValueOnce(bodyIndexProbeBuffer)
+      .mockResolvedValueOnce(bodyWithIndexBuffer)
       .mockResolvedValueOnce(bodyFinalBuffer);
     closeMock.mockResolvedValue(undefined);
+    const headings = [
+      { level: 1, text: 'Body', anchorId: 'body', offsetTop: 900 },
+      ...Array.from({ length: 30 }, (_, index) => ({
+        level: 2,
+        text: `Section ${index + 1}`,
+        anchorId: `section-${index + 1}`,
+        offsetTop: 2000 + index * 10,
+      })),
+    ];
     evaluateMock.mockResolvedValue({
-      headings: [{ level: 1, text: 'Body', anchorId: 'body', offsetTop: 900 }],
+      headings,
       scrollHeight: 9000,
     });
     addScriptTagMock.mockResolvedValue(undefined);
@@ -539,9 +552,11 @@ ${Array.from({ length: 15 }, () => '/Type /Page').join('\n')}
     expect((writeFileMock.mock.calls[0][1] as Buffer).toString()).toContain('%PDF cover');
     const renderedBodyHtml = setContentMock.mock.calls[0][0] as string;
     expect(renderedBodyHtml).not.toContain('Cover');
-    const indexHtmlArg = evaluateMock.mock.calls
+    const indexHtmlArgs = evaluateMock.mock.calls
       .map((call) => call[1])
-      .find((arg) => typeof arg === 'string' && arg.includes('ms-pdf-index')) as string | undefined;
+      .filter((arg) => typeof arg === 'string' && arg.includes('ms-pdf-index')) as string[];
+    const indexHtmlArg = indexHtmlArgs[indexHtmlArgs.length - 1];
+    expect(indexHtmlArgs.length).toBeGreaterThanOrEqual(2);
     expect(indexHtmlArg).toContain('Table of Contents');
     expect(indexHtmlArg).toContain('href="#body"');
     expect(indexHtmlArg).toContain('>p.3<');
@@ -600,9 +615,9 @@ describe('exportToPdf bookmark integration', () => {
     evaluateMock.mockResolvedValue({
       headings: [
         { level: 1, text: 'Title', offsetTop: 0 },
-        { level: 2, text: 'Section', offsetTop: 500 },
+        { level: 2, text: 'Section', offsetTop: 1600 },
       ],
-      scrollHeight: 1000,
+      scrollHeight: 3000,
     });
     addScriptTagMock.mockResolvedValue(undefined);
     waitForFunctionMock.mockResolvedValue(undefined);
@@ -704,9 +719,9 @@ describe('exportToPdf bookmark integration', () => {
     evaluateMock.mockResolvedValue({
       headings: [
         { level: 1, text: 'Title', offsetTop: 0 },
-        { level: 2, text: 'Section', offsetTop: 500 },
+        { level: 2, text: 'Section', offsetTop: 1600 },
       ],
-      scrollHeight: 1000,
+      scrollHeight: 3000,
     });
     addScriptTagMock.mockResolvedValue(undefined);
     waitForFunctionMock.mockResolvedValue(undefined);

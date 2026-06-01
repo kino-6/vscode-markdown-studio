@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as vscode from 'vscode';
 import type { Page } from 'playwright-core';
+import { PDFArray, PDFDict, PDFDocument, PDFName } from 'pdf-lib';
 import { dependencyStatus } from '../extension';
 import { mapWithConcurrency } from '../infra/async';
 import { buildPdfOptions, injectPageBreakCss, injectTocPageBreakCss } from './pdfHeaderFooter';
@@ -78,6 +79,17 @@ export interface ExportToPdfOptions {
 }
 
 const CLIENT_RENDERED_DIAGRAM_SELECTOR = '.mermaid-host[data-mermaid-src], .wavedrom-host[data-wavedrom-src]';
+const CSS_PX_PER_INCH = 96;
+const MM_PER_INCH = 25.4;
+const PDF_VIEWPORT_WIDTH_PX = 980;
+const PAGE_FORMAT_SIZE_MM: Record<string, { width: number; height: number }> = {
+  A3: { width: 297, height: 420 },
+  A4: { width: 210, height: 297 },
+  A5: { width: 148, height: 210 },
+  Letter: { width: 215.9, height: 279.4 },
+  Legal: { width: 215.9, height: 355.6 },
+  Tabloid: { width: 279.4, height: 431.8 },
+};
 
 /**
  * Converts local image file:// URIs in HTML to inline Base64 data URIs.
@@ -238,6 +250,9 @@ async function preparePageForPdf(
   assets: PdfAssets,
   progress?: ProgressReporter,
 ): Promise<void> {
+  if (typeof page.emulateMedia === 'function') {
+    await page.emulateMedia({ media: 'print' });
+  }
   await page.setContent(html, { waitUntil: 'networkidle' });
   await forceLightMode(page);
 
@@ -277,8 +292,9 @@ async function loadCoverMarkdownIfNeeded(
   };
 }
 
-async function insertPdfIndexIntoRenderedPage(page: Pick<Page, 'evaluate'>, indexHtml: string): Promise<void> {
+async function setPdfIndexInRenderedPage(page: Pick<Page, 'evaluate'>, indexHtml: string): Promise<void> {
   await page.evaluate((html: string) => {
+    document.querySelector('.ms-pdf-index')?.remove();
     document.body.insertAdjacentHTML('afterbegin', html);
   }, indexHtml);
 }
@@ -323,10 +339,61 @@ async function waitForClientRenderedDiagrams(
   }
 }
 
-function countPdfPages(pdfBuffer: Buffer): number {
-  const pdfStr = pdfBuffer.toString('latin1');
-  const pageMatches = pdfStr.match(/\/Type\s*\/Page(?!s)/g);
-  return pageMatches ? pageMatches.length : 1;
+async function countPdfPages(pdfBuffer: Buffer): Promise<number> {
+  try {
+    const pdf = await PDFDocument.load(pdfBuffer);
+    return pdf.getPageCount();
+  } catch {
+    const pdfStr = pdfBuffer.toString('latin1');
+    const pageMatches = pdfStr.match(/\/Type\s*\/Page(?!s)/g);
+    return pageMatches ? pageMatches.length : 1;
+  }
+}
+
+async function collectPdfDestinationPages(pdfBuffer: Buffer): Promise<Map<string, number>> {
+  const pageMap = new Map<string, number>();
+
+  try {
+    const pdf = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
+    const pageRefToNumber = new Map<string, number>();
+    pdf.getPages().forEach((page, index) => {
+      pageRefToNumber.set(page.ref.toString(), index + 1);
+    });
+
+    const destsRef = pdf.catalog.get(PDFName.of('Dests'));
+    const dests = destsRef ? pdf.context.lookup(destsRef) : undefined;
+    if (!(dests instanceof PDFDict)) {
+      return pageMap;
+    }
+
+    for (const key of dests.keys()) {
+      const destination = pdf.context.lookup(dests.get(key));
+      if (!(destination instanceof PDFArray) || destination.size() === 0) {
+        continue;
+      }
+
+      const targetPage = destination.get(0);
+      const pageNumber = pageRefToNumber.get(targetPage.toString());
+      if (!pageNumber) {
+        continue;
+      }
+
+      pageMap.set(key.decodeText(), pageNumber);
+      pageMap.set(key.toString().replace(/^\//, ''), pageNumber);
+    }
+  } catch {
+    return pageMap;
+  }
+
+  return pageMap;
+}
+
+function destinationPageForAnchor(destinationPages: Map<string, number>, anchorId: string): number | undefined {
+  if (!anchorId) return undefined;
+  const pdfName = PDFName.of(anchorId);
+  return destinationPages.get(anchorId)
+    ?? destinationPages.get(pdfName.decodeText())
+    ?? destinationPages.get(pdfName.toString().replace(/^\//, ''));
 }
 
 function buildPdfPageOptions(cfg: PdfExportConfig, pdfOptions: PdfOptions): PdfPageOptions {
@@ -358,16 +425,56 @@ async function writePdfFile(
   await fs.access(outputPath);
 }
 
-function pageNumberForOffset(offsetTop: number, scrollHeight: number, totalPages: number): number {
-  const ratio = scrollHeight > 0 ? offsetTop / scrollHeight : 0;
-  return Math.min(Math.floor(ratio * totalPages) + 1, totalPages);
+function cssLengthToPx(value: string | undefined): number {
+  if (!value) return 0;
+  const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*(px|mm|cm|in|pt)?$/i);
+  if (!match) return 0;
+
+  const amount = Number(match[1]);
+  const unit = (match[2] ?? 'px').toLowerCase();
+  switch (unit) {
+    case 'px':
+      return amount;
+    case 'mm':
+      return (amount / MM_PER_INCH) * CSS_PX_PER_INCH;
+    case 'cm':
+      return ((amount * 10) / MM_PER_INCH) * CSS_PX_PER_INCH;
+    case 'in':
+      return amount * CSS_PX_PER_INCH;
+    case 'pt':
+      return (amount / 72) * CSS_PX_PER_INCH;
+    default:
+      return 0;
+  }
 }
 
-function mapDomHeadingsToEntries(domData: HeadingDomData, totalPages: number): HeadingPageEntry[] {
+function printablePageHeightPx(cfg: PdfExportConfig, pdfOptions: PdfOptions): number {
+  const pageSize = PAGE_FORMAT_SIZE_MM[cfg.pageFormat] ?? PAGE_FORMAT_SIZE_MM.A4;
+  const pageWidthPx = (pageSize.width / MM_PER_INCH) * CSS_PX_PER_INCH;
+  const pageHeightPx = (pageSize.height / MM_PER_INCH) * CSS_PX_PER_INCH;
+  const horizontalMarginsPx = cssLengthToPx(pdfOptions.margin.left) + cssLengthToPx(pdfOptions.margin.right);
+  const verticalMarginsPx = cssLengthToPx(pdfOptions.margin.top) + cssLengthToPx(pdfOptions.margin.bottom);
+  const printableWidthPx = Math.max(1, pageWidthPx - horizontalMarginsPx);
+  const printableHeightPx = Math.max(1, pageHeightPx - verticalMarginsPx);
+  const scale = Math.min(1, printableWidthPx / PDF_VIEWPORT_WIDTH_PX);
+  return printableHeightPx / scale;
+}
+
+function pageNumberForOffset(offsetTop: number, printableHeightPx: number, totalPages: number): number {
+  const safeOffset = Math.max(0, offsetTop);
+  const safePageHeight = Math.max(1, printableHeightPx);
+  return Math.min(Math.floor(safeOffset / safePageHeight) + 1, totalPages);
+}
+
+function mapDomHeadingsToEntries(
+  domData: HeadingDomData,
+  totalPages: number,
+  printableHeightPx: number,
+): HeadingPageEntry[] {
   return domData.headings.map((h) => ({
     level: h.level,
     text: h.text,
-    pageNumber: pageNumberForOffset(h.offsetTop, domData.scrollHeight, totalPages),
+    pageNumber: pageNumberForOffset(h.offsetTop, printableHeightPx, totalPages),
     anchorId: h.anchorId ?? '',
   }));
 }
@@ -418,20 +525,37 @@ async function preparePdfIndex(
   pdfOptions: PdfOptions,
   pageOffset = 0,
 ): Promise<BookmarkEntry[]> {
-  const totalPages = countPdfPages(await renderPdfBuffer(page, cfg, pdfOptions));
+  const totalPages = await countPdfPages(await renderPdfBuffer(page, cfg, pdfOptions));
   const domData = await collectPdfIndexHeadingData(page, cfg);
   if (domData.headings.length === 0) {
     return [];
   }
 
-  const headingEntries = mapDomHeadingsToEntries(domData, totalPages);
-  const indexPageCount = estimateIndexPageCount(headingEntries.length);
-  const indexHtml = buildPdfIndexHtml(headingEntries, cfg.pdfIndex.title, indexPageCount + pageOffset);
+  const headingEntries = mapDomHeadingsToEntries(domData, totalPages, printablePageHeightPx(cfg, pdfOptions));
+  const estimatedIndexPageCount = estimateIndexPageCount(headingEntries.length);
+  let indexPageCount = estimatedIndexPageCount;
+  let indexHtml = buildPdfIndexHtml(headingEntries, cfg.pdfIndex.title, indexPageCount + pageOffset);
 
-  await insertPdfIndexIntoRenderedPage(page, indexHtml);
+  await setPdfIndexInRenderedPage(page, indexHtml);
   await page.setViewportSize({ width: 980, height: 1400 });
 
-  return mapHeadingEntriesToBookmarks(headingEntries, indexPageCount + pageOffset);
+  const bodyWithIndexBuffer = await renderPdfBuffer(page, cfg, pdfOptions);
+  const totalPagesWithIndex = await countPdfPages(bodyWithIndexBuffer);
+  const actualIndexPageCount = Math.max(1, totalPagesWithIndex - totalPages);
+  indexPageCount = actualIndexPageCount;
+
+  const destinationPages = await collectPdfDestinationPages(bodyWithIndexBuffer);
+  const resolvedHeadingEntries = headingEntries.map((entry) => ({
+    ...entry,
+    pageNumber: destinationPageForAnchor(destinationPages, entry.anchorId)
+      ?? entry.pageNumber + indexPageCount,
+  }));
+
+  indexHtml = buildPdfIndexHtml(resolvedHeadingEntries, cfg.pdfIndex.title, pageOffset);
+  await setPdfIndexInRenderedPage(page, indexHtml);
+  await page.setViewportSize({ width: 980, height: 1400 });
+
+  return mapHeadingEntriesToBookmarks(resolvedHeadingEntries, pageOffset);
 }
 
 async function collectBookmarkEntries(
@@ -440,12 +564,15 @@ async function collectBookmarkEntries(
   pdfOptions: PdfOptions,
   pageOffset = 0,
 ): Promise<BookmarkEntry[]> {
-  const totalPages = countPdfPages(await renderPdfBuffer(page, cfg, pdfOptions));
+  const totalPages = await countPdfPages(await renderPdfBuffer(page, cfg, pdfOptions));
   const domData = await collectBookmarkHeadingData(page);
   if (domData.headings.length === 0) {
     return [];
   }
-  return mapHeadingEntriesToBookmarks(mapDomHeadingsToEntries(domData, totalPages), pageOffset);
+  return mapHeadingEntriesToBookmarks(
+    mapDomHeadingsToEntries(domData, totalPages, printablePageHeightPx(cfg, pdfOptions)),
+    pageOffset,
+  );
 }
 
 async function prepareBookmarkEntries(
@@ -593,7 +720,7 @@ export async function exportToPdf(
       const coverPage = await browser.newPage();
       await preparePageForPdf(coverPage, coverHtml, cfg, assets, progress);
       coverBuffer = await renderPdfBuffer(coverPage, cfg, pdfOptions);
-      coverPageCount = countPdfPages(coverBuffer);
+      coverPageCount = await countPdfPages(coverBuffer);
     }
 
     const bookmarkEntries = await prepareBookmarkEntries(page, cfg, pdfOptions, progress, coverPageCount);
