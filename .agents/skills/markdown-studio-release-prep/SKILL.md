@@ -12,7 +12,7 @@ Bring this repository to a release-ready handoff state without performing the fi
 Stop before actions that should remain human-owned:
 
 - Do not run `vsce publish` unless the user explicitly asks for publishing.
-- Do not create or push the release tag until changelog, package version, tests, and package output are verified and the user has approved tagging.
+- Do not create or push the release tag until changelog, package version, tests, package output, and release impact are explained to the user and the user explicitly approves tagging.
 - Do not rewrite the final marketing copy beyond factual release-note cleanup unless requested.
 
 ## Release Handoff Definition
@@ -27,7 +27,7 @@ The handoff is ready when:
 - Verification commands have passed or failures are clearly documented.
 - `dist/markdown-studio-local-<version>.vsix` exists from the latest package run.
 - The current commit is pushed to `origin/main`.
-- Tag status is reported clearly: existing tag, missing tag, or tag ready to create.
+- Tag status is resolved clearly: existing tag verified, tag pending human confirmation, or tag created and pushed after confirmation.
 
 ## Workflow
 
@@ -63,17 +63,28 @@ The handoff is ready when:
    - Commit all intended release-prep changes with a concise message.
    - Push `main` to `origin`.
 
-7. Tag handoff:
-   - Report whether the release tag already exists.
-   - If the tag is missing and all gates pass, tell the user the exact tag commands:
+7. Tag confirmation and automation:
+   - Report the exact release situation before asking for confirmation:
+     - Intended version and tag name, for example `v1.0.3`.
+     - Current commit SHA and whether it is pushed to `origin/main`.
+     - Working tree status.
+     - Verification status for tests, demo render, E2E, package, audit, and VSIX output.
+     - Whether the tag already exists locally or on `origin`.
+     - The effect of pushing the tag: `.github/workflows/release.yml` creates the GitHub Release and VSIX artifact on `v*` tag push.
+   - If the tag already exists, verify it points to the intended commit. If it points elsewhere, stop and explain the mismatch.
+   - If the tag is missing and all gates pass, ask for explicit human confirmation such as: `May I create and push v<version> now?`
+   - After confirmation, create and push the tag automatically:
      - `git tag v<version>`
      - `git push origin v<version>`
-   - Explain that `.github/workflows/release.yml` creates the GitHub Release and VSIX artifact on `v*` tag push.
+   - Do not merely hand back tag commands unless the user asks to perform tagging manually.
 
 8. Publish handoff:
-   - Give the final publish command only after tests/package are green:
+   - Before recommending or running Marketplace publish, verify the stored Marketplace token:
+     - `vsce verify-pat`
+   - If PAT verification fails, stop and explain the failure. Do not publish.
+   - If PAT verification succeeds and tests/package are green, give the final publish command:
      - `vsce publish`
-   - Mention that `VSCE_PAT` can be verified with `vsce verify-pat`.
+   - Run `vsce publish` only when the user explicitly authorizes Marketplace publishing after the PAT and release gates are green.
    - Leave final Marketplace publish decision to the human unless explicitly authorized.
 
 ## Project-Specific Notes
