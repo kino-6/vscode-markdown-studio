@@ -4,6 +4,8 @@ All notable changes to Markdown Studio will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-06-17
+
 ### Added
 
 - Added optional Markdown cover pages for PDF export via `markdownStudio.export.cover.enabled` and `markdownStudio.export.cover.path`.
@@ -11,8 +13,6 @@ All notable changes to Markdown Studio will be documented in this file.
 - Offset PDF index and bookmark page numbers when a cover page is included.
 - Included cover settings in portable settings export/import and ready-to-import examples.
 - Added unit, integration, and E2E coverage for cover path resolution, PDF assembly, settings export/import, and cover-enabled PDF export.
-
-## [1.0.3] - 2026-05-31
 
 ### Changed
 
@@ -22,6 +22,11 @@ All notable changes to Markdown Studio will be documented in this file.
 - Group command titles by surface area such as Preview, Edit, PDF, Settings, and Tools.
 - Added ready-to-import shared settings examples for company specs, LocalOnly PDFs, and release notes.
 - Documented team-shared PDF settings as a repository-friendly workflow.
+- Reveal Preview near the active editor line when opening from Markdown, instead of always starting at the top of embedded cover demos.
+- Frame embedded cover pages as white PDF pages in dark Preview while preserving their authored SVG colors.
+- Align printed inline code styling with the Preview accent treatment.
+- Updated `@vscode/vsce` to remove stale package warnings and kept the local reinstall script quiet for VS Code CLI deprecation warnings.
+- Added a project release-prep Skill so agents can prepare future releases up to the human tag/publish handoff.
 
 ## [1.0.2] - 2026-05-31
 
