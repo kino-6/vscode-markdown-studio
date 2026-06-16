@@ -1,0 +1,4 @@
+interface:
+  display_name: "Markdown Studio Release Prep"
+  short_description: "Prepare releases before human publish"
+  default_prompt: "Use $markdown-studio-release-prep to prepare this repository for release up to the tag and publish handoff."
