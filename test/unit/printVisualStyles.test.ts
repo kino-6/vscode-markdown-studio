@@ -97,7 +97,7 @@ describe('print visual styles', () => {
 
     expect(snapshot.link.color).toBe('rgb(3, 102, 214)');
     expect(snapshot.link.textDecorationLine).toContain('underline');
-    expect(snapshot.inlineCode.color).toBe('rgb(36, 41, 47)');
+    expect(snapshot.inlineCode.color).toBe('rgb(207, 34, 46)');
 
     expect(snapshot.highlight.attr).toBe('rgb(38, 127, 153)');
     expect(snapshot.highlight.punctuation).toBe('rgb(57, 58, 52)');

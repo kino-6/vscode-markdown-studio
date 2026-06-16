@@ -266,7 +266,7 @@ describe('openOrRefreshPreview – panel reuse (R3/D3)', () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
-      { previewContentWidth: 'full' }
+      expect.objectContaining({ previewContentWidth: 'full' })
     );
   });
 });

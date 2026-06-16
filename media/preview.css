@@ -112,8 +112,8 @@ svg {
   font-weight: 700;
 }
 
-body.vscode-dark svg[xmlns] text,
-body.vscode-high-contrast svg[xmlns] text {
+body.vscode-dark svg[xmlns]:not([role="img"]) text,
+body.vscode-high-contrast svg[xmlns]:not([role="img"]) text {
   fill: var(--diagram-text);
 }
 
@@ -253,7 +253,7 @@ tbody tr:nth-child(even) {
 
   code {
     background: rgba(175, 184, 193, 0.2);
-    color: #24292f;
+    color: #cf222e;
   }
 }
 
@@ -386,6 +386,25 @@ body.vscode-high-contrast .ms-toc a {
 .ms-cover-page {
   margin: 0 0 2rem;
   padding: 2rem 0;
+}
+
+@media screen {
+  .ms-cover-page {
+    box-sizing: border-box;
+    width: min(100%, 210mm);
+    margin: 0 auto 2rem;
+    padding: 12mm;
+    background: #ffffff;
+    color: #0f172a;
+    border: 1px solid rgba(27, 31, 36, 0.15);
+    box-shadow: 0 12px 32px rgba(27, 31, 36, 0.16);
+  }
+
+  body.vscode-dark .ms-cover-page,
+  body.vscode-high-contrast .ms-cover-page {
+    border-color: rgba(240, 246, 252, 0.18);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.42);
+  }
 }
 
 .ms-cover-page > :first-child {

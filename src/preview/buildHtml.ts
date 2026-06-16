@@ -12,6 +12,7 @@ const PREVIEW_A4_MAX_WIDTH = '210mm';
 
 export interface BuildHtmlOptions {
   previewContentWidth?: PreviewContentWidth;
+  initialSourceLine?: number;
 }
 
 function normalizePreviewContentWidth(value: PreviewContentWidth | undefined): PreviewContentWidth {
@@ -27,6 +28,11 @@ export function buildPreviewLayoutStyle(contentWidth: PreviewContentWidth): stri
   }
 }
 </style>`;
+}
+
+function formatInitialSourceLine(value: number | undefined): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '';
+  return ` data-initial-source-line="${Math.max(0, Math.floor(value))}"`;
 }
 
 export function buildStyleBlock(style: ResolvedStyleConfig): string {
@@ -250,6 +256,7 @@ export async function buildHtml(
     ? `<style>/* md-studio-custom-css */\n${customCss}</style>`
     : '';
   const previewLayoutStyle = webview ? buildPreviewLayoutStyle(previewContentWidth) : '';
+  const initialSourceLineAttr = webview ? formatInitialSourceLine(options.initialSourceLine) : '';
 
   // CSP: 'unsafe-eval' is required because Mermaid 11.x uses new Function() internally
   // PDF context (no webview): omit CSP entirely — Playwright runs a local trusted Chromium
@@ -270,7 +277,7 @@ ${styleBlock}
 ${customCssBlock}
 ${previewLayoutStyle}
 </head>
-<body data-theme-override="${webview ? config.previewTheme : 'light'}" data-preview-content-width="${webview ? previewContentWidth : 'a4'}">
+<body data-theme-override="${webview ? config.previewTheme : 'light'}" data-preview-content-width="${webview ? previewContentWidth : 'a4'}"${initialSourceLineAttr}>
 ${htmlBody}
 <div id="ms-loading-overlay" class="ms-loading-overlay" style="display: flex"><div class="ms-spinner"></div></div>
 ${scriptSrc ? `<script src="${scriptSrc}" nonce="${nonce}"></script>` : ''}

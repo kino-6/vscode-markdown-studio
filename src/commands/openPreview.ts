@@ -25,5 +25,6 @@ export async function openPreviewCommand(
   await openOrRefreshPreview(context, editor.document, {
     viewColumn,
     previewContentWidth: options.previewContentWidth,
+    initialSourceLine: editor.selection.active.line,
   });
 }

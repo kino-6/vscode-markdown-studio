@@ -15,12 +15,20 @@ PUBLISHER=$(node -p "require('./package.json').publisher")
 BRANCH=$(git branch --show-current 2>/dev/null || echo HEAD)
 VSIX_PATH="dist/${NAME}-${VERSION}.vsix"
 EXTENSION_ID="${PUBLISHER}.${NAME}"
+CODE_NODE_OPTIONS="${NODE_OPTIONS:-}"
+if [[ "$CODE_NODE_OPTIONS" != *"--no-deprecation"* ]]; then
+  CODE_NODE_OPTIONS="${CODE_NODE_OPTIONS:+$CODE_NODE_OPTIONS }--no-deprecation"
+fi
+
+run_code() {
+  NODE_OPTIONS="$CODE_NODE_OPTIONS" code "$@"
+}
 
 echo "=== Markdown Studio dev reinstall (v${VERSION}) ==="
 
 # 1. 拡張機能を完全削除
 echo "[1/6] Uninstalling ${EXTENSION_ID}..."
-code --uninstall-extension "$EXTENSION_ID" 2>/dev/null || true
+run_code --uninstall-extension "$EXTENSION_ID" 2>/dev/null || true
 
 # 2. ServiceWorkerキャッシュ削除
 echo "[2/6] Clearing ServiceWorker cache..."
@@ -44,7 +52,7 @@ npm exec -- vsce package --githubBranch "$BRANCH" -o dist/
 
 # 6. 再インストール
 echo "[6/6] Installing ${VSIX_PATH}..."
-code --install-extension "$VSIX_PATH"
+run_code --install-extension "$VSIX_PATH"
 
 echo ""
 echo "✅ Done! Restart VS Code to activate v${VERSION}."

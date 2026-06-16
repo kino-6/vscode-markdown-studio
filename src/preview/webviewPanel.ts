@@ -16,6 +16,7 @@ import type { PreviewContentWidth } from '../types/models';
 export interface PreviewOpenOptions {
   viewColumn?: vscode.ViewColumn;
   previewContentWidth?: PreviewContentWidth;
+  initialSourceLine?: number;
 }
 
 /** Shared markdown-it parser for TOC heading extraction. */
@@ -54,9 +55,10 @@ let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 /** Subscription for configuration changes related to custom CSS. */
 let configChangeSubscription: vscode.Disposable | undefined;
 
-function getActiveBuildOptions(): { previewContentWidth: PreviewContentWidth } {
+function getActiveBuildOptions(initialSourceLine?: number): { previewContentWidth: PreviewContentWidth; initialSourceLine?: number } {
   return {
     previewContentWidth: currentPreviewContentWidthOverride ?? getConfig().previewContentWidth,
+    initialSourceLine,
   };
 }
 
@@ -254,7 +256,7 @@ export async function openOrRefreshPreview(
       currentPanel.webview,
       assets,
       document.uri,
-      getActiveBuildOptions()
+      getActiveBuildOptions(options.initialSourceLine)
     );
 
     // Run TOC validation after initial render
@@ -369,7 +371,7 @@ export async function openOrRefreshPreview(
     panel.webview,
     assets,
     document.uri,
-    getActiveBuildOptions()
+    getActiveBuildOptions(options.initialSourceLine)
   );
 
   // Run TOC validation after initial render

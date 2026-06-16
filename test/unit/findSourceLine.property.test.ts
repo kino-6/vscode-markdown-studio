@@ -35,7 +35,7 @@ vi.mock('mermaid', () => ({
   default: { initialize: vi.fn(), parse: vi.fn(), render: vi.fn() },
 }));
 
-const { findSourceLine } = await import('../../media/preview.js');
+const { findSourceLine, findSourceElementForLine, revealSourceLine } = await import('../../media/preview.js');
 
 // --- Helpers to build mock DOM elements ---
 
@@ -226,5 +226,43 @@ describe('Property 4: DOM walker finds nearest source line', () => {
       ),
       { numRuns: 500, seed: 42 },
     );
+  });
+
+  it('finds the nearest rendered block at or before the editor source line', () => {
+    const cover = makeMockElement('DIV', bodyElement, '1');
+    const heading = makeMockElement('H2', bodyElement, '72');
+    const nextHeading = makeMockElement('H2', bodyElement, '88');
+
+    const originalQuerySelectorAll = (globalThis as any).document.querySelectorAll;
+    (globalThis as any).document.querySelectorAll = (selector: string) => {
+      if (selector === '[data-source-line]') return [cover, heading, nextHeading];
+      return [];
+    };
+
+    try {
+      expect(findSourceElementForLine(75)).toBe(heading);
+    } finally {
+      (globalThis as any).document.querySelectorAll = originalQuerySelectorAll;
+    }
+  });
+
+  it('scrolls the selected rendered block into view', () => {
+    const target = {
+      ...makeMockElement('P', bodyElement, '40'),
+      scrollIntoView: vi.fn(),
+    };
+
+    const originalQuerySelectorAll = (globalThis as any).document.querySelectorAll;
+    (globalThis as any).document.querySelectorAll = (selector: string) => {
+      if (selector === '[data-source-line]') return [target];
+      return [];
+    };
+
+    try {
+      expect(revealSourceLine(40)).toBe(true);
+      expect(target.scrollIntoView).toHaveBeenCalledWith({ behavior: 'auto', block: 'center' });
+    } finally {
+      (globalThis as any).document.querySelectorAll = originalQuerySelectorAll;
+    }
   });
 });

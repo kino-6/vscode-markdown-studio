@@ -32,6 +32,9 @@ function markdownEditor(viewColumn = 3) {
       languageId: 'markdown',
       uri: { toString: () => 'file:///test.md' },
     },
+    selection: {
+      active: { line: 0 },
+    },
   };
 }
 
@@ -49,7 +52,7 @@ describe('openPreviewCommand', () => {
     expect(mocks.openOrRefreshPreview).toHaveBeenCalledWith(
       context,
       mocks.activeEditor.document,
-      { viewColumn: -2, previewContentWidth: undefined }
+      { viewColumn: -2, previewContentWidth: undefined, initialSourceLine: 0 }
     );
   });
 
@@ -59,7 +62,7 @@ describe('openPreviewCommand', () => {
     expect(mocks.openOrRefreshPreview).toHaveBeenCalledWith(
       context,
       mocks.activeEditor.document,
-      { viewColumn: 3, previewContentWidth: undefined }
+      { viewColumn: 3, previewContentWidth: undefined, initialSourceLine: 0 }
     );
   });
 
@@ -69,7 +72,7 @@ describe('openPreviewCommand', () => {
     expect(mocks.openOrRefreshPreview).toHaveBeenCalledWith(
       context,
       mocks.activeEditor.document,
-      { viewColumn: 3, previewContentWidth: 'full' }
+      { viewColumn: 3, previewContentWidth: 'full', initialSourceLine: 0 }
     );
   });
 

@@ -33,6 +33,39 @@ describe('buildHtml composition', () => {
     expect(html).not.toContain('https://cdn');
   });
 
+  it('embeds the initial source line only for interactive preview webviews', async () => {
+    renderMarkdownDocumentMock.mockResolvedValue({
+      htmlBody: '<p>target</p>',
+      errors: []
+    });
+
+    const fakeWebview = { cspSource: 'https://webview' };
+    const fakeAssets = {
+      styleUri: { toString: () => 'style.css' },
+      scriptUri: { toString: () => 'script.js' }
+    };
+
+    const previewHtml = await buildHtml(
+      'target',
+      { extensionPath: '/tmp/ext' } as any,
+      fakeWebview as any,
+      fakeAssets as any,
+      undefined,
+      { initialSourceLine: 42 }
+    );
+    const pdfHtml = await buildHtml(
+      'target',
+      { extensionPath: '/tmp/ext' } as any,
+      undefined,
+      fakeAssets as any,
+      undefined,
+      { initialSourceLine: 42 }
+    );
+
+    expect(previewHtml).toContain('data-initial-source-line="42"');
+    expect(pdfHtml).not.toContain('data-initial-source-line');
+  });
+
   it('generates a random nonce for CSP and script tag', async () => {
     renderMarkdownDocumentMock.mockResolvedValue({
       htmlBody: '<p>test</p>',

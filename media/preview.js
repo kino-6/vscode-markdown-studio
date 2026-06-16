@@ -495,6 +495,61 @@ function findSourceLine(el) {
   return null;
 }
 
+function normalizeSourceLine(value) {
+  const line = typeof value === 'number' ? value : parseInt(value, 10);
+  if (!Number.isFinite(line) || line < 0) return null;
+  return Math.floor(line);
+}
+
+function findSourceElementForLine(line) {
+  const targetLine = normalizeSourceLine(line);
+  if (targetLine === null) return null;
+
+  let previous = null;
+  let previousLine = -1;
+  let next = null;
+  let nextLine = Number.POSITIVE_INFINITY;
+
+  document.querySelectorAll('[data-source-line]').forEach((element) => {
+    const sourceLine = normalizeSourceLine(element.getAttribute('data-source-line'));
+    if (sourceLine === null) return;
+    if (sourceLine === targetLine && previous === null) {
+      previous = element;
+      previousLine = sourceLine;
+      return;
+    }
+    if (sourceLine <= targetLine && sourceLine >= previousLine) {
+      previous = element;
+      previousLine = sourceLine;
+      return;
+    }
+    if (sourceLine > targetLine && sourceLine < nextLine) {
+      next = element;
+      nextLine = sourceLine;
+    }
+  });
+
+  return previous ?? next;
+}
+
+function revealSourceLine(line, behavior = 'auto') {
+  const target = findSourceElementForLine(line);
+  if (!target || typeof target.scrollIntoView !== 'function') return false;
+  target.scrollIntoView({ behavior, block: 'center' });
+  return true;
+}
+
+function revealInitialSourceLine() {
+  const line = normalizeSourceLine(document.body?.getAttribute?.('data-initial-source-line'));
+  if (line === null) return;
+
+  if (typeof window.requestAnimationFrame === 'function') {
+    window.requestAnimationFrame(() => revealSourceLine(line));
+    return;
+  }
+  revealSourceLine(line);
+}
+
 function addCopyButtons() {
   const delegated = installBodyDelegatedHandlers();
   const blocks = document.querySelectorAll('pre');
@@ -613,6 +668,11 @@ window.addEventListener('message', (event) => {
     return;
   }
 
+  if (message.type === 'revealSourceLine') {
+    revealSourceLine(message.line, 'smooth');
+    return;
+  }
+
   if (message.type !== 'update-body') return;
   if (message.generation <= lastAppliedGeneration) return;
 
@@ -642,9 +702,11 @@ function initPreview() {
   renderClientDiagrams().then(() => {
     initZoomPan();
     hideLoadingOverlay();
+    revealInitialSourceLine();
   }).catch((error) => {
     console.error('Diagram rendering failed', error);
     hideLoadingOverlay();
+    revealInitialSourceLine();
   });
 
   addCopyButtons();
@@ -1007,4 +1069,4 @@ function initZoomPan() {
   });
 }
 
-export { THEME_MAP, detectThemeKind, getMermaidTheme, resolveEffectiveThemeKind, applyThemeClass, onThemeChanged, observeThemeChanges, findSourceLine, lastAppliedGeneration, showLoadingOverlay, hideLoadingOverlay, registerTocLinkHandlers, registerDocumentLinkHandlers, initZoomPan, clamp, handleWheel, handleDblClick, handleMouseDown, handleMouseMove, handleMouseUp, applyTransform, attachZoomPan, MIN_SCALE, MAX_SCALE, ZOOM_SENSITIVITY, createZoomToolbar, resetZoom, isDefaultZoomState, scheduleRerender, getDiagramType, triggerSvgRerender, rerenderMermaid, rerenderPlantUml, handlePlantUmlRerenderResult, RERENDER_DEBOUNCE_MS, saveZoomStates, restoreZoomStates };
+export { THEME_MAP, detectThemeKind, getMermaidTheme, resolveEffectiveThemeKind, applyThemeClass, onThemeChanged, observeThemeChanges, findSourceLine, normalizeSourceLine, findSourceElementForLine, revealSourceLine, lastAppliedGeneration, showLoadingOverlay, hideLoadingOverlay, registerTocLinkHandlers, registerDocumentLinkHandlers, initZoomPan, clamp, handleWheel, handleDblClick, handleMouseDown, handleMouseMove, handleMouseUp, applyTransform, attachZoomPan, MIN_SCALE, MAX_SCALE, ZOOM_SENSITIVITY, createZoomToolbar, resetZoom, isDefaultZoomState, scheduleRerender, getDiagramType, triggerSvgRerender, rerenderMermaid, rerenderPlantUml, handlePlantUmlRerenderResult, RERENDER_DEBOUNCE_MS, saveZoomStates, restoreZoomStates };
