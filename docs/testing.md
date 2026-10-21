@@ -34,6 +34,7 @@ npm run corpus:check
 
 ## Notes
 
+- `test:e2e` needs Node 22 or later (`@vscode/test-electron` 3.x). The other suites run on Node 20.
 - Tests are local-first and do not call remote APIs.
 - Playwright is mocked in tests so PDF smoke coverage stays deterministic and CI-friendly.
 - Renderer tests include graceful degradation checks (syntax errors and Java-missing behavior).

@@ -15,6 +15,7 @@ All notable changes to Markdown Studio will be documented in this file.
 
 ### Changed
 
+- Updated development tools: vitest 4.1.11, vite 8.3.3, esbuild 0.28.2, @vscode/test-cli 0.0.15, @vscode/test-electron 3.1.0 (needed for VS Code builds whose executable is named `Code`). Running the E2E tests now needs Node 22 or later.
 - Updated bundled dependencies with security fixes (markdown-it 14.3.3, linkify-it 5.0.2, sanitize-html 2.18.1 and their transitive packages).
 - Dependency downloads no longer retry with certificate verification disabled after a certificate error. The error now explains how to fix it: add the corporate CA to `markdownStudio.network.caCertificates`, or, if you trust the network, set VS Code `http.proxyStrictSSL` to `false`.
 - The default `markdownStudio.security.externalResources.allowedDomains` is now empty (previously three GitHub domains), so nothing remote is fetched unless you allow it.

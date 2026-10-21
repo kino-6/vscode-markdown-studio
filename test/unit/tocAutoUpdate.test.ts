@@ -85,10 +85,13 @@ vi.mock('../../src/infra/config', () => ({
 // Mock other imports used by extension.ts
 const ensureAllMock = vi.fn().mockResolvedValue({ allReady: true, errors: [] });
 vi.mock('../../src/deps/dependencyManager', () => ({
-  DependencyManager: vi.fn().mockImplementation(() => ({
-    ensureAll: ensureAllMock,
-    reinstall: vi.fn(),
-  })),
+  DependencyManager: vi.fn().mockImplementation(function () {
+    // A regular function: vitest 4 cannot `new` an arrow-function mock.
+    return {
+      ensureAll: ensureAllMock,
+      reinstall: vi.fn(),
+    };
+  }),
 }));
 vi.mock('../../src/commands/exportPdf', () => ({ exportPdfCommand: vi.fn() }));
 vi.mock('../../src/commands/openPreview', () => ({ openPreviewCommand: vi.fn() }));

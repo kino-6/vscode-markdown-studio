@@ -47,14 +47,17 @@ const reinstallMock = vi.fn();
 let isSetupInProgressValue = false;
 
 vi.mock("../../src/deps/dependencyManager", () => ({
-  DependencyManager: vi.fn().mockImplementation(() => ({
-    ensureAll: ensureAllMock,
-    getStatus: ensureAllMock,
-    reinstall: reinstallMock,
-    get isSetupInProgress() {
-      return isSetupInProgressValue;
-    },
-  })),
+  DependencyManager: vi.fn().mockImplementation(function () {
+    // A regular function: vitest 4 cannot `new` an arrow-function mock.
+    return {
+      ensureAll: ensureAllMock,
+      getStatus: ensureAllMock,
+      reinstall: reinstallMock,
+      get isSetupInProgress() {
+        return isSetupInProgressValue;
+      },
+    };
+  }),
 }));
 
 // Mock command modules — track calls to verify they are (or aren't) invoked

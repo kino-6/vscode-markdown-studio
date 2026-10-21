@@ -36,11 +36,14 @@ const reinstallMock = vi.fn();
 const getStatusMock = vi.fn();
 
 vi.mock('../../src/deps/dependencyManager', () => ({
-  DependencyManager: vi.fn().mockImplementation(() => ({
-    ensureAll: ensureAllMock,
-    reinstall: reinstallMock,
-    getStatus: getStatusMock,
-  })),
+  DependencyManager: vi.fn().mockImplementation(function () {
+    // A regular function: vitest 4 cannot `new` an arrow-function mock.
+    return {
+      ensureAll: ensureAllMock,
+      reinstall: reinstallMock,
+      getStatus: getStatusMock,
+    };
+  }),
 }));
 
 // Mock other command imports to avoid side effects

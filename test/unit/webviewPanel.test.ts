@@ -530,7 +530,7 @@ describe('change handler – render-start and render-error messages', () => {
     mockPanel.webview.postMessage = vi.fn(async (msg: { type: string }) => {
       callOrder.push(msg.type);
       return true;
-    });
+    }) as unknown as typeof mockPanel.webview.postMessage;
 
     await openOrRefreshPreview(fakeContext(), fakeDocument('file:///test.md'));
     const handler = getChangeHandler();

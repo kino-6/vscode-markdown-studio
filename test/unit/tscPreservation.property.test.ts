@@ -35,5 +35,7 @@ describe('tsc preservation property test', () => {
     }
 
     expect(exitCode, `vitest exited with code ${exitCode}:\n${stdout.slice(-2000)}`).toBe(0);
-  });
+    // Matches the 120 s budget of the nested run; vitest 4 enforces the
+    // per-test timeout even for synchronous tests.
+  }, 150_000);
 });
