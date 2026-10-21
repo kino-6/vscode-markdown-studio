@@ -9,6 +9,7 @@ const onWillSaveTextDocument = vi.fn().mockImplementation((cb: any) => {
   return { dispose: vi.fn() };
 });
 
+vi.mock('../../src/skill/skillDiagnostics', () => ({ registerSkillDiagnostics: () => undefined }));
 vi.mock('vscode', () => {
   class MockPosition {
     constructor(public line: number, public character: number) {}

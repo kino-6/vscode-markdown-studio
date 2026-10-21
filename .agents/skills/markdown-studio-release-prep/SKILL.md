@@ -50,6 +50,7 @@ The handoff is ready when:
 4. Run verification:
    - `npm run test:ci`
    - `npm run test:demo-render`
+   - `npm run test:local-only`
    - `npm run test:e2e`
    - `npm run package`
    - `npm audit --omit=dev --audit-level=high`

@@ -40,6 +40,7 @@
   "configuration.preview.contentWidth.enum.a4": "プレビュー本文を A4 用紙幅に制限します。",
   "configuration.preview.contentWidth.enum.full": "利用可能なエディタ幅いっぱいに表示します。",
   "configuration.preview.sourceJump.enabled.description": "プレビューをダブルクリックすると対応するソース行へ移動します。",
+  "configuration.preview.showEditorTitleButton.description": "Markdown ファイルのエディタ右上に、プレビューを開くボタンを表示します。",
   "configuration.style.preset.markdownDescription": "プレビューと PDF エクスポートの基本タイポグラフィプリセット。",
   "configuration.style.fontFamily.markdownDescription": "プリセットのフォントファミリーを上書きします。プリセットより優先されますが、Theme または Custom CSS でさらに上書きできます。",
   "configuration.style.fontSize.markdownDescription": "プリセットのフォントサイズをピクセル単位で上書きします（8-32）。プリセットより優先されますが、Theme または Custom CSS でさらに上書きできます。",

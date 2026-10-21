@@ -80,6 +80,7 @@ let bodyDelegatedHandlersInstalled = false;
 let zoomDocumentHandlersInstalled = false;
 let mermaidObserver = null;
 let mermaidRenderQueue = Promise.resolve();
+let mermaidPassId = 0;
 try {
   mermaid.initialize({
     startOnLoad: false,
@@ -196,6 +197,10 @@ function setMermaidBlockState(block, state) {
   }
 }
 
+function clearMermaidPlaceholderHeight(block) {
+  if (block.style && block.style.minHeight) block.style.minHeight = '';
+}
+
 function resetMermaidBlock(block) {
   block.innerHTML = '';
   if (typeof block.removeAttribute === 'function') {
@@ -281,6 +286,7 @@ async function renderMermaidBlock(block, index) {
   const cachedSvg = getCachedMermaidSvg(source);
   if (cachedSvg !== undefined) {
     block.innerHTML = cachedSvg;
+    clearMermaidPlaceholderHeight(block);
     setMermaidBlockState(block, 'rendered');
     return;
   }
@@ -291,11 +297,11 @@ async function renderMermaidBlock(block, index) {
     const result = await mermaid.render(id, source);
     block.innerHTML = result.svg;
     setCachedMermaidSvg(source, result.svg);
-    setMermaidBlockState(block, 'rendered');
   } catch (error) {
-    block.innerHTML = `<div class="ms-error"><div class="ms-error-title">Mermaid render error</div><pre>${String(error)}</pre></div>`;
-    setMermaidBlockState(block, 'rendered');
+    block.innerHTML = `<div class="ms-error"><div class="ms-error-title">Mermaid render error</div><pre>${escapeErrorHtml(error)}</pre></div>`;
   }
+  clearMermaidPlaceholderHeight(block);
+  setMermaidBlockState(block, 'rendered');
 }
 
 function enqueueMermaidBlockRender(block, index) {
@@ -313,6 +319,23 @@ function enqueueMermaidBlockRender(block, index) {
 async function renderMermaidBlocksEager(blocks) {
   for (const [index, block] of blocks.entries()) {
     await renderMermaidBlock(block, index);
+  }
+}
+
+/**
+ * Cached diagrams are cheap to insert, so fill them all up front, even
+ * off-screen. Leaving them empty collapses their height and makes the content
+ * below jump after every edit.
+ */
+function fillCachedMermaidBlocks(blocks) {
+  for (const block of blocks) {
+    if (getMermaidBlockState(block) !== '') continue;
+    const source = safeDecode(safeText(block.getAttribute('data-mermaid-src')));
+    const cachedSvg = getCachedMermaidSvg(source);
+    if (cachedSvg === undefined) continue;
+    block.innerHTML = cachedSvg;
+    clearMermaidPlaceholderHeight(block);
+    setMermaidBlockState(block, 'rendered');
   }
 }
 
@@ -342,18 +365,32 @@ async function renderVisibleMermaidBlocks(visibleBlocks) {
 function observeDeferredMermaidBlocks(deferredBlocks) {
   if (deferredBlocks.length === 0) return;
 
-  const indexByBlock = new WeakMap(deferredBlocks.map(({ block, index }) => [block, index]));
-  mermaidObserver = new IntersectionObserver((entries) => {
+  // Observe the surrounding container: an empty host has zero height and
+  // Chromium does not reliably report such a target as intersecting.
+  const entryByTarget = new Map();
+  for (const entry of deferredBlocks) {
+    const target = closestMatch(entry.block, DIAGRAM_CONTAINER_SELECTOR) ?? entry.block;
+    const list = entryByTarget.get(target) ?? [];
+    list.push(entry);
+    entryByTarget.set(target, list);
+  }
+
+  const observer = new IntersectionObserver((entries) => {
     for (const entry of entries) {
       if (!entry.isIntersecting) continue;
-      mermaidObserver?.unobserve(entry.target);
-      enqueueMermaidBlockRender(entry.target, indexByBlock.get(entry.target) ?? 0);
+      observer.unobserve(entry.target);
+      for (const { block, index } of entryByTarget.get(entry.target) ?? []) {
+        enqueueMermaidBlockRender(block, index);
+      }
     }
   }, { rootMargin: '100% 0px' });
+  mermaidObserver = observer;
 
   for (const { block } of deferredBlocks) {
     setMermaidBlockState(block, 'pending');
-    mermaidObserver.observe(block);
+  }
+  for (const target of entryByTarget.keys()) {
+    observer.observe(target);
   }
 }
 
@@ -376,8 +413,12 @@ async function renderMermaidBlocks(options = {}) {
     return;
   }
 
+  fillCachedMermaidBlocks(blocks);
   const { visibleBlocks, deferredBlocks } = splitMermaidBlocksByVisibility(blocks);
+  const pass = ++mermaidPassId;
   await renderVisibleMermaidBlocks(visibleBlocks);
+  // A newer update may have replaced the body meanwhile; its pass owns the observer.
+  if (pass !== mermaidPassId) return;
   observeDeferredMermaidBlocks(deferredBlocks);
 }
 
@@ -442,10 +483,14 @@ function handleTocLinkClick(event, link) {
 function handleDocumentLinkClick(event, link) {
   const href = link.getAttribute('href');
   if (!href || href.startsWith('#')) return false;
-  if (!/^[a-z][a-z0-9+\-.]*:/i.test(href)) return false;
 
   event.preventDefault();
-  vscode.postMessage({ type: 'openExternal', href });
+  if (/^[a-z][a-z0-9+\-.]*:/i.test(href)) {
+    vscode.postMessage({ type: 'openExternal', href });
+  } else {
+    // Relative or root-relative path, e.g. ./other.md#section
+    vscode.postMessage({ type: 'openLocalLink', href });
+  }
   return true;
 }
 
@@ -637,6 +682,26 @@ function applyPreviewEnhancements(savedZoomStates) {
   registerDocumentLinkHandlers();
 }
 
+/**
+ * Give each new, still-empty Mermaid host the height its predecessor at the
+ * same position had, so the page keeps its layout (and scroll position) while
+ * diagrams render.
+ */
+function measureMermaidHeights(blocks = getMermaidBlocks()) {
+  return blocks.map((block) => (
+    typeof block.getBoundingClientRect === 'function' ? block.getBoundingClientRect().height : 0
+  ));
+}
+
+function applyMermaidPlaceholderHeights(heights, blocks = getMermaidBlocks()) {
+  blocks.forEach((block, index) => {
+    const height = heights[index];
+    if (height > 0 && block.style && !block.firstElementChild) {
+      block.style.minHeight = `${height}px`;
+    }
+  });
+}
+
 let lastAppliedGeneration = -1;
 let currentOverride = 'auto';
 
@@ -678,9 +743,11 @@ window.addEventListener('message', (event) => {
 
   // Preserve zoom states before DOM replacement
   const savedZoomStates = saveZoomStates();
+  const savedMermaidHeights = measureMermaidHeights();
 
   lastAppliedGeneration = message.generation;
   document.body.innerHTML = message.html;
+  applyMermaidPlaceholderHeights(savedMermaidHeights);
   renderClientDiagrams().then(() => {
     applyPreviewEnhancements(savedZoomStates);
   }).catch((error) => {

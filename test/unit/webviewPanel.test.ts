@@ -147,7 +147,7 @@ vi.mock('../../src/toc/tocValidator', () => ({
 /*  Imports (after mocks)                                              */
 /* ------------------------------------------------------------------ */
 
-import { handleOpenExternalMessage, openOrRefreshPreview, _resetPanelForTesting } from '../../src/preview/webviewPanel';
+import { handleOpenExternalMessage, openOrRefreshPreview, _resetPanelForTesting, _setRenderDebounceMsForTesting } from '../../src/preview/webviewPanel';
 import { renderBody, buildLoadingHtml } from '../../src/preview/buildHtml';
 import { validateEnvironment } from '../../src/commands/validateEnvironmentCore';
 import * as vscode from 'vscode';
@@ -175,6 +175,7 @@ function fakeDocument(uri = 'file:///test.md'): vscode.TextDocument {
 describe('openOrRefreshPreview – panel reuse (R3/D3)', () => {
   beforeEach(() => {
     _resetPanelForTesting();
+    _setRenderDebounceMsForTesting(0);
     mockPanel = createMockPanel();
     vi.clearAllMocks();
   });
@@ -190,6 +191,17 @@ describe('openOrRefreshPreview – panel reuse (R3/D3)', () => {
       expect.any(Object)
     );
     expect(panel).toBe(mockPanel);
+  });
+
+  it('enables the built-in find widget so Ctrl/Cmd+F works in the preview', async () => {
+    await openOrRefreshPreview(fakeContext(), fakeDocument());
+
+    expect(vscode.window.createWebviewPanel).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.anything(),
+      expect.objectContaining({ enableFindWidget: true })
+    );
   });
 
   it('can create a panel in the requested editor group', async () => {
@@ -305,6 +317,7 @@ describe('handleOpenExternalMessage', () => {
 describe('onDidReceiveMessage registration (R4.1/R6.1/R6.2)', () => {
   beforeEach(() => {
     _resetPanelForTesting();
+    _setRenderDebounceMsForTesting(0);
     mockPanel = createMockPanel();
     vi.clearAllMocks();
     // Ensure createWebviewPanel returns the current mockPanel (may have been
@@ -378,6 +391,7 @@ function fakeChangeEvent(uri = 'file:///test.md', text = '# Updated') {
 describe('change handler – incremental updates (R1/R2/R3/R5/R6)', () => {
   beforeEach(() => {
     _resetPanelForTesting();
+    _setRenderDebounceMsForTesting(0);
     mockPanel = createMockPanel();
     vi.clearAllMocks();
     // Reset renderBody to default behavior
@@ -426,9 +440,11 @@ describe('change handler – incremental updates (R1/R2/R3/R5/R6)', () => {
       .mockReturnValueOnce(firstPromise)
       .mockReturnValueOnce(secondPromise);
 
-    // Fire two change events without awaiting
+    // Start the first render, then fire a second edit while it is still running
     const call1 = handler(fakeChangeEvent('file:///test.md', '# First'));
+    await vi.waitFor(() => expect(renderBody).toHaveBeenCalledTimes(1));
     const call2 = handler(fakeChangeEvent('file:///test.md', '# Second'));
+    await vi.waitFor(() => expect(renderBody).toHaveBeenCalledTimes(2));
 
     // Resolve the second (newer) render first
     resolveSecond('<h1>Second</h1>');
@@ -496,6 +512,7 @@ describe('change handler – incremental updates (R1/R2/R3/R5/R6)', () => {
 describe('change handler – render-start and render-error messages', () => {
   beforeEach(() => {
     _resetPanelForTesting();
+    _setRenderDebounceMsForTesting(0);
     mockPanel = createMockPanel();
     vi.clearAllMocks();
     (renderBody as ReturnType<typeof vi.fn>).mockResolvedValue('<h1>mock body</h1>');
@@ -556,6 +573,7 @@ describe('change handler – render-start and render-error messages', () => {
 
     // Fire first change (will hang on renderBody)
     const call1 = handler(fakeChangeEvent('file:///test.md', '# First'));
+    await vi.waitFor(() => expect(renderBody).toHaveBeenCalledTimes(1));
     // Fire second change (advances generation)
     const call2 = handler(fakeChangeEvent('file:///test.md', '# Second'));
 
@@ -574,6 +592,24 @@ describe('change handler – render-start and render-error messages', () => {
     expect(renderErrors).toHaveLength(0);
 
     consoleErrorSpy.mockRestore();
+  });
+
+  it('coalesces rapid edits into one render of the latest text', async () => {
+    _setRenderDebounceMsForTesting(30);
+    const panel = await openOrRefreshPreview(fakeContext(), fakeDocument('file:///test.md'));
+    const handler = getChangeHandler();
+
+    const calls = [
+      handler(fakeChangeEvent('file:///test.md', '# One')),
+      handler(fakeChangeEvent('file:///test.md', '# Two')),
+      handler(fakeChangeEvent('file:///test.md', '# Three')),
+    ];
+    await Promise.all(calls);
+
+    expect(renderBody).toHaveBeenCalledTimes(1);
+    expect((renderBody as ReturnType<typeof vi.fn>).mock.calls[0][0]).toBe('# Three');
+    const types = (panel.webview.postMessage as ReturnType<typeof vi.fn>).mock.calls.map((c: unknown[]) => (c[0] as { type: string }).type);
+    expect(types).toEqual(['render-start', 'update-body']);
   });
 
   it('successful render sends render-start then update-body in order', async () => {
@@ -599,6 +635,7 @@ describe('change handler – render-start and render-error messages', () => {
 describe('webviewPanel environment validation integration', () => {
   beforeEach(() => {
     _resetPanelForTesting();
+    _setRenderDebounceMsForTesting(0);
     mockPanel = createMockPanel();
     vi.clearAllMocks();
     (vscode.window.createWebviewPanel as ReturnType<typeof vi.fn>).mockImplementation(() => mockPanel);

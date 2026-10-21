@@ -8,6 +8,8 @@ import sup from 'markdown-it-sup';
 import sub from 'markdown-it-sub';
 import { highlightCode } from './highlightCode';
 import { wrapWithLineNumbers, countLines } from './lineNumbers';
+import { frontMatterPlugin } from './frontMatter';
+import { alertsPlugin } from './alerts';
 
 export function addSourceLineAttributes(md: MarkdownIt): void {
   const blockTokenTypes = [
@@ -40,6 +42,8 @@ export function createMarkdownParser(options?: { lineNumbers?: boolean }): Markd
     typographer: true,
     highlight: (code: string, lang: string) => highlightCode(code, lang)
   });
+  md.use(frontMatterPlugin);
+  md.use(alertsPlugin);
   md.use(taskLists, { label: true, labelAfter: true });
   md.use(footnote);
   md.use(emoji);

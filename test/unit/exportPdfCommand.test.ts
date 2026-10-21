@@ -85,4 +85,39 @@ describe('exportPdfCommand settings export', () => {
       expect.stringContaining('render failed'),
     );
   });
+
+  it('offers to download Chromium when it is missing and retries the export after consent', async () => {
+    exportToPdfMock
+      .mockRejectedValueOnce(new Error("browserType.launch: Executable doesn't exist"))
+      .mockResolvedValueOnce('/workspace/spec.pdf');
+    mocks.showInformationMessage.mockResolvedValue(undefined);
+    const offerChromiumDownload = vi.fn().mockResolvedValue(true);
+
+    await exportPdfCommand({} as any, { offerChromiumDownload });
+
+    expect(offerChromiumDownload).toHaveBeenCalledTimes(1);
+    expect(exportToPdfMock).toHaveBeenCalledTimes(2);
+    expect(mocks.showErrorMessage).not.toHaveBeenCalled();
+    expect(mocks.showInformationMessage).toHaveBeenCalledWith(expect.stringContaining('/workspace/spec.pdf'), 'Open PDF');
+  });
+
+  it('shows the setup hint and does not retry when the download is declined', async () => {
+    exportToPdfMock.mockRejectedValue(new Error("browserType.launch: Executable doesn't exist"));
+    const offerChromiumDownload = vi.fn().mockResolvedValue(false);
+
+    await exportPdfCommand({} as any, { offerChromiumDownload });
+
+    expect(exportToPdfMock).toHaveBeenCalledTimes(1);
+    expect(mocks.showErrorMessage).toHaveBeenCalledWith(expect.stringContaining('Setup Dependencies'));
+  });
+
+  it('offers the download only once even if the retry still fails', async () => {
+    exportToPdfMock.mockRejectedValue(new Error("browserType.launch: Executable doesn't exist"));
+    const offerChromiumDownload = vi.fn().mockResolvedValue(true);
+
+    await exportPdfCommand({} as any, { offerChromiumDownload });
+
+    expect(offerChromiumDownload).toHaveBeenCalledTimes(1);
+    expect(exportToPdfMock).toHaveBeenCalledTimes(2);
+  });
 });

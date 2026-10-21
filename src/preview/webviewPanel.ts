@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { RUNTIME_MESSAGES } from '../infra/messages';
 import { buildHtml, buildLoadingHtml, renderBody } from './buildHtml';
 import { getPreviewAssetUris } from './previewAssets';
 import { validateEnvironment } from '../commands/validateEnvironmentCore';
@@ -40,8 +41,29 @@ let messageSubscription: vscode.Disposable | undefined;
 /** URI of the document currently tracked by the preview panel. */
 let trackedUri: string | undefined;
 
+/** Document currently shown in the preview panel. */
+let currentDocument: vscode.TextDocument | undefined;
+
 /** Generation counter – incremented on each text change to discard stale async renders. */
 let generation = 0;
+
+/**
+ * Edits arriving within this window are coalesced into one render of the
+ * latest text. Without it every keystroke re-rendered the document, starting a
+ * Java process per keystroke while a PlantUML block was being edited.
+ */
+const DEFAULT_RENDER_DEBOUNCE_MS = 200;
+let renderDebounceMs = DEFAULT_RENDER_DEBOUNCE_MS;
+
+/** The edit waiting for the debounce window to close, if any. */
+let pendingChange: { timer: ReturnType<typeof setTimeout>; settle: () => void } | undefined;
+
+function cancelPendingChange(): void {
+  if (!pendingChange) return;
+  clearTimeout(pendingChange.timer);
+  pendingChange.settle();
+  pendingChange = undefined;
+}
 
 /** FileSystemWatcher for the custom CSS file. */
 let cssWatcher: vscode.FileSystemWatcher | undefined;
@@ -181,6 +203,68 @@ export async function handleJumpToLine(
   editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
 }
 
+/**
+ * Opens a relative link clicked in the preview (e.g. `./other.md#setup`).
+ * Paths resolve against the previewed document; `/path` resolves against its
+ * workspace folder. A `#fragment` on a Markdown target reveals that heading.
+ */
+export async function handleOpenLocalLinkMessage(
+  documentUri: vscode.Uri,
+  message: { type?: unknown; href?: unknown },
+): Promise<void> {
+  if (message.type !== 'openLocalLink' || typeof message.href !== 'string') return;
+
+  const hashIndex = message.href.indexOf('#');
+  const rawPath = hashIndex === -1 ? message.href : message.href.slice(0, hashIndex);
+  const rawFragment = hashIndex === -1 ? '' : message.href.slice(hashIndex + 1);
+  const pathPart = safeDecodeUri(rawPath.split('?')[0]);
+  const fragment = safeDecodeUri(rawFragment);
+
+  let target: vscode.Uri;
+  if (pathPart === '') {
+    target = documentUri;
+  } else if (pathPart.startsWith('/')) {
+    const folder = vscode.workspace.getWorkspaceFolder(documentUri);
+    target = folder
+      ? vscode.Uri.joinPath(folder.uri, pathPart)
+      : vscode.Uri.joinPath(documentUri, '..', pathPart);
+  } else {
+    target = vscode.Uri.joinPath(documentUri, '..', pathPart);
+  }
+
+  try {
+    await vscode.workspace.fs.stat(target);
+  } catch {
+    void vscode.window.showWarningMessage(RUNTIME_MESSAGES.command.linkTargetNotFound(pathPart));
+    return;
+  }
+
+  if (!/\.(md|markdown)$/i.test(target.path)) {
+    await vscode.commands.executeCommand('vscode.open', target, vscode.ViewColumn.One);
+    return;
+  }
+
+  const document = await vscode.workspace.openTextDocument(target);
+  const editor = await vscode.window.showTextDocument(document, { viewColumn: vscode.ViewColumn.One });
+  if (!fragment) return;
+
+  const anchors = resolveAnchors(extractHeadings(document.getText(), tocParser));
+  const match = anchors.find((anchor) => anchor.anchorId === fragment)
+    ?? anchors.find((anchor) => anchor.anchorId === fragment.toLowerCase());
+  if (!match || match.heading.line < 0) return;
+  const position = new vscode.Position(match.heading.line, 0);
+  editor.selection = new vscode.Selection(position, position);
+  editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.AtTop);
+}
+
+function safeDecodeUri(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 export async function handleOpenExternalMessage(message: { type?: unknown; href?: unknown }): Promise<void> {
   if (message.type !== 'openExternal' || typeof message.href !== 'string') return;
 
@@ -199,165 +283,15 @@ export async function handleOpenExternalMessage(message: { type?: unknown; href?
   await vscode.env.openExternal(uri);
 }
 
-/**
- * Opens a new preview panel or, if one already exists, reveals it and
- * refreshes its content. This prevents panel proliferation (R3).
- */
-export async function openOrRefreshPreview(
+/** Renders the full preview page, showing a spinner and environment status first. */
+async function renderFullPreview(
   context: vscode.ExtensionContext,
+  panel: vscode.WebviewPanel,
   document: vscode.TextDocument,
-  options: PreviewOpenOptions = {}
-): Promise<vscode.WebviewPanel> {
-  const targetViewColumn = options.viewColumn ?? vscode.ViewColumn.Beside;
-  currentPreviewContentWidthOverride = options.previewContentWidth;
-
-  if (currentPanel) {
-    // Reuse existing panel – just reveal and update content
-    currentPanel.reveal(targetViewColumn);
-
-    // Dispose old listeners so we track the new document
-    changeSubscription?.dispose();
-    messageSubscription?.dispose();
-    disposeCssWatcher();
-    configChangeSubscription?.dispose();
-
-    // Update tracked URI to the new document
-    trackedUri = document.uri.toString();
-
-    // Register message handler for the new document
-    messageSubscription = currentPanel.webview.onDidReceiveMessage(async (msg) => {
-      handleJumpToLine(document.uri, msg);
-      await handleOpenExternalMessage(msg);
-
-      if (msg.type === 'rerender-plantuml' && typeof msg.source === 'string') {
-        const result = await renderPlantUml(msg.source, context);
-        currentPanel!.webview.postMessage({
-          type: 'rerender-plantuml-result',
-          ok: result.ok,
-          svg: result.ok ? result.svg : undefined,
-          containerId: msg.containerId,
-        });
-      }
-    });
-
-    const assets = getPreviewAssetUris(currentPanel.webview, context);
-
-    // Show spinner + env status immediately while buildHtml() renders the full content
-    let envLines: string[] = [];
-    try {
-      const envResult = await validateEnvironment(getConfig(), context.extensionPath, {}, dependencyStatus);
-      envLines = envResult.lines;
-    } catch { /* fall back to spinner only */ }
-    currentPanel.webview.html = buildLoadingHtml(currentPanel.webview, assets, envLines);
-
-    currentPanel.webview.html = await buildHtml(
-      document.getText(),
-      context,
-      currentPanel.webview,
-      assets,
-      document.uri,
-      getActiveBuildOptions(options.initialSourceLine)
-    );
-
-    // Run TOC validation after initial render
-    runTocValidation(document.getText(), document.uri);
-
-    changeSubscription = vscode.workspace.onDidChangeTextDocument(async (event) => {
-      if (event.document.uri.toString() !== trackedUri) return;
-
-      generation++;
-      const thisGeneration = generation;
-
-      currentPanel!.webview.postMessage({
-        type: 'render-start',
-        generation: thisGeneration,
-      });
-
-      let htmlBody: string;
-      try {
-        htmlBody = await renderBody(event.document.getText(), context, event.document.uri, currentPanel!.webview);
-      } catch (err) {
-        console.error('[Markdown Studio] renderBody failed:', err);
-        if (thisGeneration === generation) {
-          currentPanel!.webview.postMessage({
-            type: 'render-error',
-            generation: thisGeneration,
-          });
-        }
-        return;
-      }
-
-      if (thisGeneration !== generation) return;
-
-      currentPanel!.webview.postMessage({
-        type: 'update-body',
-        html: htmlBody,
-        generation: thisGeneration,
-      });
-
-      // Run TOC validation on each text change
-      runTocValidation(event.document.getText(), event.document.uri);
-    });
-
-    // Set up CSS file watcher and config change listener
-    setupCssWatcher(context, document);
-    configChangeSubscription = vscode.workspace.onDidChangeConfiguration(async (e) => {
-      if (
-        e.affectsConfiguration(configurationPath(CONFIG_KEYS.styleTheme)) ||
-        e.affectsConfiguration(configurationPath(CONFIG_KEYS.styleCustomCss)) ||
-        e.affectsConfiguration(configurationPath(CONFIG_KEYS.previewContentWidth))
-      ) {
-        disposeCssWatcher();
-        setupCssWatcher(context, document);
-        // Re-render preview with new theme/customCss
-        if (currentPanel) {
-          const assets = getPreviewAssetUris(currentPanel.webview, context);
-          currentPanel.webview.html = await buildHtml(
-            document.getText(),
-            context,
-            currentPanel.webview,
-            assets,
-            document.uri,
-            getActiveBuildOptions()
-          );
-        }
-      }
-      if (e.affectsConfiguration(configurationPath(CONFIG_KEYS.previewTheme))) {
-        if (currentPanel) {
-          const cfg = getConfig();
-          currentPanel.webview.postMessage({ type: 'theme-override', value: cfg.previewTheme });
-        }
-      }
-    });
-
-    return currentPanel;
-  }
-
-  // Create a brand-new panel
-  const panel = vscode.window.createWebviewPanel(
-    'markdownStudio.preview',
-    'Markdown Studio Preview',
-    targetViewColumn,
-    {
-      enableScripts: true,
-      retainContextWhenHidden: true,
-      localResourceRoots: [
-        vscode.Uri.joinPath(context.extensionUri, 'media'),
-        vscode.Uri.joinPath(context.extensionUri, 'dist'),
-        vscode.Uri.joinPath(document.uri, '..'),
-        ...(vscode.workspace.workspaceFolders?.map(f => f.uri) ?? []),
-      ],
-    }
-  );
-
-  currentPanel = panel;
-
-  // Track the URI of the document this panel is showing
-  trackedUri = document.uri.toString();
-
+  initialSourceLine?: number,
+): Promise<void> {
   const assets = getPreviewAssetUris(panel.webview, context);
 
-  // Show spinner + env status immediately while buildHtml() renders the full content
   let envLines: string[] = [];
   try {
     const envResult = await validateEnvironment(getConfig(), context.extensionPath, {}, dependencyStatus);
@@ -371,16 +305,97 @@ export async function openOrRefreshPreview(
     panel.webview,
     assets,
     document.uri,
-    getActiveBuildOptions(options.initialSourceLine)
+    getActiveBuildOptions(initialSourceLine)
   );
+}
 
-  // Run TOC validation after initial render
-  runTocValidation(document.getText(), document.uri);
+/**
+ * Debounces edits. The returned promise settles when this edit's render has
+ * finished, or when a newer edit replaces it.
+ */
+function scheduleDocumentChange(
+  context: vscode.ExtensionContext,
+  panel: vscode.WebviewPanel,
+  event: vscode.TextDocumentChangeEvent,
+): Promise<void> {
+  if (event.document.uri.toString() !== trackedUri) return Promise.resolve();
 
-  // Register message handler for jump-to-line
+  cancelPendingChange();
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(() => {
+      pendingChange = undefined;
+      handleDocumentChange(context, panel, event).then(resolve, resolve);
+    }, renderDebounceMs);
+    pendingChange = { timer, settle: resolve };
+  });
+}
+
+/** Sends a re-rendered body to the webview, dropping stale renders. */
+async function handleDocumentChange(
+  context: vscode.ExtensionContext,
+  panel: vscode.WebviewPanel,
+  event: vscode.TextDocumentChangeEvent,
+): Promise<void> {
+  if (event.document.uri.toString() !== trackedUri) return;
+
+  generation++;
+  const thisGeneration = generation;
+
+  panel.webview.postMessage({
+    type: 'render-start',
+    generation: thisGeneration,
+  });
+
+  let htmlBody: string;
+  try {
+    htmlBody = await renderBody(event.document.getText(), context, event.document.uri, panel.webview);
+  } catch (err) {
+    console.error('[Markdown Studio] renderBody failed:', err);
+    if (thisGeneration === generation) {
+      panel.webview.postMessage({
+        type: 'render-error',
+        generation: thisGeneration,
+      });
+    }
+    return;
+  }
+
+  if (thisGeneration !== generation) return;
+
+  panel.webview.postMessage({
+    type: 'update-body',
+    html: htmlBody,
+    generation: thisGeneration,
+  });
+
+  // Run TOC validation on each text change
+  runTocValidation(event.document.getText(), event.document.uri);
+}
+
+/**
+ * Points the panel at `document`: replaces all document-specific listeners,
+ * renders the page, and starts tracking edits, CSS and configuration changes.
+ */
+async function attachDocument(
+  context: vscode.ExtensionContext,
+  panel: vscode.WebviewPanel,
+  document: vscode.TextDocument,
+  initialSourceLine?: number,
+): Promise<void> {
+  // Dispose old listeners so we track the new document
+  cancelPendingChange();
+  changeSubscription?.dispose();
+  messageSubscription?.dispose();
+  disposeCssWatcher();
+  configChangeSubscription?.dispose();
+
+  trackedUri = document.uri.toString();
+  currentDocument = document;
+
   messageSubscription = panel.webview.onDidReceiveMessage(async (msg) => {
     handleJumpToLine(document.uri, msg);
     await handleOpenExternalMessage(msg);
+    await handleOpenLocalLinkMessage(document.uri, msg);
 
     if (msg.type === 'rerender-plantuml' && typeof msg.source === 'string') {
       const result = await renderPlantUml(msg.source, context);
@@ -393,42 +408,12 @@ export async function openOrRefreshPreview(
     }
   });
 
-  changeSubscription = vscode.workspace.onDidChangeTextDocument(async (event) => {
-    if (event.document.uri.toString() !== trackedUri) return;
+  await renderFullPreview(context, panel, document, initialSourceLine);
 
-    generation++;
-    const thisGeneration = generation;
+  // Run TOC validation after initial render
+  runTocValidation(document.getText(), document.uri);
 
-    panel.webview.postMessage({
-      type: 'render-start',
-      generation: thisGeneration,
-    });
-
-    let htmlBody: string;
-    try {
-      htmlBody = await renderBody(event.document.getText(), context, event.document.uri, panel.webview);
-    } catch (err) {
-      console.error('[Markdown Studio] renderBody failed:', err);
-      if (thisGeneration === generation) {
-        panel.webview.postMessage({
-          type: 'render-error',
-          generation: thisGeneration,
-        });
-      }
-      return;
-    }
-
-    if (thisGeneration !== generation) return;
-
-    panel.webview.postMessage({
-      type: 'update-body',
-      html: htmlBody,
-      generation: thisGeneration,
-    });
-
-    // Run TOC validation on each text change
-    runTocValidation(event.document.getText(), event.document.uri);
-  });
+  changeSubscription = vscode.workspace.onDidChangeTextDocument((event) => scheduleDocumentChange(context, panel, event));
 
   // Set up CSS file watcher and config change listener
   setupCssWatcher(context, document);
@@ -460,8 +445,47 @@ export async function openOrRefreshPreview(
       }
     }
   });
+}
+
+/**
+ * Opens a new preview panel or, if one already exists, reveals it and
+ * refreshes its content. This prevents panel proliferation (R3).
+ */
+export async function openOrRefreshPreview(
+  context: vscode.ExtensionContext,
+  document: vscode.TextDocument,
+  options: PreviewOpenOptions = {}
+): Promise<vscode.WebviewPanel> {
+  const targetViewColumn = options.viewColumn ?? vscode.ViewColumn.Beside;
+  currentPreviewContentWidthOverride = options.previewContentWidth;
+
+  if (currentPanel) {
+    // Reuse existing panel – just reveal and update content
+    currentPanel.reveal(targetViewColumn);
+    await attachDocument(context, currentPanel, document, options.initialSourceLine);
+    return currentPanel;
+  }
+
+  const panel = vscode.window.createWebviewPanel(
+    'markdownStudio.preview',
+    'Markdown Studio Preview',
+    targetViewColumn,
+    {
+      enableScripts: true,
+      enableFindWidget: true,
+      retainContextWhenHidden: true,
+      localResourceRoots: [
+        vscode.Uri.joinPath(context.extensionUri, 'media'),
+        vscode.Uri.joinPath(context.extensionUri, 'dist'),
+        vscode.Uri.joinPath(document.uri, '..'),
+        ...(vscode.workspace.workspaceFolders?.map(f => f.uri) ?? []),
+      ],
+    }
+  );
+  currentPanel = panel;
 
   panel.onDidDispose(() => {
+    cancelPendingChange();
     changeSubscription?.dispose();
     changeSubscription = undefined;
     messageSubscription?.dispose();
@@ -474,10 +498,18 @@ export async function openOrRefreshPreview(
     currentPanel = undefined;
     currentPreviewContentWidthOverride = undefined;
     trackedUri = undefined;
+    currentDocument = undefined;
     generation = 0;
   });
 
+  await attachDocument(context, panel, document, options.initialSourceLine);
   return panel;
+}
+
+/** Re-renders the open preview, e.g. after a missing runtime was installed. */
+export async function rerenderPreview(context: vscode.ExtensionContext): Promise<void> {
+  if (!currentPanel || !currentDocument) return;
+  await renderFullPreview(context, currentPanel, currentDocument);
 }
 
 /**
@@ -496,6 +528,8 @@ export function destroyPreviewPanel(): void {
  * @internal
  */
 export function _resetPanelForTesting(): void {
+  cancelPendingChange();
+  renderDebounceMs = DEFAULT_RENDER_DEBOUNCE_MS;
   changeSubscription?.dispose();
   changeSubscription = undefined;
   messageSubscription?.dispose();
@@ -508,5 +542,14 @@ export function _resetPanelForTesting(): void {
   currentPanel = undefined;
   currentPreviewContentWidthOverride = undefined;
   trackedUri = undefined;
+  currentDocument = undefined;
   generation = 0;
+}
+
+/**
+ * Override the edit debounce window – exposed only for unit tests.
+ * @internal
+ */
+export function _setRenderDebounceMsForTesting(ms: number): void {
+  renderDebounceMs = ms;
 }

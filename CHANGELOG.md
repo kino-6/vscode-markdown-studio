@@ -4,6 +4,35 @@ All notable changes to Markdown Studio will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Agent Skills (`SKILL.md`) support: front matter with `name` and `description` renders as a skill card (fields, allowed tools, metadata, and a collapsible raw YAML view), and `SKILL.md` files get Problems-panel diagnostics based on the Agent Skills specification, including missing referenced files and the 500-line recommendation.
+- Local-only verification: a static audit test that fails on unreviewed network/process/identity API usage, and `npm run test:local-only` (also in CI), which runs the real Preview, PDF, and PlantUML pipeline behind a recording proxy and fails if anything leaves the machine.
+- Render GitHub-style alerts (`> [!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`) in preview and PDF.
+- Use the front matter `title:` for the PDF document title, the default PDF header, and the `${title}` output filename variable. Without it, the previous behavior is kept.
+- Added `markdownStudio.preview.showEditorTitleButton` (off by default) to show an Open Preview button in the editor title bar for Markdown files.
+- Clicking a relative link in the preview (e.g. `./other.md#setup`) opens the file in the editor and reveals the linked heading.
+
+### Changed
+
+- The default `markdownStudio.security.externalResources.allowedDomains` is now empty (previously three GitHub domains), so nothing remote is fetched unless you allow it.
+- PDF export now blocks every network request from the export page except local resources and images from allowed domains. Previously only `<img src="…">` and links were filtered, so other HTML (srcset, `<link>`, `<iframe>`, CSS `url()`) could reach the network.
+- Images from allowed domains now also show in the preview (they were blocked there by the webview CSP), so preview and PDF match.
+- Opening a Markdown file no longer downloads Java or Chromium. Activation only checks what is installed; a missing runtime is offered for download when PDF export or PlantUML first needs it, and only that runtime is installed.
+- Coalesce edits made within 200 ms into a single preview render, so editing a PlantUML block no longer starts Java on every keystroke.
+
+### Fixed
+
+- PDF export pages now carry a Content Security Policy, which stops connections the request gate cannot see, such as `<link rel="preconnect">`.
+- PlantUML no longer fetches URLs (`!include https://…`, `<img:https://…>`) when the user's environment sets `PLANTUML_SECURITY_PROFILE`; the variable is removed from the Java process environment.
+- The `${title}` output filename variable no longer picks up `#` lines inside code blocks, and now also recognizes setext (`===`) H1 headings.
+- PlantUML timeouts and Java start-up failures are no longer cached, so the next render retries them. Syntax errors are still cached.
+- Keep the preview scroll position stable when the document is edited: unchanged Mermaid diagrams are restored from cache immediately and changed ones keep their previous height while re-rendering.
+- Fix deferred Mermaid diagrams that sometimes stayed blank after being scrolled into view.
+- Escape Mermaid error messages shown in the preview.
+- Render YAML front matter (e.g. `SKILL.md`) as a metadata block in the preview instead of a horizontal rule plus a giant heading; it no longer leaks into the TOC or PDF bookmarks and is omitted from PDF output.
+- Enable the built-in find widget in the preview so `Ctrl+F` / `Cmd+F` searches the rendered document.
+
 ## [1.0.3] - 2026-06-17
 
 ### Added

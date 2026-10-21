@@ -114,8 +114,11 @@ function rewriteNamedDestinationLinks(
   }
 }
 
-export async function mergePdfBuffers(buffers: Buffer[]): Promise<Buffer> {
+export async function mergePdfBuffers(buffers: Buffer[], options: { title?: string } = {}): Promise<Buffer> {
   const merged = await PDFDocument.create();
+  if (options.title) {
+    merged.setTitle(options.title);
+  }
 
   for (const buffer of buffers) {
     const source = await PDFDocument.load(buffer, { ignoreEncryption: true });

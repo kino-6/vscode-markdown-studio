@@ -12,6 +12,7 @@ const showWarningMessage = vi.fn();
 const showInformationMessage = vi.fn();
 const registerCommandMock = vi.fn().mockReturnValue({ dispose: vi.fn() });
 
+vi.mock('../../src/skill/skillDiagnostics', () => ({ registerSkillDiagnostics: () => undefined }));
 vi.mock("vscode", () => ({
   workspace: {
     getConfiguration: () => ({ get: (_: string, f: unknown) => f }),
@@ -39,7 +40,8 @@ vi.mock("vscode", () => ({
   TextEdit: { replace: vi.fn() },
 }));
 
-// Mock DependencyManager so we can control the status returned by ensureAll
+// Mock DependencyManager so we can control the dependency status. Activation
+// reads it with getStatus (no downloads), so both share one mock.
 const ensureAllMock = vi.fn();
 const reinstallMock = vi.fn();
 let isSetupInProgressValue = false;
@@ -47,6 +49,7 @@ let isSetupInProgressValue = false;
 vi.mock("../../src/deps/dependencyManager", () => ({
   DependencyManager: vi.fn().mockImplementation(() => ({
     ensureAll: ensureAllMock,
+    getStatus: ensureAllMock,
     reinstall: reinstallMock,
     get isSetupInProgress() {
       return isSetupInProgressValue;

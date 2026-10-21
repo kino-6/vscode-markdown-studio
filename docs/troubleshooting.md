@@ -2,7 +2,7 @@
 
 ## Dependency Installation
 
-Markdown Studio auto-installs Amazon Corretto JDK for PlantUML and Playwright Chromium for PDF export on first activation.
+Markdown Studio never downloads at startup. When PDF export needs Chromium, or PlantUML cannot find Java, it asks first and then installs only the missing runtime (Amazon Corretto JDK for PlantUML, Playwright Chromium for PDF export). You can also install both with `Markdown Studio: Tools: Setup Dependencies`.
 
 | Symptom | Cause | Solution |
 | ------- | ----- | -------- |

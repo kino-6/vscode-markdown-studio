@@ -37,11 +37,13 @@ export async function runProcess(
   command: string,
   args: string[],
   timeoutMs: number,
-  cwd?: string
+  cwd?: string,
+  env?: NodeJS.ProcessEnv
 ): Promise<ProcessResult> {
   return new Promise((resolve) => {
     const child = spawn(command, args, {
       cwd,
+      env,
       stdio: ['ignore', 'pipe', 'pipe']
     });
 

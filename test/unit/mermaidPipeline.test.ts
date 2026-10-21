@@ -7,6 +7,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 // Mock vscode
+vi.mock('../../src/skill/skillDiagnostics', () => ({ registerSkillDiagnostics: () => undefined }));
 vi.mock('vscode', () => ({
   workspace: {
     getConfiguration: vi.fn(() => ({

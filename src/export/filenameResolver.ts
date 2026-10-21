@@ -1,3 +1,7 @@
+import type MarkdownIt from 'markdown-it';
+import { createMarkdownParser } from '../parser/parseMarkdown';
+import { extractHeadings } from '../toc/extractHeadings';
+
 /** Context required to resolve filename template variables. */
 export interface FilenameContext {
   /** Source file name without extension. */
@@ -12,11 +16,20 @@ export interface FilenameContext {
 
 /**
  * Extracts the plain text of the first H1 heading from Markdown.
+ * Uses the same parser as the preview, so `#` lines inside code blocks and
+ * front matter are ignored and setext (`Title` + `===`) headings are found.
  * Returns undefined when no H1 exists.
  */
 export function extractH1Title(markdown: string): string | undefined {
-  const match = /^#\s+(.+)$/m.exec(markdown);
-  return match ? match[1].trim() : undefined;
+  const heading = extractHeadings(markdown, getTitleParser()).find((entry) => entry.level === 1);
+  const text = heading?.text.trim();
+  return text ? text : undefined;
+}
+
+let titleParser: MarkdownIt | undefined;
+function getTitleParser(): MarkdownIt {
+  titleParser ??= createMarkdownParser();
+  return titleParser;
 }
 
 /**

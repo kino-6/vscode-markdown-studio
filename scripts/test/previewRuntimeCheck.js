@@ -24,6 +24,7 @@ function previewBody(codeText, options = {}) {
 <button id="outside">outside</button>
 <nav class="ms-toc"><a id="toc-link" href="#target-heading">Target</a></nav>
 <a id="external-link" href="https://example.com/docs">External</a>
+<a id="local-link" href="./other%20doc.md#setup">Local</a>
 <pre><code>${codeText}</code></pre>
 <h2 id="target-heading" data-source-line="12">Target heading</h2>
 <div id="svg-diagram" class="diagram-container">
@@ -113,6 +114,13 @@ async function assertCopyTocAndExternalLink(page, expectedCopyText) {
     type: 'openExternal',
     href: 'https://example.com/docs',
   });
+
+  await page.locator('#local-link').click();
+  assert.deepEqual(await page.evaluate(() => window.__messages.at(-1)), {
+    type: 'openLocalLink',
+    href: './other%20doc.md#setup',
+  });
+  assert.equal(new URL(page.url()).hash, '', 'relative link must not navigate the preview');
 }
 
 async function assertZoomBehavior(page) {
@@ -188,6 +196,57 @@ async function assertLazyMermaidRendering(page) {
   }, null, { timeout: 15000 });
 }
 
+function stackedMermaidBody(count, changedLabel = '') {
+  let html = '';
+  for (let i = 0; i < count; i += 1) {
+    const label = i === 2 ? `Start ${i}${changedLabel}` : `Start ${i}`;
+    const source = encodeURIComponent(`graph TD; A${i}[${label}] --> B${i}[Step]; B${i} --> C${i}[Step 2]; C${i} --> D${i}[End]`);
+    html += `<h2 id="stack-${i}">Section ${i}</h2>${'<p>text</p>'.repeat(3)}`;
+    html += `<div class="diagram-container"><div class="mermaid-host" data-mermaid-src="${source}"></div></div>`;
+  }
+  return `${html}<p>tail</p>`;
+}
+
+// Regression: after an edit, diagrams above the viewport were left empty
+// (zero height) until scrolled back to, so the visible content jumped.
+async function assertScrollPositionSurvivesUpdate(browser) {
+  const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
+  try {
+    await page.setContent(`<!doctype html><html><body data-theme-override="light">${stackedMermaidBody(12)}</body></html>`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await installPreviewRuntime(page);
+    for (let y = 0; y < 9000; y += 250) {
+      await page.evaluate((top) => window.scrollTo(0, top), y);
+      await page.waitForTimeout(40);
+    }
+    await page.waitForFunction(() => Array.from(document.querySelectorAll('.mermaid-host'))
+      .every((host) => host.querySelector('svg')), null, { timeout: 15000 });
+
+    await page.evaluate(() => document.getElementById('stack-8').scrollIntoView());
+    const anchorTop = () => page.evaluate(() => Math.round(document.getElementById('stack-8').getBoundingClientRect().top));
+    const before = await anchorTop();
+
+    for (const [generation, changedLabel] of [[1, ''], [2, ' edited']]) {
+      await page.evaluate(([html, gen]) => {
+        window.postMessage({ type: 'update-body', html, generation: gen }, '*');
+      }, [stackedMermaidBody(12, changedLabel), Date.now() + generation]);
+      await page.waitForTimeout(600);
+      const after = await anchorTop();
+      assert.ok(Math.abs(after - before) <= 2, `visible section moved from ${before}px to ${after}px after update ${generation}`);
+    }
+
+    // Switching theme re-renders every diagram; the visible section must stay put.
+    await page.evaluate(() => window.postMessage({ type: 'theme-override', value: 'dark' }, '*'));
+    await page.waitForFunction(() => document.body.classList.contains('vscode-dark'));
+    await page.waitForTimeout(600);
+    const afterTheme = await anchorTop();
+    assert.ok(Math.abs(afterTheme - before) <= 2, `visible section moved from ${before}px to ${afterTheme}px after theme switch`);
+  } finally {
+    await page.close();
+  }
+}
+
 async function main() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
@@ -216,6 +275,7 @@ async function main() {
     await assertInvalidWaveDromError(page);
     await assertUnsafeWaveDromIsNotEvaluated(page);
     await assertLazyMermaidRendering(page);
+    await assertScrollPositionSurvivesUpdate(browser);
 
     console.log('Preview runtime browser check passed');
   } finally {

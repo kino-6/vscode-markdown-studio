@@ -30,8 +30,22 @@ function showExportSuccess(outputPath: string): void {
   });
 }
 
+export interface ExportPdfCommandOptions {
+  /** Asks the user to download Chromium; resolves true once it is installed. */
+  offerChromiumDownload?: () => Promise<boolean>;
+}
+
+function isBrowserMissingError(error: unknown): boolean {
+  const msg = String(error);
+  return msg.includes('Executable doesn\'t exist')
+    || msg.includes('browserType.launch')
+    || msg.includes(RUNTIME_MESSAGES.dependencies.chromiumBrowserUnavailable);
+}
+
 export async function exportPdfCommand(
   context: vscode.ExtensionContext,
+  options: ExportPdfCommandOptions = {},
+  isRetry = false,
 ): Promise<void> {
   const editor = vscode.window.activeTextEditor;
   if (!editor || editor.document.languageId !== 'markdown') {
@@ -66,7 +80,11 @@ export async function exportPdfCommand(
       return;
     }
     const msg = String(error);
-    if (msg.includes('Executable doesn\'t exist') || msg.includes('browserType.launch')) {
+    if (isBrowserMissingError(error)) {
+      if (!isRetry && options.offerChromiumDownload && await options.offerChromiumDownload()) {
+        await exportPdfCommand(context, options, true);
+        return;
+      }
       void vscode.window.showErrorMessage(RUNTIME_MESSAGES.dependencies.chromiumMissingAutomatic);
     } else {
       void vscode.window.showErrorMessage(RUNTIME_MESSAGES.exportPdf.failed(msg));

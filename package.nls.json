@@ -40,6 +40,7 @@
   "configuration.preview.contentWidth.enum.a4": "Constrain preview content to A4 paper width.",
   "configuration.preview.contentWidth.enum.full": "Use the full available editor width.",
   "configuration.preview.sourceJump.enabled.description": "Double-click in preview jumps to the corresponding source line.",
+  "configuration.preview.showEditorTitleButton.description": "Show an Open Preview button in the editor title bar for Markdown files.",
   "configuration.style.preset.markdownDescription": "Base typography preset for preview and PDF export.",
   "configuration.style.fontFamily.markdownDescription": "Override the preset font family. Takes priority over the preset default, but can be overridden by Theme or Custom CSS.",
   "configuration.style.fontSize.markdownDescription": "Override the preset font size in pixels (8-32). Takes priority over the preset default, but can be overridden by Theme or Custom CSS.",

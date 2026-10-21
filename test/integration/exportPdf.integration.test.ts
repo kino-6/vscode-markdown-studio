@@ -320,6 +320,42 @@ describe('exportToPdf smoke/integration', () => {
     );
   });
 
+  it('uses the front matter title for the PDF header, document title and filename', async () => {
+    buildHtmlMock.mockResolvedValue('<html><head></head><body>content</body></html>');
+    readFileMock.mockResolvedValue('.hljs { background: #f6f8fa; }');
+    accessMock.mockResolvedValue(undefined);
+    setContentMock.mockResolvedValue(undefined);
+    pdfMock.mockResolvedValue(undefined);
+    closeMock.mockResolvedValue(undefined);
+    evaluateMock.mockResolvedValue(undefined);
+    addScriptTagMock.mockResolvedValue(undefined);
+    waitForFunctionMock.mockResolvedValue(undefined);
+    setViewportSizeMock.mockResolvedValue(undefined);
+    newPageMock.mockResolvedValue({
+      setContent: setContentMock, pdf: pdfMock,
+      evaluate: evaluateMock, addScriptTag: addScriptTagMock,
+      waitForFunction: waitForFunctionMock, setViewportSize: setViewportSizeMock,
+    });
+    launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
+
+    const document = {
+      getText: () => '---\ntitle: Design <Spec>\n---\n\n# Hello',
+      uri: { fsPath: '/tmp/sample.md' }
+    } as any;
+
+    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+
+    expect(setContentMock).toHaveBeenCalledWith(
+      expect.stringContaining('<title>Design &lt;Spec&gt;</title>'),
+      { waitUntil: 'networkidle' }
+    );
+    expect(pdfMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        headerTemplate: expect.stringContaining('Design &lt;Spec&gt;'),
+      })
+    );
+  });
+
   it('PDF export injects page-break CSS when enabled', async () => {
     buildHtmlMock.mockResolvedValue('<html><head></head><body>content</body></html>');
     readFileMock.mockResolvedValue('.hljs { background: #f6f8fa; }');
@@ -547,7 +583,7 @@ ${Array.from({ length: 16 }, () => '/Type /Page').join('\n')}
 
     await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
 
-    expect(mergePdfBuffersMock).toHaveBeenCalledWith([coverBuffer, bodyFinalBuffer]);
+    expect(mergePdfBuffersMock).toHaveBeenCalledWith([coverBuffer, bodyFinalBuffer], { title: expect.any(String) });
     expect(writeFileMock.mock.calls[0][0]).toBe('/tmp/sample.pdf');
     expect((writeFileMock.mock.calls[0][1] as Buffer).toString()).toContain('%PDF cover');
     const renderedBodyHtml = setContentMock.mock.calls[0][0] as string;

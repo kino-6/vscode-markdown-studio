@@ -10,6 +10,7 @@ import type { DependencyStatus } from "../../src/deps/types";
 const showErrorMessage = vi.fn();
 const showWarningMessage = vi.fn();
 
+vi.mock('../../src/skill/skillDiagnostics', () => ({ registerSkillDiagnostics: () => undefined }));
 vi.mock("vscode", () => ({
   workspace: {
     getConfiguration: () => ({ get: (_: string, f: unknown) => f }),

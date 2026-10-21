@@ -131,7 +131,7 @@ vi.mock('../../src/toc/tocValidator', () => ({
 /*  Imports (after mocks)                                              */
 /* ------------------------------------------------------------------ */
 
-import { openOrRefreshPreview, _resetPanelForTesting } from '../../src/preview/webviewPanel';
+import { openOrRefreshPreview, _resetPanelForTesting, _setRenderDebounceMsForTesting } from '../../src/preview/webviewPanel';
 import * as vscode from 'vscode';
 
 /* ------------------------------------------------------------------ */
@@ -184,6 +184,7 @@ function fakeChangeEvent(uri: string) {
 describe('Property 3: URI filtering', () => {
   beforeEach(() => {
     _resetPanelForTesting();
+    _setRenderDebounceMsForTesting(0);
     mockPanel = createMockPanel();
     vi.clearAllMocks();
   });

@@ -16,6 +16,7 @@ npm run test:integration
 npm test
 npm run test:ci
 npm run test:preview-runtime
+npm run test:local-only
 npm run benchmark:preview
 npm run benchmark:pdf
 npm run corpus:check
@@ -25,6 +26,7 @@ npm run corpus:check
 - `test:integration`: preview composition and export smoke tests, plus renderer pipeline composition tests.
 - `test:ci`: lint + unit + integration (CI-friendly entrypoint).
 - `test:preview-runtime`: developer-only browser runtime check for Preview copy, TOC, external links, zoom, theme switching, and `update-body` behavior. This is intentionally not part of `test:ci`.
+- `test:local-only`: verifies the local-only promise against the real Preview, PDF export, and PlantUML pipeline. Chromium and Java are routed through a local recording proxy, and Node network APIs, process launches, machine-information APIs, and file reads outside the expected folders are recorded. It renders `test/fixtures/local-only/external-vectors.md` (images, `srcset`, `<link>`, `<iframe>`, CSS `url()`, SVG `<image>`, PlantUML `!include https://…`) and fails if anything leaves the machine with default settings. A second pass allowlists `example.com` and requires that only its image requests appear, which also proves the monitor works. Needs Chromium and Java; it also runs in CI. The static half lives in `test/unit/localOnlyAudit.test.ts`, which fails when new network, process, or identity APIs appear in the source without review.
 - `benchmark:preview`: developer-only Preview benchmark for `examples/demo.md`, `examples/demo_win.md`, and `examples/demo_load.md`. This is intentionally an npm debug command, not a contributed VS Code command.
 - `benchmark:pdf`: developer-only PDF export benchmark for `examples/demo.md`, `examples/demo_win.md`, and `examples/demo_load.md`.
 - `corpus:check`: developer-only local Markdown corpus runner. It reads `ignore/markdown-corpus/manifest.json`, runs Preview/PDF benchmark checks, and writes local-only reports under `ignore/markdown-corpus/reports/`.
