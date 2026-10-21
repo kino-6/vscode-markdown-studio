@@ -105,26 +105,22 @@ describe("chromiumInstaller", () => {
       expect(result.error).toContain("Chromium verification failed");
     });
 
-    it("retries Chromium install with NODE_TLS_REJECT_UNAUTHORIZED=0 on certificate errors", async () => {
+    it("never retries with certificate checks disabled after a certificate error", async () => {
       const savedTls = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
       delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
       const tlsValues: Array<string | undefined> = [];
 
-      mockInstallBrowsers
-        .mockImplementationOnce(async () => {
-          tlsValues.push(process.env.NODE_TLS_REJECT_UNAUTHORIZED);
-          throw new Error("UNABLE_TO_GET_ISSUER_CERT_LOCALLY");
-        })
-        .mockImplementationOnce(async () => {
-          tlsValues.push(process.env.NODE_TLS_REJECT_UNAUTHORIZED);
-        });
+      mockInstallBrowsers.mockImplementation(async () => {
+        tlsValues.push(process.env.NODE_TLS_REJECT_UNAUTHORIZED);
+        throw new Error("UNABLE_TO_GET_ISSUER_CERT_LOCALLY");
+      });
 
       try {
         const result = await chromiumInstaller.install(storageDir, progress);
 
-        expect(result.ok).toBe(true);
-        expect(mockInstallBrowsers).toHaveBeenCalledTimes(2);
-        expect(tlsValues).toEqual([undefined, "0"]);
+        expect(result.ok).toBe(false);
+        expect(mockInstallBrowsers).toHaveBeenCalledTimes(1);
+        expect(tlsValues).toEqual([undefined]);
         expect(process.env.NODE_TLS_REJECT_UNAUTHORIZED).toBeUndefined();
       } finally {
         if (savedTls === undefined) {
@@ -135,7 +131,7 @@ describe("chromiumInstaller", () => {
       }
     });
 
-    it("adds VS Code network setting hints when certificate retry still fails", async () => {
+    it("adds VS Code network setting hints to certificate errors", async () => {
       mockInstallBrowsers.mockRejectedValue(new Error("UNABLE_TO_GET_ISSUER_CERT_LOCALLY"));
 
       const result = await chromiumInstaller.install(storageDir, progress);

@@ -42,8 +42,6 @@ const APPROVED: Record<string, string> = {
   'src/deps/extract.ts|process-launch': 'Extracts the downloaded JDK archive (tar/unzip) during setup.',
   'src/deps/chromiumInstaller.ts|browser-automation': 'Installs and verifies Chromium during setup.',
   'src/deps/chromiumInstaller.ts|env-read': 'Applies proxy/CA settings for the setup download and restores them.',
-  'src/deps/correttoInstaller.ts|env-read': 'Checks whether TLS verification was already disabled by the user.',
-  'src/infra/tlsCertificateRetry.ts|env-read': 'Temporarily changes TLS verification for a setup download retry.',
   'src/infra/networkConfig.ts|env-read': 'Reads proxy variables for setup downloads.',
   'src/infra/runProcess.ts|process-launch': 'Runs the bundled PlantUML JAR with Java, and `java -version` checks.',
   'src/export/exportPdf.ts|browser-automation': 'Local headless Chromium renders the PDF; its network is gated by isPdfRequestAllowed + CSP.',

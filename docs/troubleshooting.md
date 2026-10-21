@@ -7,6 +7,7 @@ Markdown Studio never downloads at startup. When PDF export needs Chromium, or P
 | Symptom | Cause | Solution |
 | ------- | ----- | -------- |
 | Download timeout or failure | Corporate proxy or firewall | Set `http.proxy` in VS Code settings, or add CA certs with `markdownStudio.network.caCertificates`. |
+| Certificate error (e.g. `UNABLE_TO_GET_ISSUER_CERT_LOCALLY`) | SSL inspection by a corporate proxy | Add your corporate CA certificate to `markdownStudio.network.caCertificates` (recommended). Only if you trust the network, set VS Code `http.proxyStrictSSL` to `false`. Markdown Studio never turns certificate checks off by itself. Then run `Markdown Studio: Tools: Setup Dependencies`. |
 | Chromium not available | Browser dependency missing or disk space insufficient | Run `Markdown Studio: Tools: Setup Dependencies`; Chromium needs roughly 200 MB. |
 | PlantUML diagrams not rendering | Java is not available | Run `Markdown Studio: Tools: Validate Local Environment`, then set `markdownStudio.java.path` if needed. |
 | macOS security block | Gatekeeper blocks an unsigned binary | Open System Settings > Privacy & Security, then allow the blocked app. |

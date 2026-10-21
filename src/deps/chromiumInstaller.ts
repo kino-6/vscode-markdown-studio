@@ -6,7 +6,6 @@ import { RUNTIME_MESSAGES } from "../infra/messages";
 import {
   appendTlsCertificateSettingsHint,
   isTlsCertificateError,
-  withNodeTlsRejectUnauthorizedDisabled,
 } from "../infra/tlsCertificateRetry";
 
 /**
@@ -75,32 +74,16 @@ async function installChromiumOnce(): Promise<ChromiumInstallAttempt> {
   }
 }
 
-async function installChromiumWithTlsRetry(): Promise<ChromiumInstallAttempt> {
-  const firstAttempt = await installChromiumOnce();
-  if (
-    firstAttempt.ok ||
-    !firstAttempt.tlsCertificateError
-  ) {
-    return firstAttempt;
+/**
+ * Installs Chromium once. A certificate error is reported with setup guidance;
+ * certificate checks are never switched off automatically.
+ */
+async function installChromiumReportingTlsErrors(): Promise<ChromiumInstallAttempt> {
+  const attempt = await installChromiumOnce();
+  if (!attempt.ok && attempt.tlsCertificateError && attempt.error) {
+    return { ...attempt, error: appendTlsCertificateSettingsHint(attempt.error) };
   }
-
-  if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === "0") {
-    return firstAttempt.error
-      ? {
-          ...firstAttempt,
-          error: appendTlsCertificateSettingsHint(firstAttempt.error),
-        }
-      : firstAttempt;
-  }
-
-  const retryAttempt = await withNodeTlsRejectUnauthorizedDisabled(installChromiumOnce);
-  if (!retryAttempt.ok && retryAttempt.tlsCertificateError && retryAttempt.error) {
-    return {
-      ...retryAttempt,
-      error: appendTlsCertificateSettingsHint(retryAttempt.error),
-    };
-  }
-  return retryAttempt;
+  return attempt;
 }
 
 export const chromiumInstaller = {
@@ -128,7 +111,7 @@ export const chromiumInstaller = {
     try {
       progress(RUNTIME_MESSAGES.dependencyProgress.installingChromium, 20);
 
-      const installAttempt = await installChromiumWithTlsRetry();
+      const installAttempt = await installChromiumReportingTlsErrors();
       if (!installAttempt.ok) {
         return {
           ok: false,

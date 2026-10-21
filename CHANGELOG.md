@@ -15,6 +15,7 @@ All notable changes to Markdown Studio will be documented in this file.
 
 ### Changed
 
+- Dependency downloads no longer retry with certificate verification disabled after a certificate error. The error now explains how to fix it: add the corporate CA to `markdownStudio.network.caCertificates`, or, if you trust the network, set VS Code `http.proxyStrictSSL` to `false`.
 - The default `markdownStudio.security.externalResources.allowedDomains` is now empty (previously three GitHub domains), so nothing remote is fetched unless you allow it.
 - PDF export now blocks every network request from the export page except local resources and images from allowed domains. Previously only `<img src="…">` and links were filtered, so other HTML (srcset, `<link>`, `<iframe>`, CSS `url()`) could reach the network.
 - Images from allowed domains now also show in the preview (they were blocked there by the webview CSP), so preview and PDF match.
