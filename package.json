@@ -364,6 +364,7 @@
     "test:local-only": "npm run build && node scripts/test/localOnlyCheck.js",
     "package": "npm run build && rm -f dist/*.vsix && npm exec -- vsce package -o dist/",
     "reinstall": "bash scripts/dev/reinstall.sh",
+    "acceptance": "bash scripts/dev/acceptance.sh",
     "demo": "npx tsx scripts/demo/index.ts",
     "demo:marketplace-gif": "npm run build && node scripts/demo/marketplaceGif.js",
     "benchmark:preview": "npm run build && node scripts/benchmark/previewBenchmark.js",
