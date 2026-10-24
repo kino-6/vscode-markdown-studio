@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   showInformationMessage: vi.fn(),
@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
       getText: () => '# Spec',
       uri: { fsPath: '/workspace/spec.md' },
     },
-  },
+  } as { document: unknown } | undefined,
 }));
 
 vi.mock('vscode', () => ({
@@ -119,5 +119,42 @@ describe('exportPdfCommand settings export', () => {
 
     expect(offerChromiumDownload).toHaveBeenCalledTimes(1);
     expect(exportToPdfMock).toHaveBeenCalledTimes(2);
+  });
+
+  describe('when the preview has focus', () => {
+    const editor = mocks.activeTextEditor;
+    const previewDoc = { languageId: 'markdown', getText: () => '# Previewed', uri: { fsPath: '/workspace/previewed.md' } };
+
+    afterEach(() => {
+      mocks.activeTextEditor = editor;
+    });
+
+    it('exports the previewed document when no text editor is active (preview focused)', async () => {
+      mocks.activeTextEditor = undefined;
+      mocks.showInformationMessage.mockResolvedValue(undefined);
+
+      await exportPdfCommand({} as any, { getPreviewDocument: () => previewDoc as any });
+
+      expect(exportToPdfMock).toHaveBeenCalledTimes(1);
+      expect(exportToPdfMock.mock.calls[0][0]).toBe(previewDoc);
+      expect(mocks.showWarningMessage).not.toHaveBeenCalled();
+    });
+
+    it('prefers the active Markdown editor over the preview', async () => {
+      mocks.showInformationMessage.mockResolvedValue(undefined);
+
+      await exportPdfCommand({} as any, { getPreviewDocument: () => previewDoc as any });
+
+      expect((exportToPdfMock.mock.calls[0][0] as { uri: { fsPath: string } }).uri.fsPath).toBe('/workspace/spec.md');
+    });
+
+    it('still asks for a Markdown file when neither an editor nor the preview is active', async () => {
+      mocks.activeTextEditor = undefined;
+
+      await exportPdfCommand({} as any, { getPreviewDocument: () => undefined });
+
+      expect(exportToPdfMock).not.toHaveBeenCalled();
+      expect(mocks.showWarningMessage).toHaveBeenCalledWith(expect.stringContaining('Open a Markdown file first'));
+    });
   });
 });

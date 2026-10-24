@@ -36,6 +36,7 @@ Three defaults changed to keep everything on your machine:
 
 ### Fixed
 
+- `Export PDF` now works while the preview has focus: it exports the previewed file instead of asking you to open a Markdown file first.
 - The preview tab is titled after the file it shows, e.g. `Preview (demo.md)`, and follows when the preview switches to another file.
 - A preview reused for a Markdown file in another folder can now load that file's local images (the folders the preview may read from were fixed to the first file).
 - PDF export pages now carry a Content Security Policy, which stops connections the request gate cannot see, such as `<link rel="preconnect">`.

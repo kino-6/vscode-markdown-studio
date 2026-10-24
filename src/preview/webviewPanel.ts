@@ -527,6 +527,11 @@ export async function openOrRefreshPreview(
   return panel;
 }
 
+/** The previewed document while the preview panel has focus, otherwise undefined. */
+export function getActivePreviewDocument(): vscode.TextDocument | undefined {
+  return currentPanel?.active ? currentDocument : undefined;
+}
+
 /** Re-renders the open preview, e.g. after a missing runtime was installed. */
 export async function rerenderPreview(context: vscode.ExtensionContext): Promise<void> {
   if (!currentPanel || !currentDocument) return;

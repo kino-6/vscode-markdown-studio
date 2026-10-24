@@ -98,7 +98,7 @@ vi.mock('../../src/commands/openPreview', () => ({ openPreviewCommand: vi.fn() }
 vi.mock('../../src/commands/validateEnvironment', () => ({ validateEnvironmentCommand: vi.fn() }));
 vi.mock('../../src/commands/insertToc', () => ({ insertTocCommand: vi.fn() }));
 vi.mock('../../src/infra/tempFiles', () => ({ cleanupTempFiles: vi.fn().mockResolvedValue(undefined) }));
-vi.mock('../../src/preview/webviewPanel', () => ({ destroyPreviewPanel: vi.fn() }));
+vi.mock('../../src/preview/webviewPanel', () => ({ destroyPreviewPanel: vi.fn(), rerenderPreview: vi.fn(), getActivePreviewDocument: vi.fn() }));
 
 describe('TOC auto-update on save', () => {
   beforeEach(async () => {

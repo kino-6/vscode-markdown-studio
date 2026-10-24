@@ -5,6 +5,15 @@
 
 ## 2026-10
 
+### T008 — プレビューにフォーカスがある状態でも PDF 出力ができる
+
+- 完了: 2026-10-25
+- Gate: `npx vitest run -c config/vitest.unit.config.ts test/unit/exportPdfCommand.test.ts` — 8 passing、failing 0（プレビューを選んだ状態では、プレビュー中の文書を出力する。エディタが選ばれていればエディタ側を優先する。どちらも無ければ従来どおり案内を出す）
+- 赤の確認: プレビュー中の文書を使う分岐を外すと、該当テストが落ちた
+- 再現: `./scripts/dev/acceptance.sh`（demo.md のプレビューを選んだ状態で Export PDF を実行する）
+- 何が本当の原因だったか: PDF 出力はアクティブなテキストエディタだけを見ていた。プレビューを選ぶと、アクティブなエディタは無い扱いになる
+- commit: このレコードと同じ commit
+
 ### T007 — プレビューのタブ名に元ファイル名が出る（例: `Preview (demo.md)`）
 
 - 完了: 2026-10-25

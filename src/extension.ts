@@ -7,7 +7,7 @@ import { validateEnvironmentCommand } from './commands/validateEnvironment';
 import { cleanupTempFiles } from './infra/tempFiles';
 import { DependencyManager } from './deps/dependencyManager';
 import type { DependencyStatus } from './deps/types';
-import { destroyPreviewPanel, rerenderPreview } from './preview/webviewPanel';
+import { destroyPreviewPanel, getActivePreviewDocument, rerenderPreview } from './preview/webviewPanel';
 import { createDependencyPrompter } from './deps/dependencyConsent';
 import { registerSkillDiagnostics } from './skill/skillDiagnostics';
 import { setJavaMissingHandler } from './renderers/renderPlantUml';
@@ -79,6 +79,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('markdownStudio.openPreviewFullWidth', async () => openPreviewCommand(context, { location: 'current', previewContentWidth: 'full' })),
     vscode.commands.registerCommand('markdownStudio.exportPdf', async () => exportPdfCommand(context, {
       offerChromiumDownload: () => prompter.offerChromium(),
+      getPreviewDocument: getActivePreviewDocument,
     })),
     vscode.commands.registerCommand('markdownStudio.validateEnvironment', async () => validateEnvironmentCommand(context)),
     vscode.commands.registerCommand('markdownStudio.reloadPreview', async () => {

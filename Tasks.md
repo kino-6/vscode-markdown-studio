@@ -44,12 +44,6 @@
   - Gate: `gh pr view 15 --json state -q .state` — `MERGED` と出る
   - 再現: `scripts/dev/acceptance.sh`
 
-- [ ] **T008 — プレビューにフォーカスがある状態でも PDF 出力ができる**
-  - なぜ: user 2026-10-25。プレビューを見ているときに Export PDF を実行すると、エディタに戻る手間がかかる（今は「Markdown を先に開いて」と出て止まる）
-  - 最小検証: `npx vitest run -c config/vitest.unit.config.ts test/unit/exportPdfCommand.test.ts -t "preview"` — 1 件以上 passing、failing 0（今は該当テストが無く 0 件）
-  - Gate: `npx vitest run -c config/vitest.unit.config.ts test/unit/exportPdfCommand.test.ts` — アクティブなエディタが無くプレビューが開いているとき、プレビュー中の文書が出力されることを検査するテストを含めて failing 0
-  - 再現: `./scripts/dev/acceptance.sh`（demo.md のプレビューを選んだ状態で Export PDF を実行する）
-
 - [!] **T003 — `npm audit --omit=dev` に katex の指摘が出ない**
   - なぜ: GHSA-238p-pmpm-9mq7（katex 0.11.0〜0.18.1）。修正版がまだ出ていない（2026-10-21 確認）ため外部待ち
   - 最小検証: `npm view katex version` — 0.18.1 より新しい版が出る
@@ -60,4 +54,4 @@
 
 | 状態 | ID | 何を | 証跡 |
 |---|---|---|---|
-| [x] | T007 | プレビューのタブ名に元ファイル名が出る（例: `Preview (demo.md)`） | `webviewPanel.test.ts` 29 passing / 2026-10-25 |
+| [x] | T008 | プレビューにフォーカスがある状態でも PDF 出力ができる | `exportPdfCommand.test.ts` 8 passing / 2026-10-25 |
