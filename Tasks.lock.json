@@ -15,7 +15,7 @@
       "min_check": "`gh pr checks 15` — すべて `pass`",
       "gate": "`gh pr view 15 --json state -q .state` — `MERGED` と出る",
       "locked": "2026-10-24",
-      "passes": false,
+      "passes": true,
       "amendments": []
     },
     "T002": {
@@ -87,6 +87,14 @@
       "title": "プレビューにフォーカスがある状態でも PDF 出力ができる",
       "min_check": "`npx vitest run -c config/vitest.unit.config.ts test/unit/exportPdfCommand.test.ts -t \"preview\"` — 1 件以上 passing、failing 0（今は該当テストが無く 0 件）",
       "gate": "`npx vitest run -c config/vitest.unit.config.ts test/unit/exportPdfCommand.test.ts` — アクティブなエディタが無くプレビューが開いているとき、プレビュー中の文書が出力されることを検査するテストを含めて failing 0",
+      "locked": "2026-10-25",
+      "passes": true,
+      "amendments": []
+    },
+    "T009": {
+      "title": "受け入れ確認の流れを実際の VS Code で自動検査する（`npm run test:acceptance`）",
+      "min_check": "`node scripts/test/acceptanceCheck.js --only skills` — `ok` が 3 行出て FAIL が無い",
+      "gate": "`node scripts/test/acceptanceCheck.js` — `ACCEPTANCE OK (11 checks)` と出る",
       "locked": "2026-10-25",
       "passes": true,
       "amendments": []

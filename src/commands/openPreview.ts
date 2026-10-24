@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { isMarkdownLanguage } from '../infra/markdownLanguages';
 import { RUNTIME_MESSAGES } from '../infra/messages';
 import { openOrRefreshPreview } from '../preview/webviewPanel';
 import type { PreviewContentWidth } from '../types/models';
@@ -13,7 +14,7 @@ export async function openPreviewCommand(
   options: OpenPreviewCommandOptions = {}
 ): Promise<void> {
   const editor = vscode.window.activeTextEditor;
-  if (!editor || editor.document.languageId !== 'markdown') {
+  if (!editor || !isMarkdownLanguage(editor.document.languageId)) {
     void vscode.window.showWarningMessage(RUNTIME_MESSAGES.command.openMarkdownFirst);
     return;
   }

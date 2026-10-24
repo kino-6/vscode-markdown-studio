@@ -17,8 +17,11 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$REPO_ROOT"
 
 PROFILE_DIR="$REPO_ROOT/ignore/acceptance-profile"
-USER_DATA_DIR="$PROFILE_DIR/user-data"
-EXTENSIONS_DIR="$PROFILE_DIR/extensions"
+# VS Code creates a Unix socket inside the user-data folder, and macOS limits
+# socket paths to ~103 characters, so keep the profile on a short path.
+VSCODE_PROFILE_DIR="/tmp/markdown-studio-acceptance"
+USER_DATA_DIR="$VSCODE_PROFILE_DIR/user-data"
+EXTENSIONS_DIR="$VSCODE_PROFILE_DIR/extensions"
 WORKSPACE_DIR="$PROFILE_DIR/workspace"
 
 VERSION=$(node -p "require('./package.json').version")
@@ -26,19 +29,22 @@ NAME=$(node -p "require('./package.json').name")
 VSIX_PATH="dist/${NAME}-${VERSION}.vsix"
 
 if [[ "${1:-}" == "--reset" ]]; then
-  echo "Resetting isolated profile: $PROFILE_DIR"
-  rm -rf "$PROFILE_DIR"
+  echo "Resetting isolated profile: $VSCODE_PROFILE_DIR and $PROFILE_DIR"
+  rm -rf "$VSCODE_PROFILE_DIR" "$PROFILE_DIR"
 fi
 mkdir -p "$USER_DATA_DIR/User" "$EXTENSIONS_DIR"
 
 # Settings for the isolated profile only: skip the Workspace Trust prompt
-# (restricted mode would keep the extension from running) and the welcome page.
+# (restricted mode would keep the extension from running), the welcome page,
+# and the Copilot sign-in dialog a fresh profile shows.
 SETTINGS_FILE="$USER_DATA_DIR/User/settings.json"
-if [[ ! -f "$SETTINGS_FILE" ]]; then
+if [[ ! -f "$SETTINGS_FILE" ]] || ! grep -q git.openRepositoryInParentFolders "$SETTINGS_FILE"; then
   cat > "$SETTINGS_FILE" <<'JSON'
 {
   "security.workspace.trust.enabled": false,
-  "workbench.startupEditor": "none"
+  "workbench.startupEditor": "none",
+  "chat.disableAIFeatures": true,
+  "git.openRepositoryInParentFolders": "never"
 }
 JSON
 fi

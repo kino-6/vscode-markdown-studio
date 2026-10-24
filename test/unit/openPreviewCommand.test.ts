@@ -76,6 +76,18 @@ describe('openPreviewCommand', () => {
     );
   });
 
+  it.each(['skill', 'prompt', 'instructions', 'chatagent'])(
+    'opens the preview for VS Code agent files (%s language, e.g. SKILL.md)',
+    async (languageId) => {
+      mocks.activeEditor = { ...markdownEditor(), document: { ...markdownEditor().document, languageId } };
+
+      await openPreviewCommand(context);
+
+      expect(mocks.openOrRefreshPreview).toHaveBeenCalledTimes(1);
+      expect(mocks.showWarningMessage).not.toHaveBeenCalled();
+    },
+  );
+
   it('warns when the active editor is not Markdown', async () => {
     mocks.activeEditor = { document: { languageId: 'typescript' } };
 

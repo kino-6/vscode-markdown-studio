@@ -9,7 +9,7 @@
 > **上から 1 件ずつ**処理する。詰まったら `[~]` / `[!]` に理由を書いて次へ。2 件を同時に開かない。
 > このファイルは **200 行以内**に保つ。超えたら幅を広げず、履歴へ移す。**commit の粒度で整備する。**
 
-次に起票する ID は **T009 以降**。
+次に起票する ID は **T010 以降**。
 
 ## 何をどこに書くか
 
@@ -38,12 +38,6 @@
 
 ## 本線 A — ローカル完結の強化とリリース準備（2026-10-21〜）
 
-- [!] **T001 — PR #15 が main にマージされている**
-  - なぜ: user 2026-10-21。マージはユーザが決める。ユーザの受け入れ確認（`scripts/dev/acceptance.sh`）待ち
-  - 最小検証: `gh pr checks 15` — すべて `pass`
-  - Gate: `gh pr view 15 --json state -q .state` — `MERGED` と出る
-  - 再現: `scripts/dev/acceptance.sh`
-
 - [!] **T003 — `npm audit --omit=dev` に katex の指摘が出ない**
   - なぜ: GHSA-238p-pmpm-9mq7（katex 0.11.0〜0.18.1）。修正版がまだ出ていない（2026-10-21 確認）ため外部待ち
   - 最小検証: `npm view katex version` — 0.18.1 より新しい版が出る
@@ -54,4 +48,4 @@
 
 | 状態 | ID | 何を | 証跡 |
 |---|---|---|---|
-| [x] | T008 | プレビューにフォーカスがある状態でも PDF 出力ができる | `exportPdfCommand.test.ts` 8 passing / 2026-10-25 |
+| [x] | T009 | 受け入れ確認の流れを実際の VS Code で自動検査する（`npm run test:acceptance`） | `ACCEPTANCE OK (11 checks)` / 2026-10-25 |

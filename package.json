@@ -37,7 +37,11 @@
     "technical-docs"
   ],
   "activationEvents": [
-    "onLanguage:markdown"
+    "onLanguage:markdown",
+    "onLanguage:skill",
+    "onLanguage:prompt",
+    "onLanguage:instructions",
+    "onLanguage:chatagent"
   ],
   "icon": "icon/icon.png",
   "main": "./dist/extension.js",
@@ -89,7 +93,7 @@
       "editor/title": [
         {
           "command": "markdownStudio.openPreview",
-          "when": "editorLangId == markdown && config.markdownStudio.preview.showEditorTitleButton",
+          "when": "editorLangId =~ /^(markdown|skill|prompt|instructions|chatagent)$/ && config.markdownStudio.preview.showEditorTitleButton",
           "group": "navigation"
         }
       ]
@@ -362,6 +366,7 @@
     "test:preview-runtime": "npm run build && node scripts/test/previewRuntimeCheck.js",
     "test:demo-render": "npm run build && node scripts/test/demoRenderCheck.js",
     "test:local-only": "npm run build && node scripts/test/localOnlyCheck.js",
+    "test:acceptance": "npm run package && node scripts/test/acceptanceCheck.js",
     "package": "npm run build && rm -f dist/*.vsix && npm exec -- vsce package -o dist/",
     "reinstall": "bash scripts/dev/reinstall.sh",
     "acceptance": "bash scripts/dev/acceptance.sh",

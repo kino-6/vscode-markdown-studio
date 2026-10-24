@@ -36,6 +36,7 @@ Three defaults changed to keep everything on your machine:
 
 ### Fixed
 
+- `SKILL.md`, `*.prompt.md`, `*.instructions.md` and `*.agent.md` can be previewed and exported again. Recent VS Code builds open them with their own languages (`skill`, `prompt`, `instructions`, `chatagent`) instead of `markdown`, so the commands refused them with "Open a Markdown file first".
 - `Export PDF` now works while the preview has focus: it exports the previewed file instead of asking you to open a Markdown file first.
 - The preview tab is titled after the file it shows, e.g. `Preview (demo.md)`, and follows when the preview switches to another file.
 - A preview reused for a Markdown file in another folder can now load that file's local images (the folders the preview may read from were fixed to the first file).

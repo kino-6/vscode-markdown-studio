@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { isMarkdownLanguage } from '../infra/markdownLanguages';
 import { extractHeadings } from '../toc/extractHeadings';
 import { resolveAnchors } from '../toc/anchorResolver';
 import { buildTocMarkdown } from '../toc/buildTocMarkdown';
@@ -20,7 +21,7 @@ import { detectLineEnding } from '../infra/lineEndings';
  */
 export async function insertTocCommand(): Promise<void> {
   const editor = vscode.window.activeTextEditor;
-  if (!editor || editor.document.languageId !== 'markdown') {
+  if (!editor || !isMarkdownLanguage(editor.document.languageId)) {
     return;
   }
 

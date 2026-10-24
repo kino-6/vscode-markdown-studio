@@ -5,6 +5,22 @@
 
 ## 2026-10
 
+### T009 — 受け入れ確認の流れを実際の VS Code で自動検査する（`npm run test:acceptance`）
+
+- 完了: 2026-10-25
+- Gate: `node scripts/test/acceptanceCheck.js` — `ACCEPTANCE OK (11 checks)`。隔離プロファイルの VS Code に VSIX だけを入れ、タブ名、demo.md のローカル画像 3 つ、Mermaid / PlantUML、プレビュー内の Cmd+F、プレビューを選んだ状態での PDF 出力、SKILL.md のカードと問題パネル、注記、Chromium が無いときの確認ダイアログを、画面から確かめる
+- 赤の確認: SKILL.md の言語対応を入れる前は skills のシナリオが落ちた（プレビューが開かなかった）。この検査で見つかった不具合
+- 再現: `npm run test:acceptance`（スクリーンショットは `ignore/acceptance-check/`）
+- 何が本当の原因だったか: 最近の VS Code は SKILL.md を `skill` という別の言語で開く。最初に報告された「SKILL.md がプレビューできない」の本当の原因はこれで、frontmatter の表示は副次的な問題だった。ほかに、新しいプロファイルで出る Copilot のサインイン画面、git の通知、macOS のソケットのパス長の上限が、受け入れ確認の妨げになっていた
+- commit: このレコードと同じ commit
+
+### T001 — PR #15 が main にマージされている
+
+- 完了: 2026-10-25
+- Gate: `gh pr view 15 --json state -q .state` — `MERGED`（merge commit `e8acd24`）
+- 再現: `gh pr view 15`
+- commit: `e8acd24`
+
 ### T008 — プレビューにフォーカスがある状態でも PDF 出力ができる
 
 - 完了: 2026-10-25

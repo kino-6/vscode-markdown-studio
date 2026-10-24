@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { isMarkdownLanguage } from '../infra/markdownLanguages';
 import { exportToPdf, ProgressReporter, CancellationChecker, CancellationError } from '../export/exportPdf';
 import { RUNTIME_MESSAGES } from '../infra/messages';
 import { saveCurrentSettingsExport } from '../infra/portableSettings';
@@ -43,7 +44,7 @@ export interface ExportPdfCommandOptions {
  */
 function resolveExportDocument(options: ExportPdfCommandOptions): vscode.TextDocument | undefined {
   const editor = vscode.window.activeTextEditor;
-  if (editor && editor.document.languageId === 'markdown') return editor.document;
+  if (editor && isMarkdownLanguage(editor.document.languageId)) return editor.document;
   return options.getPreviewDocument?.();
 }
 

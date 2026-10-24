@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { isMarkdownLanguage } from './infra/markdownLanguages';
 import { exportPdfCommand } from './commands/exportPdf';
 import { exportProfileToJsonCommand } from './commands/exportProfileToJson';
 import { importExportProfileCommand } from './commands/importExportProfile';
@@ -104,7 +105,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('markdownStudio.importExportProfile', async () => importExportProfileCommand()),
     vscode.commands.registerCommand('markdownStudio.exportProfileToJson', async () => exportProfileToJsonCommand()),
     vscode.workspace.onWillSaveTextDocument((event) => {
-      if (event.document.languageId !== 'markdown') return;
+      if (!isMarkdownLanguage(event.document.languageId)) return;
 
       const markdown = event.document.getText();
       const lineEnding = detectLineEnding(markdown);
