@@ -41,16 +41,9 @@
 - [-] **T004 — タグ push 時の Release ワークフローが、VSIX を作る前に全テスト（lint・unit・integration・local-only）を流し、落ちたら VSIX も GitHub Release も作らない**
   - なぜ: user 2026-10-25。Marketplace に出しているので、配布物ができる時点で守る（main の扱いは変えない）。あわせて、Node 20 で最新 vsce（Node 22 以上が必要）をグローバルに入れている不要な手順を外す
   - 最小検証: `node scripts/test/releaseWorkflowCheck.js` — `RELEASE_WORKFLOW OK` と出る
-  - Gate: `gh run list --workflow release.yml --commit $(git rev-parse HEAD) --limit 1 --json databaseId -q '.[0].databaseId' | xargs -I{} gh run view {} --json conclusion,jobs -q '[.conclusion, (.jobs[0].steps[]|select(.name=="Create GitHub Release").conclusion)]|join(" ")'` — `success skipped` と出る
+  - Gate: `gh run list --workflow release.yml --commit $(git rev-parse HEAD) --limit 1 --json databaseId -q '.[0].databaseId' | xargs -I{} gh run view {} --json conclusion,jobs -q '[.conclusion, (.jobs[0].steps[]|select(.name|test("^Run npm run (lint|test:unit|test:integration|test:local-only|package)$|^Create GitHub Release$"))|.conclusion)]|join(" ")'` — `success success success success success success skipped` と出る
   - 再現: `gh run list --workflow release.yml --branch feat/local-only-hardening --limit 1`
-  - 経過: 2026-10-25 監査で GATE_BROKEN。最小検証が `continue-on-error` / `if:` / `|| true` などの抜け道を見分けられず、Gate も HEAD の run に絞っていなかった。最小検証を厳しくし（変異 10 件を `test/unit/releaseWorkflowCheck.test.ts` に固定）、Gate を amendment で修正。再監査待ち
-
-- [~] **T005 — テストが落ちたとき、Release ワークフローが VSIX を作らずに止まることを、実際の run で一度確かめる**
-  - なぜ: T004 の監査（2026-10-25）で、失敗する経路が一度も実行されていないと指摘された。今は workflow の構造の検査（抜け道が無いこと）で代えている
-  - 決めてほしいこと: わざと落ちるテストを入れた使い捨ての PR を、公開 repo に作ってよいか（作った後すぐ閉じる）。こちらで決めなかった理由: 公開 repo に履歴が残る操作のため
-  - 最小検証: `node scripts/test/releaseWorkflowCheck.js` — `RELEASE_WORKFLOW OK` と出る
-  - Gate: `gh run view <使い捨て PR の run id> --json conclusion,jobs -q '[.conclusion, (.jobs[0].steps[]|select(.name=="Run npm run package").conclusion)]|join(" ")'` — `failure skipped` と出る
-  - 再現: `gh run view <使い捨て PR の run id>`
+  - 経過: 2026-10-25 監査で GATE_BROKEN。最小検証が `continue-on-error` / `if:` / `|| true` などの抜け道を見分けられず、Gate も HEAD の run に絞っていなかった。最小検証を厳しくし（変異 10 件を `test/unit/releaseWorkflowCheck.test.ts` に固定）、Gate を amendment で修正。同日の再監査でも GATE_BROKEN（Gate が検査手順の結果を読まない / 2 つ目の Release 手順を最小検証が見逃す）。両方直し、Gate を 2 回目の amendment で修正。再監査待ち。`package.json` のスクリプト中身まで固定する案は採らない（スクリプトは CI でも毎回使われ差分で見える。固定するとスクリプト変更のたびに検査も直す手間が勝つ）
 
 - [!] **T001 — PR #15 が main にマージされている**
   - なぜ: user 2026-10-21。マージはユーザが決める。ユーザの受け入れ確認（`scripts/dev/acceptance.sh`）待ち
@@ -74,4 +67,4 @@
 
 | 状態 | ID | 何を | 証跡 |
 |---|---|---|---|
-| [x] | T000 | ローカル完結の強化・SKILL.md 対応・プレビュー修正・依存更新（PR #15 のブランチ） | CI run 39533917454（`efdc94a`）で `test` と `local-only` が pass / 2026-10-21 |
+| [x] | T005 | テストが落ちたとき、Release ワークフローが VSIX を作らずに止まることを実際の run で確かめた | `gh run view 40105809061` — lint failure、package と Release は skipped / 2026-10-25 |

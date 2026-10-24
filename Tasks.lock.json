@@ -37,7 +37,7 @@
     "T004": {
       "title": "タグ push 時の Release ワークフローが、VSIX を作る前に全テスト（lint・unit・integration・local-only）を流し、落ちたら VSIX も GitHub Release も作らない",
       "min_check": "`node scripts/test/releaseWorkflowCheck.js` — `RELEASE_WORKFLOW OK` と出る",
-      "gate": "`gh run list --workflow release.yml --commit $(git rev-parse HEAD) --limit 1 --json databaseId -q '.[0].databaseId' | xargs -I{} gh run view {} --json conclusion,jobs -q '[.conclusion, (.jobs[0].steps[]|select(.name==\"Create GitHub Release\").conclusion)]|join(\" \")'` — `success skipped` と出る",
+      "gate": "`gh run list --workflow release.yml --commit $(git rev-parse HEAD) --limit 1 --json databaseId -q '.[0].databaseId' | xargs -I{} gh run view {} --json conclusion,jobs -q '[.conclusion, (.jobs[0].steps[]|select(.name|test(\"^Run npm run (lint|test:unit|test:integration|test:local-only|package)$|^Create GitHub Release$\"))|.conclusion)]|join(\" \")'` — `success success success success success success skipped` と出る",
       "locked": "2026-10-25",
       "passes": false,
       "amendments": [
@@ -45,16 +45,27 @@
           "date": "2026-10-25",
           "field": "gate",
           "reason": "gate-auditor が GATE_BROKEN と判定。旧 Gate は最新の run の conclusion しか見ず、HEAD の commit の run かどうかも、Create GitHub Release が skipped かどうかも 1 コマンドで確かめていなかった。HEAD の sha の run に絞り、手順の結果まで読む形に直す"
+        },
+        {
+          "date": "2026-10-25",
+          "field": "gate",
+          "reason": "再監査で GATE_BROKEN。Gate が run 全体と Release 手順の結果しか読まず、検査手順を消した workflow でも通った。lint・test:unit・test:integration・test:local-only・package の結果も並べて読む形に直す"
         }
       ]
     },
     "T005": {
       "title": "テストが落ちたとき、Release ワークフローが VSIX を作らずに止まることを、実際の run で一度確かめる",
       "min_check": "`node scripts/test/releaseWorkflowCheck.js` — `RELEASE_WORKFLOW OK` と出る",
-      "gate": "`gh run view <使い捨て PR の run id> --json conclusion,jobs -q '[.conclusion, (.jobs[0].steps[]|select(.name==\"Run npm run package\").conclusion)]|join(\" \")'` — `failure skipped` と出る",
+      "gate": "`gh run view 40105809061 --json conclusion,jobs -q '[.conclusion, (.jobs[0].steps[]|select(.name==\"Run npm run package\").conclusion)]|join(\" \")'` — `failure skipped` と出る",
       "locked": "2026-10-25",
-      "passes": false,
-      "amendments": []
+      "passes": true,
+      "amendments": [
+        {
+          "date": "2026-10-25",
+          "field": "gate",
+          "reason": "使い捨て PR を作らずに済んだ。f2b9fb9 で lint が実際に失敗した run 40105809061 があり、後続の検査・package・Release がすべて skipped になっていた。placeholder だった run id をこの run に置き換える"
+        }
+      ]
     }
   }
 }

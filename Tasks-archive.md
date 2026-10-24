@@ -5,6 +5,15 @@
 
 ## 2026-10
 
+### T005 — テストが落ちたとき、Release ワークフローが VSIX を作らずに止まることを実際の run で確かめた
+
+- 完了: 2026-10-25
+- Gate: `gh run view 40105809061 ...` — `failure skipped`（lint が failure、test:unit・test:integration・test:local-only・package・Create GitHub Release はすべて skipped）
+- 監査: T004 の再監査を担当した gate-auditor が、この run を独立に読んで同じ結果を報告した
+- 再現: `gh run view 40105809061`
+- 何が本当の原因だったか: 使い捨ての PR を作る想定だったが、f2b9fb9 で lint エラーを push してしまった run が、そのまま失敗経路の実証になった
+- commit: run の対象は `f2b9fb9`
+
 ### T000 — ローカル完結の強化・SKILL.md 対応・プレビュー修正・依存更新
 
 - 完了: 2026-10-21（このキューを作ったときに後から記録）

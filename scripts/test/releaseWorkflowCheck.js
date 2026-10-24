@@ -52,6 +52,14 @@ function checkReleaseWorkflow(workflow) {
     if (releaseIndex < packageIndex) problems.push(`"${RELEASE_STEP}" must come after packaging`);
   }
 
+  // Any step that publishes a release, whatever its name, must be tag-only.
+  steps.forEach((step, i) => {
+    if (i === releaseIndex || !/action-gh-release/.test(String(step.uses ?? ''))) return;
+    if (String(step.if ?? '').trim() !== RELEASE_IF) {
+      problems.push(`release step \`${step.name ?? step.uses}\` must have exactly if: ${RELEASE_IF}`);
+    }
+  });
+
   if (steps.some((step) => /npm (install|i) -g @vscode\/vsce/.test(runOf(step) ?? ''))) {
     problems.push('do not install a global vsce; `npm run package` uses the pinned one');
   }
