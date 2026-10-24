@@ -9,7 +9,7 @@
 > **上から 1 件ずつ**処理する。詰まったら `[~]` / `[!]` に理由を書いて次へ。2 件を同時に開かない。
 > このファイルは **200 行以内**に保つ。超えたら幅を広げず、履歴へ移す。**commit の粒度で整備する。**
 
-次に起票する ID は **T007 以降**。
+次に起票する ID は **T009 以降**。
 
 ## 何をどこに書くか
 
@@ -43,6 +43,18 @@
   - 最小検証: `gh pr checks 15` — すべて `pass`
   - Gate: `gh pr view 15 --json state -q .state` — `MERGED` と出る
   - 再現: `scripts/dev/acceptance.sh`
+
+- [ ] **T007 — プレビューのタブ名に元ファイル名が出る（例: `Preview (demo.md)`）**
+  - なぜ: user 2026-10-25。今はどのファイルでも `Markdown Studio Preview` で、どのファイルのプレビューか分からない。別のファイルに切り替えたときもタブ名が追従する必要がある
+  - 最小検証: `npx vitest run -c config/vitest.unit.config.ts test/unit/webviewPanel.test.ts -t "tab title"` — 1 件以上 passing、failing 0（今は該当テストが無く 0 件）
+  - Gate: `npx vitest run -c config/vitest.unit.config.ts test/unit/webviewPanel.test.ts` — 作成時のタブ名が `Preview (demo.md)`、別ファイルへ切り替え後に `Preview (other.md)` になることを検査するテストを含めて failing 0
+  - 再現: `./scripts/dev/acceptance.sh`（demo.md のプレビューを開いてタブ名を見る）
+
+- [ ] **T008 — プレビューにフォーカスがある状態でも PDF 出力ができる**
+  - なぜ: user 2026-10-25。プレビューを見ているときに Export PDF を実行すると、エディタに戻る手間がかかる（今は「Markdown を先に開いて」と出て止まる）
+  - 最小検証: `npx vitest run -c config/vitest.unit.config.ts test/unit/exportPdfCommand.test.ts -t "preview"` — 1 件以上 passing、failing 0（今は該当テストが無く 0 件）
+  - Gate: `npx vitest run -c config/vitest.unit.config.ts test/unit/exportPdfCommand.test.ts` — アクティブなエディタが無くプレビューが開いているとき、プレビュー中の文書が出力されることを検査するテストを含めて failing 0
+  - 再現: `./scripts/dev/acceptance.sh`（demo.md のプレビューを選んだ状態で Export PDF を実行する）
 
 - [!] **T003 — `npm audit --omit=dev` に katex の指摘が出ない**
   - なぜ: GHSA-238p-pmpm-9mq7（katex 0.11.0〜0.18.1）。修正版がまだ出ていない（2026-10-21 確認）ため外部待ち
