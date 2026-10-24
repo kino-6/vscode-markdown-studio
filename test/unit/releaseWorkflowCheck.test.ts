@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { createRequire } from 'node:module';
 import yaml from 'js-yaml';
 
-const require = createRequire(import.meta.url);
+const require = createRequire(__filename);
 const { checkReleaseWorkflow } = require('../../scripts/test/releaseWorkflowCheck.js') as {
   checkReleaseWorkflow: (workflow: unknown) => string[];
 };
