@@ -44,12 +44,6 @@
   - Gate: `gh pr view 15 --json state -q .state` — `MERGED` と出る
   - 再現: `scripts/dev/acceptance.sh`
 
-- [ ] **T007 — プレビューのタブ名に元ファイル名が出る（例: `Preview (demo.md)`）**
-  - なぜ: user 2026-10-25。今はどのファイルでも `Markdown Studio Preview` で、どのファイルのプレビューか分からない。別のファイルに切り替えたときもタブ名が追従する必要がある
-  - 最小検証: `npx vitest run -c config/vitest.unit.config.ts test/unit/webviewPanel.test.ts -t "tab title"` — 1 件以上 passing、failing 0（今は該当テストが無く 0 件）
-  - Gate: `npx vitest run -c config/vitest.unit.config.ts test/unit/webviewPanel.test.ts` — 作成時のタブ名が `Preview (demo.md)`、別ファイルへ切り替え後に `Preview (other.md)` になることを検査するテストを含めて failing 0
-  - 再現: `./scripts/dev/acceptance.sh`（demo.md のプレビューを開いてタブ名を見る）
-
 - [ ] **T008 — プレビューにフォーカスがある状態でも PDF 出力ができる**
   - なぜ: user 2026-10-25。プレビューを見ているときに Export PDF を実行すると、エディタに戻る手間がかかる（今は「Markdown を先に開いて」と出て止まる）
   - 最小検証: `npx vitest run -c config/vitest.unit.config.ts test/unit/exportPdfCommand.test.ts -t "preview"` — 1 件以上 passing、failing 0（今は該当テストが無く 0 件）
@@ -66,4 +60,4 @@
 
 | 状態 | ID | 何を | 証跡 |
 |---|---|---|---|
-| [x] | T006 | PDF 出力の E2E が、PDF が実際に作られたことを検査する | `npm run test:e2e` — 17 passing、failing 0 / 2026-10-25 |
+| [x] | T007 | プレビューのタブ名に元ファイル名が出る（例: `Preview (demo.md)`） | `webviewPanel.test.ts` 29 passing / 2026-10-25 |

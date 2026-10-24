@@ -80,7 +80,7 @@
       "min_check": "`npx vitest run -c config/vitest.unit.config.ts test/unit/webviewPanel.test.ts -t \"tab title\"` — 1 件以上 passing、failing 0（今は該当テストが無く 0 件）",
       "gate": "`npx vitest run -c config/vitest.unit.config.ts test/unit/webviewPanel.test.ts` — 作成時のタブ名が `Preview (demo.md)`、別ファイルへ切り替え後に `Preview (other.md)` になることを検査するテストを含めて failing 0",
       "locked": "2026-10-25",
-      "passes": false,
+      "passes": true,
       "amendments": []
     },
     "T008": {

@@ -186,7 +186,7 @@ describe('openOrRefreshPreview – panel reuse (R3/D3)', () => {
     expect(vscode.window.createWebviewPanel).toHaveBeenCalledTimes(1);
     expect(vscode.window.createWebviewPanel).toHaveBeenCalledWith(
       'markdownStudio.preview',
-      'Markdown Studio Preview',
+      'Preview (test.md)',
       vscode.ViewColumn.Beside,
       expect.any(Object)
     );
@@ -202,6 +202,23 @@ describe('openOrRefreshPreview – panel reuse (R3/D3)', () => {
       expect.anything(),
       expect.objectContaining({ enableFindWidget: true })
     );
+  });
+
+  it('tab title names the previewed file and follows a switch to another file', async () => {
+    const doc = (name: string) => ({
+      getText: () => '# Hello',
+      uri: { toString: () => `file:///work/${name}`, path: `/work/${name}` },
+      languageId: 'markdown',
+    }) as unknown as vscode.TextDocument;
+
+    await openOrRefreshPreview(fakeContext(), doc('demo.md'));
+    expect(vscode.window.createWebviewPanel).toHaveBeenCalledWith(
+      'markdownStudio.preview', 'Preview (demo.md)', expect.anything(), expect.any(Object),
+    );
+    expect((mockPanel as unknown as { title?: string }).title).toBe('Preview (demo.md)');
+
+    await openOrRefreshPreview(fakeContext(), doc('other%20notes.md'));
+    expect((mockPanel as unknown as { title?: string }).title).toBe('Preview (other notes.md)');
   });
 
   it('lets a reused preview load images from the new document folder', async () => {
@@ -226,7 +243,7 @@ describe('openOrRefreshPreview – panel reuse (R3/D3)', () => {
 
     expect(vscode.window.createWebviewPanel).toHaveBeenCalledWith(
       'markdownStudio.preview',
-      'Markdown Studio Preview',
+      'Preview (test.md)',
       vscode.ViewColumn.One,
       expect.any(Object)
     );

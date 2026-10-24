@@ -5,6 +5,15 @@
 
 ## 2026-10
 
+### T007 — プレビューのタブ名に元ファイル名が出る（例: `Preview (demo.md)`）
+
+- 完了: 2026-10-25
+- Gate: `npx vitest run -c config/vitest.unit.config.ts test/unit/webviewPanel.test.ts` — 29 passing、failing 0。作成時は `Preview (demo.md)`、切り替え後は `Preview (other notes.md)` になる
+- 赤の確認: 切り替え時にタブ名を更新する 1 行を外すと、該当テストが落ちた
+- 再現: `./scripts/dev/acceptance.sh`（demo.md のプレビューを開いてタブ名を見る）
+- 何が本当の原因だったか: タブ名がコード中に固定文字列で書かれていた
+- commit: このレコードと同じ commit
+
 ### T006 — PDF 出力の E2E が、PDF が実際に作られたことを検査する
 
 - 完了: 2026-10-25

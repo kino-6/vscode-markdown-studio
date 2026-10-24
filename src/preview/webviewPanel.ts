@@ -283,6 +283,13 @@ export async function handleOpenExternalMessage(message: { type?: unknown; href?
   await vscode.env.openExternal(uri);
 }
 
+/** Tab title naming the previewed file, e.g. `Preview (demo.md)`. */
+export function previewTitle(document: vscode.TextDocument): string {
+  const source = document.uri.path || document.uri.toString();
+  const name = decodeURIComponent(source.split('/').pop() ?? '') || 'Markdown';
+  return `Preview (${name})`;
+}
+
 /** Folders the preview may load local files (images, styles, scripts) from. */
 function previewResourceRoots(context: vscode.ExtensionContext, document: vscode.TextDocument): vscode.Uri[] {
   return [
@@ -399,6 +406,7 @@ async function attachDocument(
     ...panel.webview.options,
     localResourceRoots: previewResourceRoots(context, document),
   };
+  panel.title = previewTitle(document);
 
   // Dispose old listeners so we track the new document
   cancelPendingChange();
@@ -486,7 +494,7 @@ export async function openOrRefreshPreview(
 
   const panel = vscode.window.createWebviewPanel(
     'markdownStudio.preview',
-    'Markdown Studio Preview',
+    previewTitle(document),
     targetViewColumn,
     {
       enableScripts: true,
