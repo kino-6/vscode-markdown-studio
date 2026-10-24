@@ -18,8 +18,8 @@ open this file and its preview with **Markdown Studio: Preview: Open Beside**.
 
 1. In the preview, press `Cmd+F` / `Ctrl+F` and search for `acceptance`.
 2. Click [the linked page](linked.md#second-section). It should open in the editor at "Second section".
-3. Open [skills/sample-skill/SKILL.md](skills/sample-skill/SKILL.md) and preview it: the top should be a card with the skill name.
-4. Open [skills/BadName/SKILL.md](skills/BadName/SKILL.md): the Problems panel should list Agent Skills warnings.
+3. Open [skills/sample-skill/SKILL.md](../skills/sample-skill/SKILL.md) and preview it: the top should be a card with the skill name.
+4. Open [skills/BadName/SKILL.md](../skills/BadName/SKILL.md): the Problems panel should list Agent Skills warnings.
 5. Run **Markdown Studio: Export PDF** on this file. Because this VS Code has a fresh profile, it should *ask* before downloading Chromium. Choosing "Not now" is fine.
 6. Optional: Settings → search `showEditorTitleButton` → turn it on. A preview button appears at the top right of Markdown editors.
 
