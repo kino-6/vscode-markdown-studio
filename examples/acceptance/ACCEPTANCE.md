@@ -6,7 +6,8 @@ title: Markdown Studio acceptance check
 
 Automated tests already cover behavior (unit, integration, preview runtime,
 local-only, demo render). This is only a quick look at what can be seen on
-screen. Open the preview with **Markdown Studio: Preview: Open Beside**.
+screen. Start with `demo.md` in the folder root (preview and PDF export), then
+open this file and its preview with **Markdown Studio: Preview: Open Beside**.
 
 > [!NOTE]
 > This box should be a blue "Note" alert, and the top of this page should be a
