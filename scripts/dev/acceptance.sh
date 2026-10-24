@@ -5,8 +5,8 @@ set -euo pipefail
 #
 # Builds the VSIX and starts an empty VS Code with its own settings folder and
 # its own extensions folder, so only Markdown Studio is installed and your
-# normal VS Code profile is untouched. Opens a fresh copy of examples/ (so PDF
-# exports never overwrite the committed examples) with demo.md shown.
+# normal VS Code profile is untouched. Opens a fresh copy of examples/ and icon/
+# (so PDF exports never overwrite the committed examples) with demo.md shown.
 #
 # Usage:
 #   scripts/dev/acceptance.sh          # build, install, launch
@@ -59,13 +59,16 @@ INSTALLED=$(NODE_OPTIONS="--no-deprecation" code \
 echo "Installed extensions in this profile:"
 echo "$INSTALLED" | sed 's/^/  /'
 
-echo "[3/3] Copying examples/ to $WORKSPACE_DIR and launching VS Code..."
+echo "[3/3] Copying examples/ and icon/ to $WORKSPACE_DIR and launching VS Code..."
+# Same layout as the repo: examples/demo.md refers to ../icon/ for its images.
 rm -rf "$WORKSPACE_DIR"
-cp -R "$REPO_ROOT/examples" "$WORKSPACE_DIR"
+mkdir -p "$WORKSPACE_DIR"
+cp -R "$REPO_ROOT/examples" "$WORKSPACE_DIR/examples"
+cp -R "$REPO_ROOT/icon" "$WORKSPACE_DIR/icon"
 NODE_OPTIONS="--no-deprecation" code \
   --new-window \
   --user-data-dir "$USER_DATA_DIR" \
   --extensions-dir "$EXTENSIONS_DIR" \
-  "$WORKSPACE_DIR" "$WORKSPACE_DIR/demo.md"
+  "$WORKSPACE_DIR" "$WORKSPACE_DIR/examples/demo.md"
 
-echo "Done. In the new window: preview and export demo.md, then see acceptance/ACCEPTANCE.md for the new features."
+echo "Done. In the new window: preview and export examples/demo.md, then see examples/acceptance/ACCEPTANCE.md for the new features."

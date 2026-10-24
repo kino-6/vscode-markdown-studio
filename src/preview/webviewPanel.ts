@@ -283,6 +283,16 @@ export async function handleOpenExternalMessage(message: { type?: unknown; href?
   await vscode.env.openExternal(uri);
 }
 
+/** Folders the preview may load local files (images, styles, scripts) from. */
+function previewResourceRoots(context: vscode.ExtensionContext, document: vscode.TextDocument): vscode.Uri[] {
+  return [
+    vscode.Uri.joinPath(context.extensionUri, 'media'),
+    vscode.Uri.joinPath(context.extensionUri, 'dist'),
+    vscode.Uri.joinPath(document.uri, '..'),
+    ...(vscode.workspace.workspaceFolders?.map(f => f.uri) ?? []),
+  ];
+}
+
 /** Renders the full preview page, showing a spinner and environment status first. */
 async function renderFullPreview(
   context: vscode.ExtensionContext,
@@ -382,6 +392,14 @@ async function attachDocument(
   document: vscode.TextDocument,
   initialSourceLine?: number,
 ): Promise<void> {
+  // Images are readable only from these folders, so follow the document:
+  // otherwise a preview reused for a file in another folder cannot show its
+  // local images.
+  panel.webview.options = {
+    ...panel.webview.options,
+    localResourceRoots: previewResourceRoots(context, document),
+  };
+
   // Dispose old listeners so we track the new document
   cancelPendingChange();
   changeSubscription?.dispose();
@@ -474,12 +492,7 @@ export async function openOrRefreshPreview(
       enableScripts: true,
       enableFindWidget: true,
       retainContextWhenHidden: true,
-      localResourceRoots: [
-        vscode.Uri.joinPath(context.extensionUri, 'media'),
-        vscode.Uri.joinPath(context.extensionUri, 'dist'),
-        vscode.Uri.joinPath(document.uri, '..'),
-        ...(vscode.workspace.workspaceFolders?.map(f => f.uri) ?? []),
-      ],
+      localResourceRoots: previewResourceRoots(context, document),
     }
   );
   currentPanel = panel;

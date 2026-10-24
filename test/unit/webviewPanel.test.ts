@@ -204,6 +204,23 @@ describe('openOrRefreshPreview – panel reuse (R3/D3)', () => {
     );
   });
 
+  it('lets a reused preview load images from the new document folder', async () => {
+    const docIn = (dir: string) => ({
+      getText: () => '# Hello',
+      uri: { toString: () => `file://${dir}/doc.md`, path: `${dir}/doc.md` },
+      languageId: 'markdown',
+    }) as unknown as vscode.TextDocument;
+    const rootPaths = () => ((mockPanel.webview as unknown as { options?: { localResourceRoots?: Array<{ path: string }> } })
+      .options?.localResourceRoots ?? []).map((u) => u.path);
+
+    await openOrRefreshPreview(fakeContext(), docIn('/work/a'));
+    await openOrRefreshPreview(fakeContext(), docIn('/work/b'));
+
+    expect(vscode.window.createWebviewPanel).toHaveBeenCalledTimes(1);
+    expect(rootPaths()).toContain('/work/b/doc.md/..');
+    expect(rootPaths()).not.toContain('/work/a/doc.md/..');
+  });
+
   it('can create a panel in the requested editor group', async () => {
     await openOrRefreshPreview(fakeContext(), fakeDocument(), { viewColumn: vscode.ViewColumn.One });
 

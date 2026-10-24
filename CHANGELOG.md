@@ -36,6 +36,7 @@ Three defaults changed to keep everything on your machine:
 
 ### Fixed
 
+- A preview reused for a Markdown file in another folder can now load that file's local images (the folders the preview may read from were fixed to the first file).
 - PDF export pages now carry a Content Security Policy, which stops connections the request gate cannot see, such as `<link rel="preconnect">`.
 - PlantUML no longer fetches URLs (`!include https://…`, `<img:https://…>`) when the user's environment sets `PLANTUML_SECURITY_PROFILE`; the variable is removed from the Java process environment.
 - The `${title}` output filename variable no longer picks up `#` lines inside code blocks, and now also recognizes setext (`===`) H1 headings.
