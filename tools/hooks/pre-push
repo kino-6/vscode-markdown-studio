@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Lock check against upstream, then the full run (several minutes).
+# Not installed by default. Install: cp tools/hooks/pre-push .git/hooks/ && chmod +x .git/hooks/pre-push
+set -euo pipefail
+
+if base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)"; then
+  python3 tools/check_tasks_lock.py --base "$base"
+else
+  python3 tools/check_tasks_lock.py --base HEAD
+fi
+
+npm run test:ci
+npm run test:local-only
+npm run test:e2e

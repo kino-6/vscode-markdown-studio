@@ -29,3 +29,10 @@ tsconfig.json
 e2e_log.txt
 *.vsix
 dist/*.vsix
+Tasks.md
+Tasks-archive.md
+Tasks.lock.json
+CHARTER.md
+tools/**
+.claude/**
+docs/work-rules.md

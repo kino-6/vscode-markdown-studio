@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "id_pattern": "T\\d+",
+  "rows": {
+    "T000": {
+      "title": "ローカル完結の強化・SKILL.md 対応・プレビュー修正・依存更新（PR #15 のブランチ）",
+      "min_check": "`npm run test:local-only` — `Local-only check passed` と出る",
+      "gate": "CI（`efdc94a`）で `test` と `local-only` のジョブが pass",
+      "locked": "2026-10-24",
+      "passes": true,
+      "amendments": []
+    },
+    "T001": {
+      "title": "PR #15 が main にマージされている",
+      "min_check": "`gh pr checks 15` — すべて `pass`",
+      "gate": "`gh pr view 15 --json state -q .state` — `MERGED` と出る",
+      "locked": "2026-10-24",
+      "passes": false,
+      "amendments": []
+    },
+    "T002": {
+      "title": "PR #15 の「画面でしか確かめられない動作」が E2E で検査され、受け入れ確認が眺める程度で済む",
+      "min_check": "`npm run test:e2e -- --grep \"local-first activation|SKILL.md diagnostics\"` — 2 件以上 passing、failing 0",
+      "gate": "`npm run test:e2e` — 16 件以上 passing（現在 14 件）、failing 0",
+      "locked": "2026-10-24",
+      "passes": false,
+      "amendments": []
+    },
+    "T003": {
+      "title": "`npm audit --omit=dev` に katex の指摘が出ない",
+      "min_check": "`npm view katex version` — 0.18.1 より新しい版が出る",
+      "gate": "`npm audit --omit=dev` — 出力に `katex` が無い",
+      "locked": "2026-10-24",
+      "passes": false,
+      "amendments": []
+    }
+  }
+}
