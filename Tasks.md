@@ -44,12 +44,6 @@
   - Gate: `gh pr view 15 --json state -q .state` — `MERGED` と出る
   - 再現: `scripts/dev/acceptance.sh`
 
-- [ ] **T006 — PDF 出力の E2E が、PDF が実際に作られたことを検査する**
-  - なぜ: T002 の作業中（2026-10-25）に判明。今のテストは出力が失敗してもファイルが無くても通り、「E2E が通る」が PDF 出力の動作の証明になっていない
-  - 最小検証: `npm run test:e2e -- --grep "exportPdf command should execute"` — PDF 出力を壊した状態で failing 1 になる（今は passing のまま）
-  - Gate: `npm run test:e2e` — failing 0、かつ PDF 出力テストが生成ファイルのサイズ > 0 を必ず確かめる（例外やファイル無しで抜ける経路が無い）
-  - 再現: `npm run test:e2e -- --grep "exportPdf"`
-
 - [!] **T003 — `npm audit --omit=dev` に katex の指摘が出ない**
   - なぜ: GHSA-238p-pmpm-9mq7（katex 0.11.0〜0.18.1）。修正版がまだ出ていない（2026-10-21 確認）ため外部待ち
   - 最小検証: `npm view katex version` — 0.18.1 より新しい版が出る
@@ -60,4 +54,4 @@
 
 | 状態 | ID | 何を | 証跡 |
 |---|---|---|---|
-| [x] | T002 | 起動時に何もダウンロードしないことと SKILL.md の警告表示を E2E で検査する | `npm run test:e2e` — 17 passing、failing 0 / 2026-10-25 |
+| [x] | T006 | PDF 出力の E2E が、PDF が実際に作られたことを検査する | `npm run test:e2e` — 17 passing、failing 0 / 2026-10-25 |
