@@ -39,7 +39,7 @@
       "min_check": "`node scripts/test/releaseWorkflowCheck.js` — `RELEASE_WORKFLOW OK` と出る",
       "gate": "`gh run list --workflow release.yml --commit $(git rev-parse HEAD) --limit 1 --json databaseId -q '.[0].databaseId' | xargs -I{} gh run view {} --json conclusion,jobs -q '[.conclusion, (.jobs[0].steps[]|select(.name|test(\"^Run npm run (lint|test:unit|test:integration|test:local-only|package)$|^Create GitHub Release$\"))|.conclusion)]|join(\" \")'` — `success success success success success success skipped` と出る",
       "locked": "2026-10-25",
-      "passes": false,
+      "passes": true,
       "amendments": [
         {
           "date": "2026-10-25",

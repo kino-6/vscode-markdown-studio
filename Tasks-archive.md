@@ -5,6 +5,15 @@
 
 ## 2026-10
 
+### T004 — タグ push 時の Release ワークフローが、VSIX を作る前に全テストを流し、落ちたら VSIX も Release も作らない
+
+- 完了: 2026-10-25
+- Gate: HEAD（`11e8f8f`）の release run で `success success success success success success skipped`（lint・unit・integration・local-only・package が success、Release は skipped）
+- 監査: 3 回とも GATE_BROKEN。1・2 回目の指摘（`continue-on-error` / `if:` / `|| true`、Gate が検査手順を読まない、2 つ目の Release 手順）は直した。3 回目の指摘（`shell:` や `npm_config_script_shell` による意図的なごまかし）は対象外とした。ユーザ判断（2026-10-25）で、この検査が守るのは書き間違いまでとし、release.yml を書き換えられる人による意図的な改ざんは扱わない
+- 再現: `node scripts/test/releaseWorkflowCheck.js`
+- 何が本当の原因だったか: 旧 workflow は Node 20 上で最新 vsce（Node 22 以上が必要）をグローバルに入れており、次のタグで落ちうる状態だった
+- commit: `647be3f` 〜 `11e8f8f`
+
 ### T005 — テストが落ちたとき、Release ワークフローが VSIX を作らずに止まることを実際の run で確かめた
 
 - 完了: 2026-10-25
