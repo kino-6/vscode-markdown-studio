@@ -9,7 +9,7 @@
 > **上から 1 件ずつ**処理する。詰まったら `[~]` / `[!]` に理由を書いて次へ。2 件を同時に開かない。
 > このファイルは **200 行以内**に保つ。超えたら幅を広げず、履歴へ移す。**commit の粒度で整備する。**
 
-次に起票する ID は **T005 以降**。
+次に起票する ID は **T006 以降**。
 
 ## 何をどこに書くか
 
@@ -41,8 +41,16 @@
 - [-] **T004 — タグ push 時の Release ワークフローが、VSIX を作る前に全テスト（lint・unit・integration・local-only）を流し、落ちたら VSIX も GitHub Release も作らない**
   - なぜ: user 2026-10-25。Marketplace に出しているので、配布物ができる時点で守る（main の扱いは変えない）。あわせて、Node 20 で最新 vsce（Node 22 以上が必要）をグローバルに入れている不要な手順を外す
   - 最小検証: `node scripts/test/releaseWorkflowCheck.js` — `RELEASE_WORKFLOW OK` と出る
-  - Gate: `gh run list --workflow release.yml --branch feat/local-only-hardening --limit 1 --json conclusion -q '.[0].conclusion'` — `success` と出、同じ run の `Create GitHub Release` の結論が `skipped`
+  - Gate: `gh run list --workflow release.yml --commit $(git rev-parse HEAD) --limit 1 --json databaseId -q '.[0].databaseId' | xargs -I{} gh run view {} --json conclusion,jobs -q '[.conclusion, (.jobs[0].steps[]|select(.name=="Create GitHub Release").conclusion)]|join(" ")'` — `success skipped` と出る
   - 再現: `gh run list --workflow release.yml --branch feat/local-only-hardening --limit 1`
+  - 経過: 2026-10-25 監査で GATE_BROKEN。最小検証が `continue-on-error` / `if:` / `|| true` などの抜け道を見分けられず、Gate も HEAD の run に絞っていなかった。最小検証を厳しくし（変異 10 件を `test/unit/releaseWorkflowCheck.test.ts` に固定）、Gate を amendment で修正。再監査待ち
+
+- [~] **T005 — テストが落ちたとき、Release ワークフローが VSIX を作らずに止まることを、実際の run で一度確かめる**
+  - なぜ: T004 の監査（2026-10-25）で、失敗する経路が一度も実行されていないと指摘された。今は workflow の構造の検査（抜け道が無いこと）で代えている
+  - 決めてほしいこと: わざと落ちるテストを入れた使い捨ての PR を、公開 repo に作ってよいか（作った後すぐ閉じる）。こちらで決めなかった理由: 公開 repo に履歴が残る操作のため
+  - 最小検証: `node scripts/test/releaseWorkflowCheck.js` — `RELEASE_WORKFLOW OK` と出る
+  - Gate: `gh run view <使い捨て PR の run id> --json conclusion,jobs -q '[.conclusion, (.jobs[0].steps[]|select(.name=="Run npm run package").conclusion)]|join(" ")'` — `failure skipped` と出る
+  - 再現: `gh run view <使い捨て PR の run id>`
 
 - [!] **T001 — PR #15 が main にマージされている**
   - なぜ: user 2026-10-21。マージはユーザが決める。ユーザの受け入れ確認（`scripts/dev/acceptance.sh`）待ち
