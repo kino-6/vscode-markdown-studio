@@ -44,12 +44,6 @@
   - Gate: `gh pr view 15 --json state -q .state` — `MERGED` と出る
   - 再現: `scripts/dev/acceptance.sh`
 
-- [ ] **T002 — PR #15 の「画面でしか確かめられない動作」が E2E で検査され、受け入れ確認が眺める程度で済む**
-  - なぜ: user 2026-10-21（人間を監査機関にしない）。次の 2 点は今も目視でしか確かめていない。起動しただけで何もダウンロードしない（起動後の globalStorage に Java / Chromium が無い）。SKILL.md の警告が「問題」パネルに出る
-  - 最小検証: `npm run test:e2e -- --grep "local-first activation|SKILL.md diagnostics"` — 2 件以上 passing、failing 0
-  - Gate: `npm run test:e2e` — 16 件以上 passing（現在 14 件）、failing 0
-  - 再現: `npm run test:e2e -- --grep "SKILL.md diagnostics"`
-
 - [!] **T003 — `npm audit --omit=dev` に katex の指摘が出ない**
   - なぜ: GHSA-238p-pmpm-9mq7（katex 0.11.0〜0.18.1）。修正版がまだ出ていない（2026-10-21 確認）ため外部待ち
   - 最小検証: `npm view katex version` — 0.18.1 より新しい版が出る
@@ -60,4 +54,4 @@
 
 | 状態 | ID | 何を | 証跡 |
 |---|---|---|---|
-| [x] | T004 | タグ push 時の Release ワークフローが、VSIX を作る前に全テストを流し、落ちたら VSIX も Release も作らない | Gate `success success success success success success skipped`（`11e8f8f`）/ 2026-10-25 |
+| [x] | T002 | 起動時に何もダウンロードしないことと SKILL.md の警告表示を E2E で検査する | `npm run test:e2e` — 17 passing、failing 0 / 2026-10-25 |

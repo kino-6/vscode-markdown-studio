@@ -23,7 +23,7 @@
       "min_check": "`npm run test:e2e -- --grep \"local-first activation|SKILL.md diagnostics\"` — 2 件以上 passing、failing 0",
       "gate": "`npm run test:e2e` — 16 件以上 passing（現在 14 件）、failing 0",
       "locked": "2026-10-24",
-      "passes": false,
+      "passes": true,
       "amendments": []
     },
     "T003": {
