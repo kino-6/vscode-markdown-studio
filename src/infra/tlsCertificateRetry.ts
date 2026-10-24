@@ -12,8 +12,12 @@ const TLS_CERTIFICATE_ERROR_PATTERNS = [
   "HOSTNAME/IP DOES NOT MATCH CERTIFICATE'S ALTNAMES",
 ];
 
+/**
+ * Shown when a dependency download fails certificate verification. Markdown
+ * Studio never disables verification on its own; the user decides.
+ */
 export const TLS_CERTIFICATE_SETTINGS_HINT =
-  'If your network uses a corporate proxy or SSL inspection, configure VS Code "http.proxy", set "http.proxyStrictSSL": false, or add your corporate CA certificate path to "markdownStudio.network.caCertificates".';
+  'If your network uses a corporate proxy or SSL inspection, add your corporate CA certificate path to "markdownStudio.network.caCertificates" (recommended), configure VS Code "http.proxy", or, only if you trust the network, set VS Code "http.proxyStrictSSL": false and retry with "Markdown Studio: Setup Dependencies".';
 
 function stringifyError(error: unknown): string {
   if (error instanceof Error) {
@@ -33,20 +37,4 @@ export function appendTlsCertificateSettingsHint(message: string): string {
     return message;
   }
   return `${message} ${TLS_CERTIFICATE_SETTINGS_HINT}`;
-}
-
-export async function withNodeTlsRejectUnauthorizedDisabled<T>(
-  operation: () => Promise<T>
-): Promise<T> {
-  const saved = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-  try {
-    return await operation();
-  } finally {
-    if (saved === undefined) {
-      delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-    } else {
-      process.env.NODE_TLS_REJECT_UNAUTHORIZED = saved;
-    }
-  }
 }

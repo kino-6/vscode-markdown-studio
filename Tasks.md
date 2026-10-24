@@ -1,0 +1,57 @@
+# Tasks.md — 作業のブレークダウン
+
+> **READ FIRST（全エージェント / 全セッション）**
+> 憲章（目的・ゴール・アプローチ・完了の判断）は [CHARTER.md](CHARTER.md)。
+> 作業規律（Gate と最小検証の契約 / 完了の 4 条件 / 別視点の検証 / 並列化）は [docs/work-rules.md](docs/work-rules.md)。
+> **ここは具体作業だけを書く。決まりを写さない。**
+> **毎周の入口でこのファイルと CHARTER.md を読み、`[x]` を付ける前に work-rules.md を読む。**
+> 題が下のどれにも無ければ、**脇道と明記してから**回す。
+> **上から 1 件ずつ**処理する。詰まったら `[~]` / `[!]` に理由を書いて次へ。2 件を同時に開かない。
+> このファイルは **200 行以内**に保つ。超えたら幅を広げず、履歴へ移す。**commit の粒度で整備する。**
+
+次に起票する ID は **T009 以降**。
+
+## 何をどこに書くか
+
+| 何を書くか | どこに書くか |
+|---|---|
+| 作業規律 | [docs/work-rules.md](docs/work-rules.md) |
+| 完了した作業の記録 | [Tasks-archive.md](Tasks-archive.md) |
+| 着手した行の最小検証・Gate の封印 | [Tasks.lock.json](Tasks.lock.json)（`python3 tools/check_tasks_lock.py`） |
+| 設計の原本・将来候補 | `docs/plans/` |
+| リリースごとの変更履歴 | [CHANGELOG.md](CHANGELOG.md) |
+
+## 書き方
+
+1 行 1 作業。項目は「**何を・なぜ・最小検証・Gate・再現・状態**」。状態はチェックボックスで書く。
+
+- `[x]`: 完了。**直近 1 件だけ**境界確認用に残し、以後は履歴へ移す
+- `[-]`: 進行中。中断時は、どこまで済んだかを書く
+- `[~]`: 人間の判断が必要（何を決めてほしいかを書く）
+- `[!]`: 外部（人・他システム）の動作待ち
+- `[ ]`: 未着手
+
+最小検証と Gate は着手前に書き、`Tasks.lock.json` に封印する。赤くなれることを最小検証で先に確かめる。
+行の Gate はその行を証明するもの。フルのテストは push の直前にだけ回し、行の Gate には書かない。
+
+---
+
+## 本線 A — ローカル完結の強化とリリース準備（2026-10-21〜）
+
+- [!] **T001 — PR #15 が main にマージされている**
+  - なぜ: user 2026-10-21。マージはユーザが決める。ユーザの受け入れ確認（`scripts/dev/acceptance.sh`）待ち
+  - 最小検証: `gh pr checks 15` — すべて `pass`
+  - Gate: `gh pr view 15 --json state -q .state` — `MERGED` と出る
+  - 再現: `scripts/dev/acceptance.sh`
+
+- [!] **T003 — `npm audit --omit=dev` に katex の指摘が出ない**
+  - なぜ: GHSA-238p-pmpm-9mq7（katex 0.11.0〜0.18.1）。修正版がまだ出ていない（2026-10-21 確認）ため外部待ち
+  - 最小検証: `npm view katex version` — 0.18.1 より新しい版が出る
+  - Gate: `npm audit --omit=dev` — 出力に `katex` が無い
+  - 再現: `npm audit --omit=dev`
+
+## 直近完了（境界確認用に 1 件だけ）
+
+| 状態 | ID | 何を | 証跡 |
+|---|---|---|---|
+| [x] | T008 | プレビューにフォーカスがある状態でも PDF 出力ができる | `exportPdfCommand.test.ts` 8 passing / 2026-10-25 |

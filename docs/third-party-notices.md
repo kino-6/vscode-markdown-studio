@@ -60,6 +60,12 @@ THE SOFTWARE.
 - License: MIT
 - Usage: Markdown parsing pipeline.
 
+## js-yaml
+- Project: js-yaml
+- Homepage: https://github.com/nodeca/js-yaml
+- License: MIT
+- Usage: Parsing YAML front matter (SKILL.md metadata card and validation).
+
 ## sanitize-html
 - Project: sanitize-html
 - Homepage: https://github.com/apostrophecms/sanitize-html

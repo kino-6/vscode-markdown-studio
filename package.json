@@ -2,7 +2,7 @@
   "name": "markdown-studio-local",
   "displayName": "Markdown Studio: Local PDF Export",
   "description": "%extension.description%",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "publisher": "kino6",
   "license": "MIT",
   "repository": {
@@ -45,7 +45,8 @@
     "commands": [
       {
         "command": "markdownStudio.openPreview",
-        "title": "%command.openPreview.title%"
+        "title": "%command.openPreview.title%",
+        "icon": "$(open-preview)"
       },
       {
         "command": "markdownStudio.openPreviewInCurrentTab",
@@ -84,6 +85,15 @@
         "title": "%command.exportProfileToJson.title%"
       }
     ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "markdownStudio.openPreview",
+          "when": "editorLangId == markdown && config.markdownStudio.preview.showEditorTitleButton",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "title": "%configuration.title%",
       "properties": {
@@ -141,11 +151,7 @@
           "items": {
             "type": "string"
           },
-          "default": [
-            "github.com",
-            "raw.githubusercontent.com",
-            "user-images.githubusercontent.com"
-          ],
+          "default": [],
           "description": "%configuration.security.externalResources.allowedDomains.description%"
         },
         "markdownStudio.export.header.enabled": {
@@ -241,6 +247,11 @@
           "type": "boolean",
           "default": true,
           "description": "%configuration.preview.sourceJump.enabled.description%"
+        },
+        "markdownStudio.preview.showEditorTitleButton": {
+          "type": "boolean",
+          "default": false,
+          "description": "%configuration.preview.showEditorTitleButton.description%"
         },
         "markdownStudio.style.preset": {
           "type": "string",
@@ -350,8 +361,10 @@
     "test:ci": "npm run lint && npm run test:unit && npm run test:integration",
     "test:preview-runtime": "npm run build && node scripts/test/previewRuntimeCheck.js",
     "test:demo-render": "npm run build && node scripts/test/demoRenderCheck.js",
+    "test:local-only": "npm run build && node scripts/test/localOnlyCheck.js",
     "package": "npm run build && rm -f dist/*.vsix && npm exec -- vsce package -o dist/",
     "reinstall": "bash scripts/dev/reinstall.sh",
+    "acceptance": "bash scripts/dev/acceptance.sh",
     "demo": "npx tsx scripts/demo/index.ts",
     "demo:marketplace-gif": "npm run build && node scripts/demo/marketplaceGif.js",
     "benchmark:preview": "npm run build && node scripts/benchmark/previewBenchmark.js",
@@ -363,6 +376,7 @@
     "@vscode/markdown-it-katex": "^1.1.2",
     "highlight.js": "^11.11.1",
     "https-proxy-agent": "^7.0.6",
+    "js-yaml": "4.3.2",
     "json5": "^2.2.3",
     "markdown-it": "^14.1.0",
     "markdown-it-deflist": "^3.0.0",
@@ -378,21 +392,23 @@
     "wavedrom": "^3.5.0"
   },
   "devDependencies": {
+    "@types/js-yaml": "4.0.9",
     "@types/markdown-it": "^14.1.2",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.10.0",
     "@types/sanitize-html": "^2.16.0",
     "@types/tar-stream": "^3.1.0",
     "@types/vscode": "^1.92.0",
-    "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^3.9.2",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.28.2",
     "fast-check": "^4.6.0",
     "mermaid": "^11.12.0",
     "playwright": "1.59.1",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vite": "8.3.3",
+    "vitest": "^4.1.11"
   },
   "overrides": {
     "diff": "^8.0.3",

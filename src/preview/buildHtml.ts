@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 import * as vscode from 'vscode';
 import { renderMarkdownDocument } from '../renderers/renderMarkdown';
+import { buildRemoteImageCspSources } from '../renderers/resourceFilter';
 import { getConfig } from '../infra/config';
 import { loadCustomCss } from '../infra/customCssLoader';
 import { RUNTIME_MESSAGES } from '../infra/messages';
@@ -261,8 +262,10 @@ export async function buildHtml(
   // CSP: 'unsafe-eval' is required because Mermaid 11.x uses new Function() internally
   // PDF context (no webview): omit CSP entirely — Playwright runs a local trusted Chromium
   // and needs file:// access for images. The restrictive webview CSP would block local resources.
+  const remoteImageSources = buildRemoteImageCspSources(config.externalResources);
+  const imgSrc = [cspSource, 'data:', remoteImageSources].filter(Boolean).join(' ');
   const cspTag = webview
-    ? `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} data:; style-src ${cspSource} 'unsafe-inline'; script-src ${cspSource} 'nonce-${nonce}' 'unsafe-eval'; font-src ${cspSource};">`
+    ? `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${imgSrc}; style-src ${cspSource} 'unsafe-inline'; script-src ${cspSource} 'nonce-${nonce}' 'unsafe-eval'; font-src ${cspSource};">`
     : '';
   return `<!doctype html>
 <html>

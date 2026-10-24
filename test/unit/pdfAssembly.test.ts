@@ -21,6 +21,12 @@ describe('PDF assembly', () => {
     expect(doc.getPageCount()).toBe(3);
   });
 
+  it('sets the document title on the merged PDF when given', async () => {
+    const merged = await mergePdfBuffers([await makePdf(1), await makePdf(1)], { title: 'Front Matter Title' });
+    const doc = await PDFDocument.load(merged);
+    expect(doc.getTitle()).toBe('Front Matter Title');
+  });
+
   it('rewrites named destination links to direct page destinations when merging', async () => {
     const cover = await makePdf(1);
     const body = await PDFDocument.create();

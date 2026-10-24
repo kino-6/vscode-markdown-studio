@@ -63,33 +63,27 @@ describe("correttoInstaller", () => {
     await fs.promises.rm(storageDir, { recursive: true, force: true });
   });
 
-  it("retries Corretto download with NODE_TLS_REJECT_UNAUTHORIZED=0 on certificate errors", async () => {
+  it("never retries with certificate checks disabled after a certificate error", async () => {
     const tlsValues: Array<string | undefined> = [];
-    mockDownloadFile
-      .mockImplementationOnce(async () => {
-        tlsValues.push(process.env.NODE_TLS_REJECT_UNAUTHORIZED);
-        throw new Error("UNABLE_TO_GET_ISSUER_CERT_LOCALLY");
-      })
-      .mockImplementationOnce(async () => {
-        tlsValues.push(process.env.NODE_TLS_REJECT_UNAUTHORIZED);
-      });
+    mockDownloadFile.mockImplementation(async () => {
+      tlsValues.push(process.env.NODE_TLS_REJECT_UNAUTHORIZED);
+      throw new Error("UNABLE_TO_GET_ISSUER_CERT_LOCALLY");
+    });
 
     const result = await correttoInstaller.install(storageDir, platform, progress, {
       caCertPaths: [],
       strictSSL: true,
     });
 
-    expect(result.ok).toBe(true);
-    expect(mockDownloadFile).toHaveBeenCalledTimes(2);
-    expect(tlsValues).toEqual([undefined, "0"]);
-    expect(mockDownloadFile.mock.calls[1][2]).toMatchObject({ strictSSL: false });
+    expect(result.ok).toBe(false);
+    expect(mockDownloadFile).toHaveBeenCalledTimes(1);
+    expect(mockDownloadFile.mock.calls[0][2]).toMatchObject({ strictSSL: true });
+    expect(tlsValues).toEqual([undefined]);
     expect(process.env.NODE_TLS_REJECT_UNAUTHORIZED).toBeUndefined();
   });
 
-  it("adds VS Code network setting hints when certificate retry still fails", async () => {
-    mockDownloadFile
-      .mockRejectedValueOnce(new Error("UNABLE_TO_GET_ISSUER_CERT_LOCALLY"))
-      .mockRejectedValueOnce(new Error("UNABLE_TO_GET_ISSUER_CERT_LOCALLY"));
+  it("adds VS Code network setting hints to certificate errors", async () => {
+    mockDownloadFile.mockRejectedValueOnce(new Error("UNABLE_TO_GET_ISSUER_CERT_LOCALLY"));
 
     const result = await correttoInstaller.install(storageDir, platform, progress, {
       caCertPaths: [],

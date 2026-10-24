@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "id_pattern": "T\\d+",
+  "rows": {
+    "T000": {
+      "title": "ローカル完結の強化・SKILL.md 対応・プレビュー修正・依存更新（PR #15 のブランチ）",
+      "min_check": "`npm run test:local-only` — `Local-only check passed` と出る",
+      "gate": "CI（`efdc94a`）で `test` と `local-only` のジョブが pass",
+      "locked": "2026-10-24",
+      "passes": true,
+      "amendments": []
+    },
+    "T001": {
+      "title": "PR #15 が main にマージされている",
+      "min_check": "`gh pr checks 15` — すべて `pass`",
+      "gate": "`gh pr view 15 --json state -q .state` — `MERGED` と出る",
+      "locked": "2026-10-24",
+      "passes": false,
+      "amendments": []
+    },
+    "T002": {
+      "title": "PR #15 の「画面でしか確かめられない動作」が E2E で検査され、受け入れ確認が眺める程度で済む",
+      "min_check": "`npm run test:e2e -- --grep \"local-first activation|SKILL.md diagnostics\"` — 2 件以上 passing、failing 0",
+      "gate": "`npm run test:e2e` — 16 件以上 passing（現在 14 件）、failing 0",
+      "locked": "2026-10-24",
+      "passes": true,
+      "amendments": []
+    },
+    "T003": {
+      "title": "`npm audit --omit=dev` に katex の指摘が出ない",
+      "min_check": "`npm view katex version` — 0.18.1 より新しい版が出る",
+      "gate": "`npm audit --omit=dev` — 出力に `katex` が無い",
+      "locked": "2026-10-24",
+      "passes": false,
+      "amendments": []
+    },
+    "T004": {
+      "title": "タグ push 時の Release ワークフローが、VSIX を作る前に全テスト（lint・unit・integration・local-only）を流し、落ちたら VSIX も GitHub Release も作らない",
+      "min_check": "`node scripts/test/releaseWorkflowCheck.js` — `RELEASE_WORKFLOW OK` と出る",
+      "gate": "`gh run list --workflow release.yml --commit $(git rev-parse HEAD) --limit 1 --json databaseId -q '.[0].databaseId' | xargs -I{} gh run view {} --json conclusion,jobs -q '[.conclusion, (.jobs[0].steps[]|select(.name|test(\"^Run npm run (lint|test:unit|test:integration|test:local-only|package)$|^Create GitHub Release$\"))|.conclusion)]|join(\" \")'` — `success success success success success success skipped` と出る",
+      "locked": "2026-10-25",
+      "passes": true,
+      "amendments": [
+        {
+          "date": "2026-10-25",
+          "field": "gate",
+          "reason": "gate-auditor が GATE_BROKEN と判定。旧 Gate は最新の run の conclusion しか見ず、HEAD の commit の run かどうかも、Create GitHub Release が skipped かどうかも 1 コマンドで確かめていなかった。HEAD の sha の run に絞り、手順の結果まで読む形に直す"
+        },
+        {
+          "date": "2026-10-25",
+          "field": "gate",
+          "reason": "再監査で GATE_BROKEN。Gate が run 全体と Release 手順の結果しか読まず、検査手順を消した workflow でも通った。lint・test:unit・test:integration・test:local-only・package の結果も並べて読む形に直す"
+        }
+      ]
+    },
+    "T005": {
+      "title": "テストが落ちたとき、Release ワークフローが VSIX を作らずに止まることを、実際の run で一度確かめる",
+      "min_check": "`node scripts/test/releaseWorkflowCheck.js` — `RELEASE_WORKFLOW OK` と出る",
+      "gate": "`gh run view 40105809061 --json conclusion,jobs -q '[.conclusion, (.jobs[0].steps[]|select(.name==\"Run npm run package\").conclusion)]|join(\" \")'` — `failure skipped` と出る",
+      "locked": "2026-10-25",
+      "passes": true,
+      "amendments": [
+        {
+          "date": "2026-10-25",
+          "field": "gate",
+          "reason": "使い捨て PR を作らずに済んだ。f2b9fb9 で lint が実際に失敗した run 40105809061 があり、後続の検査・package・Release がすべて skipped になっていた。placeholder だった run id をこの run に置き換える"
+        }
+      ]
+    },
+    "T006": {
+      "title": "PDF 出力の E2E が、PDF が実際に作られたことを検査する",
+      "min_check": "`npm run test:e2e -- --grep \"exportPdf command should execute\"` — PDF 出力を壊した状態で failing 1 になる（今は passing のまま）",
+      "gate": "`npm run test:e2e` — failing 0、かつ PDF 出力テストが生成ファイルのサイズ > 0 を必ず確かめる（例外やファイル無しで抜ける経路が無い）",
+      "locked": "2026-10-25",
+      "passes": true,
+      "amendments": []
+    },
+    "T007": {
+      "title": "プレビューのタブ名に元ファイル名が出る（例: `Preview (demo.md)`）",
+      "min_check": "`npx vitest run -c config/vitest.unit.config.ts test/unit/webviewPanel.test.ts -t \"tab title\"` — 1 件以上 passing、failing 0（今は該当テストが無く 0 件）",
+      "gate": "`npx vitest run -c config/vitest.unit.config.ts test/unit/webviewPanel.test.ts` — 作成時のタブ名が `Preview (demo.md)`、別ファイルへ切り替え後に `Preview (other.md)` になることを検査するテストを含めて failing 0",
+      "locked": "2026-10-25",
+      "passes": true,
+      "amendments": []
+    },
+    "T008": {
+      "title": "プレビューにフォーカスがある状態でも PDF 出力ができる",
+      "min_check": "`npx vitest run -c config/vitest.unit.config.ts test/unit/exportPdfCommand.test.ts -t \"preview\"` — 1 件以上 passing、failing 0（今は該当テストが無く 0 件）",
+      "gate": "`npx vitest run -c config/vitest.unit.config.ts test/unit/exportPdfCommand.test.ts` — アクティブなエディタが無くプレビューが開いているとき、プレビュー中の文書が出力されることを検査するテストを含めて failing 0",
+      "locked": "2026-10-25",
+      "passes": true,
+      "amendments": []
+    }
+  }
+}

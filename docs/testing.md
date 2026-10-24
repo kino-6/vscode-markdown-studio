@@ -16,6 +16,7 @@ npm run test:integration
 npm test
 npm run test:ci
 npm run test:preview-runtime
+npm run test:local-only
 npm run benchmark:preview
 npm run benchmark:pdf
 npm run corpus:check
@@ -25,12 +26,16 @@ npm run corpus:check
 - `test:integration`: preview composition and export smoke tests, plus renderer pipeline composition tests.
 - `test:ci`: lint + unit + integration (CI-friendly entrypoint).
 - `test:preview-runtime`: developer-only browser runtime check for Preview copy, TOC, external links, zoom, theme switching, and `update-body` behavior. This is intentionally not part of `test:ci`.
+- `test:local-only`: verifies the local-only promise against the real Preview, PDF export, and PlantUML pipeline. Chromium and Java are routed through a local recording proxy, and Node network APIs, process launches, machine-information APIs, and file reads outside the expected folders are recorded. It renders `test/fixtures/local-only/external-vectors.md` (images, `srcset`, `<link>`, `<iframe>`, CSS `url()`, SVG `<image>`, PlantUML `!include https://…`) and fails if anything leaves the machine with default settings. A second pass allowlists `example.com` and requires that only its image requests appear, which also proves the monitor works. Needs Chromium and Java; it also runs in CI. The static half lives in `test/unit/localOnlyAudit.test.ts`, which fails when new network, process, or identity APIs appear in the source without review.
+- `acceptance`: builds the VSIX and launches VS Code with an isolated settings folder and extensions folder (under `ignore/acceptance-profile/`), so only Markdown Studio is installed. Opens a fresh copy of `examples/` and `icon/` (under `ignore/acceptance-profile/workspace`, same layout as the repo so `../icon/` images resolve, and PDF exports never touch the committed examples) with `examples/demo.md` shown; `examples/acceptance/ACCEPTANCE.md` lists the new on-screen checks. Use `scripts/dev/acceptance.sh --reset` to start from a fresh profile. This is an acceptance look, not a substitute for the automated suites.
 - `benchmark:preview`: developer-only Preview benchmark for `examples/demo.md`, `examples/demo_win.md`, and `examples/demo_load.md`. This is intentionally an npm debug command, not a contributed VS Code command.
 - `benchmark:pdf`: developer-only PDF export benchmark for `examples/demo.md`, `examples/demo_win.md`, and `examples/demo_load.md`.
 - `corpus:check`: developer-only local Markdown corpus runner. It reads `ignore/markdown-corpus/manifest.json`, runs Preview/PDF benchmark checks, and writes local-only reports under `ignore/markdown-corpus/reports/`.
 
 ## Notes
 
+- The tag-triggered release workflow (`.github/workflows/release.yml`) runs lint, unit, integration, and `test:local-only` before `npm run package`; any failure means no VSIX and no GitHub Release. A PR that changes the workflow runs it as a rehearsal without creating a release. `node scripts/test/releaseWorkflowCheck.js` checks the workflow file itself.
+- `test:e2e` needs Node 22 or later (`@vscode/test-electron` 3.x). The other suites run on Node 20.
 - Tests are local-first and do not call remote APIs.
 - Playwright is mocked in tests so PDF smoke coverage stays deterministic and CI-friendly.
 - Renderer tests include graceful degradation checks (syntax errors and Java-missing behavior).

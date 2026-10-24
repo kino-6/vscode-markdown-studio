@@ -129,3 +129,49 @@ export function filterExternalResources(
 
   return result;
 }
+
+/** URL schemes that never leave the machine. */
+const LOCAL_SCHEMES = new Set(['file:', 'data:', 'blob:', 'about:']);
+
+/**
+ * Network gate for the PDF export browser. Every request the page makes goes
+ * through this, so HTML that slips past `filterExternalResources` (srcset,
+ * <link>, <iframe>, CSS url(), SVG <image>, ...) still cannot reach the
+ * network.
+ *
+ * Local schemes are always allowed. A remote request is allowed only for an
+ * image whose host the external-resource policy permits.
+ */
+export function isPdfRequestAllowed(
+  url: string,
+  resourceType: string,
+  config: ExternalResourceConfig,
+): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (LOCAL_SCHEMES.has(parsed.protocol)) return true;
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
+  if (resourceType !== 'image') return false;
+  if (config.mode === 'allow-all') return true;
+  if (config.mode === 'block-all') return false;
+  return isDomainAllowed(url, config.allowedDomains);
+}
+
+/**
+ * Extra `img-src` CSP sources for the preview webview, so images the policy
+ * allows are shown in the preview just like in the PDF. Returns an empty
+ * string when nothing remote is allowed.
+ */
+export function buildRemoteImageCspSources(config: ExternalResourceConfig): string {
+  if (config.mode === 'allow-all') return 'https: http:';
+  if (config.mode === 'block-all') return '';
+  const hosts = config.allowedDomains
+    .map((entry) => extractDomain(entry) ?? entry.trim().toLowerCase())
+    // Hostnames only: anything else could inject extra CSP directives.
+    .filter((host) => /^[a-z0-9.-]+$/.test(host) && host.includes('.'));
+  return [...new Set(hosts)].map((host) => `https://${host}`).join(' ');
+}

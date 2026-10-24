@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   showInformationMessage: vi.fn(),
@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
       getText: () => '# Spec',
       uri: { fsPath: '/workspace/spec.md' },
     },
-  },
+  } as { document: unknown } | undefined,
 }));
 
 vi.mock('vscode', () => ({
@@ -84,5 +84,77 @@ describe('exportPdfCommand settings export', () => {
     expect(mocks.showErrorMessage).toHaveBeenCalledWith(
       expect.stringContaining('render failed'),
     );
+  });
+
+  it('offers to download Chromium when it is missing and retries the export after consent', async () => {
+    exportToPdfMock
+      .mockRejectedValueOnce(new Error("browserType.launch: Executable doesn't exist"))
+      .mockResolvedValueOnce('/workspace/spec.pdf');
+    mocks.showInformationMessage.mockResolvedValue(undefined);
+    const offerChromiumDownload = vi.fn().mockResolvedValue(true);
+
+    await exportPdfCommand({} as any, { offerChromiumDownload });
+
+    expect(offerChromiumDownload).toHaveBeenCalledTimes(1);
+    expect(exportToPdfMock).toHaveBeenCalledTimes(2);
+    expect(mocks.showErrorMessage).not.toHaveBeenCalled();
+    expect(mocks.showInformationMessage).toHaveBeenCalledWith(expect.stringContaining('/workspace/spec.pdf'), 'Open PDF');
+  });
+
+  it('shows the setup hint and does not retry when the download is declined', async () => {
+    exportToPdfMock.mockRejectedValue(new Error("browserType.launch: Executable doesn't exist"));
+    const offerChromiumDownload = vi.fn().mockResolvedValue(false);
+
+    await exportPdfCommand({} as any, { offerChromiumDownload });
+
+    expect(exportToPdfMock).toHaveBeenCalledTimes(1);
+    expect(mocks.showErrorMessage).toHaveBeenCalledWith(expect.stringContaining('Setup Dependencies'));
+  });
+
+  it('offers the download only once even if the retry still fails', async () => {
+    exportToPdfMock.mockRejectedValue(new Error("browserType.launch: Executable doesn't exist"));
+    const offerChromiumDownload = vi.fn().mockResolvedValue(true);
+
+    await exportPdfCommand({} as any, { offerChromiumDownload });
+
+    expect(offerChromiumDownload).toHaveBeenCalledTimes(1);
+    expect(exportToPdfMock).toHaveBeenCalledTimes(2);
+  });
+
+  describe('when the preview has focus', () => {
+    const editor = mocks.activeTextEditor;
+    const previewDoc = { languageId: 'markdown', getText: () => '# Previewed', uri: { fsPath: '/workspace/previewed.md' } };
+
+    afterEach(() => {
+      mocks.activeTextEditor = editor;
+    });
+
+    it('exports the previewed document when no text editor is active (preview focused)', async () => {
+      mocks.activeTextEditor = undefined;
+      mocks.showInformationMessage.mockResolvedValue(undefined);
+
+      await exportPdfCommand({} as any, { getPreviewDocument: () => previewDoc as any });
+
+      expect(exportToPdfMock).toHaveBeenCalledTimes(1);
+      expect(exportToPdfMock.mock.calls[0][0]).toBe(previewDoc);
+      expect(mocks.showWarningMessage).not.toHaveBeenCalled();
+    });
+
+    it('prefers the active Markdown editor over the preview', async () => {
+      mocks.showInformationMessage.mockResolvedValue(undefined);
+
+      await exportPdfCommand({} as any, { getPreviewDocument: () => previewDoc as any });
+
+      expect((exportToPdfMock.mock.calls[0][0] as { uri: { fsPath: string } }).uri.fsPath).toBe('/workspace/spec.md');
+    });
+
+    it('still asks for a Markdown file when neither an editor nor the preview is active', async () => {
+      mocks.activeTextEditor = undefined;
+
+      await exportPdfCommand({} as any, { getPreviewDocument: () => undefined });
+
+      expect(exportToPdfMock).not.toHaveBeenCalled();
+      expect(mocks.showWarningMessage).toHaveBeenCalledWith(expect.stringContaining('Open a Markdown file first'));
+    });
   });
 });

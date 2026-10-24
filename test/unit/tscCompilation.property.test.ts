@@ -39,5 +39,7 @@ describe('tsc compilation property test – bug condition', () => {
       errorLines.length,
       `Found ${errorLines.length} TypeScript errors:\n${errorLines.join('\n')}`,
     ).toBe(0);
-  });
+    // Matches the 60 s budget of the nested tsc run; vitest 4 enforces the
+    // per-test timeout even for synchronous tests.
+  }, 90_000);
 });

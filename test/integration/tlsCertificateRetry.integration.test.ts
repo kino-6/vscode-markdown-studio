@@ -6,8 +6,8 @@ import * as os from "os";
 import * as path from "path";
 import { downloadFile } from "../../src/deps/download";
 import {
+  appendTlsCertificateSettingsHint,
   isTlsCertificateError,
-  withNodeTlsRejectUnauthorizedDisabled,
 } from "../../src/infra/tlsCertificateRetry";
 
 function runOpenSsl(args: string[]): void {
@@ -19,7 +19,8 @@ function runOpenSsl(args: string[]): void {
 
 const hasOpenSsl = spawnSync("openssl", ["version"], { encoding: "utf-8" }).status === 0;
 
-describe("TLS certificate retry integration", () => {
+describe("TLS certificate errors during dependency download", () => {
+  let caCertPath: string;
   let tmpDir: string;
   let server: https.Server | undefined;
   let url: string;
@@ -33,6 +34,7 @@ describe("TLS certificate retry integration", () => {
 
     const caKey = path.join(tmpDir, "ca-key.pem");
     const caCert = path.join(tmpDir, "ca-cert.pem");
+    caCertPath = caCert;
     const serverKey = path.join(tmpDir, "server-key.pem");
     const serverCsr = path.join(tmpDir, "server.csr");
     const serverCert = path.join(tmpDir, "server-cert.pem");
@@ -117,27 +119,39 @@ describe("TLS certificate retry integration", () => {
   });
 
   (hasOpenSsl ? it : it.skip)(
-    "reproduces an untrusted CA failure and succeeds with the TLS-disabled retry environment",
+    "fails on an untrusted CA and reports the settings that fix it",
     async () => {
-      const strictDest = path.join(tmpDir, "strict.txt");
       let strictError: unknown;
-
       try {
-        await downloadFile(url, strictDest, { caCertPaths: [], strictSSL: true });
+        await downloadFile(url, path.join(tmpDir, "strict.txt"), { caCertPaths: [], strictSSL: true });
       } catch (err) {
         strictError = err;
       }
 
       expect(strictError).toBeDefined();
       expect(isTlsCertificateError(strictError)).toBe(true);
+      const message = appendTlsCertificateSettingsHint(String(strictError));
+      expect(message).toContain("markdownStudio.network.caCertificates");
+      expect(message).toContain("http.proxyStrictSSL");
+    }
+  );
 
+  (hasOpenSsl ? it : it.skip)(
+    "succeeds when the user adds the corporate CA certificate",
+    async () => {
+      const dest = path.join(tmpDir, "with-ca.txt");
+      await downloadFile(url, dest, { caCertPaths: [caCertPath], strictSSL: true });
+      expect(await fs.promises.readFile(dest, "utf-8")).toBe("ok");
+    }
+  );
+
+  (hasOpenSsl ? it : it.skip)(
+    "succeeds when the user turns off http.proxyStrictSSL, without touching process-wide TLS settings",
+    async () => {
       const savedTls = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
-      const retryDest = path.join(tmpDir, "retry.txt");
-      await withNodeTlsRejectUnauthorizedDisabled(() =>
-        downloadFile(url, retryDest, { caCertPaths: [], strictSSL: false })
-      );
-
-      expect(await fs.promises.readFile(retryDest, "utf-8")).toBe("ok");
+      const dest = path.join(tmpDir, "user-opt-out.txt");
+      await downloadFile(url, dest, { caCertPaths: [], strictSSL: false });
+      expect(await fs.promises.readFile(dest, "utf-8")).toBe("ok");
       expect(process.env.NODE_TLS_REJECT_UNAUTHORIZED).toBe(savedTls);
     }
   );

@@ -103,7 +103,7 @@ For strict local-only work, set:
 
 ## Dependency Setup
 
-Run `Markdown Studio: Tools: Setup Dependencies` if prompted. The setup installs managed local dependencies used by Markdown Studio:
+Markdown Studio does not download anything when you open a file. The first time PDF export or PlantUML needs a runtime that is missing, it asks before downloading it. You can also run `Markdown Studio: Tools: Setup Dependencies` to install both up front:
 
 - Amazon Corretto JDK for PlantUML.
 - Playwright Chromium for PDF export.

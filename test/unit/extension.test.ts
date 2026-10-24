@@ -9,6 +9,7 @@ const subscriptionsPush = vi.fn();
 
 const onWillSaveTextDocument = vi.fn().mockReturnValue({ dispose: vi.fn() });
 
+vi.mock('../../src/skill/skillDiagnostics', () => ({ registerSkillDiagnostics: () => undefined }));
 vi.mock('vscode', () => ({
   workspace: {
     getConfiguration: () => ({ get: (_: string, f: unknown) => f }),
@@ -32,12 +33,17 @@ vi.mock('vscode', () => ({
 // Mock DependencyManager
 const ensureAllMock = vi.fn();
 const reinstallMock = vi.fn();
+const getStatusMock = vi.fn();
 
 vi.mock('../../src/deps/dependencyManager', () => ({
-  DependencyManager: vi.fn().mockImplementation(() => ({
-    ensureAll: ensureAllMock,
-    reinstall: reinstallMock,
-  })),
+  DependencyManager: vi.fn().mockImplementation(function () {
+    // A regular function: vitest 4 cannot `new` an arrow-function mock.
+    return {
+      ensureAll: ensureAllMock,
+      reinstall: reinstallMock,
+      getStatus: getStatusMock,
+    };
+  }),
 }));
 
 // Mock other command imports to avoid side effects
@@ -50,7 +56,9 @@ vi.mock('../../src/commands/openPreview', () => ({ openPreviewCommand: vi.fn() }
 vi.mock('../../src/commands/validateEnvironment', () => ({ validateEnvironmentCommand: vi.fn() }));
 vi.mock('../../src/commands/insertToc', () => ({ insertTocCommand: vi.fn() }));
 vi.mock('../../src/infra/tempFiles', () => ({ cleanupTempFiles: vi.fn().mockResolvedValue(undefined) }));
-vi.mock('../../src/preview/webviewPanel', () => ({ destroyPreviewPanel: vi.fn() }));
+vi.mock('../../src/preview/webviewPanel', () => ({ destroyPreviewPanel: vi.fn(), rerenderPreview: vi.fn(), getActivePreviewDocument: vi.fn() }));
+const setJavaMissingHandlerMock = vi.fn();
+vi.mock('../../src/renderers/renderPlantUml', () => ({ setJavaMissingHandler: setJavaMissingHandlerMock }));
 vi.mock('../../src/parser/scanFencedBlocks', () => ({ scanFencedBlocks: vi.fn().mockReturnValue([]) }));
 vi.mock('../../src/toc/tocCommentMarker', () => ({
   findTocCommentMarkers: vi.fn(),
@@ -78,20 +86,22 @@ describe('extension activation', () => {
     };
   });
 
-  it('calls ensureAll on activation and registers all commands', async () => {
-    ensureAllMock.mockResolvedValue({
-      allReady: true,
-      javaPath: '/path/to/java',
-      browserPath: '/path/to/chromium',
-      errors: [],
+  it('only checks installed dependencies on activation — never downloads', async () => {
+    getStatusMock.mockResolvedValue({
+      allReady: false,
+      errors: ['Corretto: not installed', 'Chromium: not installed'],
     });
 
     // Dynamic import to get fresh module state
     const ext = await import('../../src/extension');
     await ext.activate(context);
 
-    expect(ensureAllMock).toHaveBeenCalledWith(context);
+    expect(getStatusMock).toHaveBeenCalledWith(context);
+    expect(ensureAllMock).not.toHaveBeenCalled();
+    expect(reinstallMock).not.toHaveBeenCalled();
     expect(showWarningMessage).not.toHaveBeenCalled();
+    expect(showInformationMessage).not.toHaveBeenCalled();
+    expect(setJavaMissingHandlerMock).toHaveBeenCalledWith(expect.any(Function));
 
     expect(registerCommand).toHaveBeenCalledTimes(10);
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.openPreview', expect.any(Function));
@@ -106,40 +116,18 @@ describe('extension activation', () => {
     expect(registerCommand).toHaveBeenCalledWith('markdownStudio.exportProfileToJson', expect.any(Function));
   });
 
-  it('shows warning when ensureAll reports failures', async () => {
-    ensureAllMock.mockResolvedValue({
-      allReady: false,
-      errors: ['Corretto: download timeout'],
-    });
+  it('still activates and registers commands when the status check throws', async () => {
+    getStatusMock.mockRejectedValue(new Error('unexpected crash'));
 
     const ext = await import('../../src/extension');
     await ext.activate(context);
 
-    expect(showWarningMessage).toHaveBeenCalledWith(
-      expect.stringContaining('Corretto: download timeout')
-    );
-    expect(showWarningMessage).toHaveBeenCalledWith(
-      expect.stringContaining('Setup Dependencies')
-    );
-    // Commands still registered despite failure
-    expect(registerCommand).toHaveBeenCalledTimes(10);
-  });
-
-  it('still activates and registers commands when ensureAll throws', async () => {
-    ensureAllMock.mockRejectedValue(new Error('unexpected crash'));
-
-    const ext = await import('../../src/extension');
-    await ext.activate(context);
-
-    expect(showWarningMessage).toHaveBeenCalledWith(
-      expect.stringContaining('unexpected crash')
-    );
-    // All commands still registered
+    expect(ensureAllMock).not.toHaveBeenCalled();
     expect(registerCommand).toHaveBeenCalledTimes(10);
   });
 
   it('setupDependencies command calls reinstall and shows success', async () => {
-    ensureAllMock.mockResolvedValue({ allReady: true, errors: [] });
+    getStatusMock.mockResolvedValue({ allReady: true, errors: [] });
     reinstallMock.mockResolvedValue({
       allReady: true,
       javaPath: '/path/to/java',
@@ -166,7 +154,7 @@ describe('extension activation', () => {
   });
 
   it('setupDependencies command shows warning on partial failure', async () => {
-    ensureAllMock.mockResolvedValue({ allReady: true, errors: [] });
+    getStatusMock.mockResolvedValue({ allReady: true, errors: [] });
     reinstallMock.mockResolvedValue({
       allReady: false,
       errors: ['Chromium: network error'],
@@ -187,7 +175,7 @@ describe('extension activation', () => {
   });
 
   it('setupDependencies command shows error when reinstall throws', async () => {
-    ensureAllMock.mockResolvedValue({ allReady: true, errors: [] });
+    getStatusMock.mockResolvedValue({ allReady: true, errors: [] });
     reinstallMock.mockRejectedValue(new Error('disk full'));
 
     const ext = await import('../../src/extension');

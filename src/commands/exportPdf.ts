@@ -30,11 +30,37 @@ function showExportSuccess(outputPath: string): void {
   });
 }
 
+export interface ExportPdfCommandOptions {
+  /** Asks the user to download Chromium; resolves true once it is installed. */
+  offerChromiumDownload?: () => Promise<boolean>;
+  /** The document shown in the Markdown Studio preview, when the preview has focus. */
+  getPreviewDocument?: () => vscode.TextDocument | undefined;
+}
+
+/**
+ * The Markdown document to export: the active Markdown editor, or, when the
+ * preview has focus (there is no active text editor then), the previewed file.
+ */
+function resolveExportDocument(options: ExportPdfCommandOptions): vscode.TextDocument | undefined {
+  const editor = vscode.window.activeTextEditor;
+  if (editor && editor.document.languageId === 'markdown') return editor.document;
+  return options.getPreviewDocument?.();
+}
+
+function isBrowserMissingError(error: unknown): boolean {
+  const msg = String(error);
+  return msg.includes('Executable doesn\'t exist')
+    || msg.includes('browserType.launch')
+    || msg.includes(RUNTIME_MESSAGES.dependencies.chromiumBrowserUnavailable);
+}
+
 export async function exportPdfCommand(
   context: vscode.ExtensionContext,
+  options: ExportPdfCommandOptions = {},
+  isRetry = false,
 ): Promise<void> {
-  const editor = vscode.window.activeTextEditor;
-  if (!editor || editor.document.languageId !== 'markdown') {
+  const document = resolveExportDocument(options);
+  if (!document) {
     void vscode.window.showWarningMessage(RUNTIME_MESSAGES.command.openMarkdownFirst);
     return;
   }
@@ -55,7 +81,7 @@ export async function exportPdfCommand(
         const cancellation: CancellationChecker = {
           isCancelled() { return token.isCancellationRequested; },
         };
-        return exportToPdf(editor.document, context, reporter, cancellation);
+        return exportToPdf(document, context, reporter, cancellation);
       }
     );
     await saveSettingsSnapshotAfterPdfExport();
@@ -66,7 +92,11 @@ export async function exportPdfCommand(
       return;
     }
     const msg = String(error);
-    if (msg.includes('Executable doesn\'t exist') || msg.includes('browserType.launch')) {
+    if (isBrowserMissingError(error)) {
+      if (!isRetry && options.offerChromiumDownload && await options.offerChromiumDownload()) {
+        await exportPdfCommand(context, options, true);
+        return;
+      }
       void vscode.window.showErrorMessage(RUNTIME_MESSAGES.dependencies.chromiumMissingAutomatic);
     } else {
       void vscode.window.showErrorMessage(RUNTIME_MESSAGES.exportPdf.failed(msg));

@@ -126,20 +126,15 @@ Current behavior is local-first:
 - PlantUML defaults to the bundled local jar and Java execution.
 - No document content is sent to a remote renderer by default.
 
-Not absolute LocalOnly by default:
+LocalOnly by default (since v1.0.4):
 
-- `markdownStudio.security.externalResources.mode` defaults to `whitelist`.
-- The default allowlist includes `github.com`, `raw.githubusercontent.com`, and
-  `user-images.githubusercontent.com`.
-- This can fetch remote images/resources referenced by Markdown if they match
-  the allowlist.
-
-Decision for v1.0:
-
-- Keep current `whitelist` default if the intended posture is "local-first with
-  a practical GitHub asset allowlist".
-- Change the default to `block-all` if the intended posture is "strict LocalOnly
-  by default".
+- `markdownStudio.security.externalResources.mode` defaults to `whitelist` with
+  an empty allowlist, so no remote resource is fetched unless the user adds a
+  domain.
+- PDF export routes every page request through a network gate; only local
+  schemes and allowlisted images pass.
+- Java and Chromium are downloaded only after the user agrees (prompt or
+  `Setup Dependencies`), never on activation.
 
 ## Release Blockers
 

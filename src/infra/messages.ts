@@ -1,6 +1,7 @@
 export const RUNTIME_MESSAGES = {
   command: {
     openMarkdownFirst: 'Markdown Studio: Open a Markdown file first.',
+    linkTargetNotFound: (target: string) => `Markdown Studio: Linked file not found: ${target}`,
   },
 
   customCss: {
@@ -31,6 +32,13 @@ export const RUNTIME_MESSAGES = {
     chromiumInstallFailed: (message: string): string => `Chromium install failed: ${message}`,
     chromiumInstallationFailed: (message: string): string => `Chromium installation failed: ${message}`,
     chromiumVerificationFailed: (message: string): string => `Chromium verification failed: ${message}`,
+  },
+
+  dependencyConsent: {
+    chromiumPrompt: 'Markdown Studio needs a Chromium browser to export PDF. Download it now from the Playwright download server? It is stored in VS Code extension storage and used only locally.',
+    javaPrompt: 'Markdown Studio needs Java to render PlantUML diagrams. Download Amazon Corretto 21 now from corretto.aws? It is stored in VS Code extension storage and used only locally.',
+    download: 'Download',
+    notNow: 'Not now',
   },
 
   dependencyProgress: {

@@ -754,3 +754,125 @@ dd {
     display: none;
   }
 }
+
+/* YAML front matter (e.g. SKILL.md): shown as metadata in the preview, omitted from PDF */
+.ms-frontmatter {
+  margin: 0 0 1.5em;
+  opacity: 0.85;
+}
+
+.ms-frontmatter pre {
+  margin: 0;
+}
+
+.ms-frontmatter pre code,
+.ms-frontmatter pre code.hljs {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 0;
+  background: transparent;
+}
+
+@media print {
+  .ms-frontmatter {
+    display: none;
+  }
+}
+
+/* GitHub-style alerts: > [!NOTE] / [!TIP] / [!IMPORTANT] / [!WARNING] / [!CAUTION] */
+.markdown-alert {
+  --alert-color: #0969da;
+  margin: 1rem 0;
+  padding: 0.5em 1em;
+  border-left: 0.25em solid var(--alert-color);
+  border-radius: 0 4px 4px 0;
+  break-inside: avoid;
+}
+
+.markdown-alert > .markdown-alert-title + * {
+  margin-top: 0;
+}
+
+.markdown-alert > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-alert .markdown-alert-title {
+  margin: 0 0 0.25em;
+  font-weight: 600;
+  color: var(--alert-color);
+}
+
+.markdown-alert-note { --alert-color: #0969da; }
+.markdown-alert-tip { --alert-color: #1a7f37; }
+.markdown-alert-important { --alert-color: #8250df; }
+.markdown-alert-warning { --alert-color: #9a6700; }
+.markdown-alert-caution { --alert-color: #cf222e; }
+
+body.vscode-dark .markdown-alert-note,
+body.vscode-high-contrast .markdown-alert-note { --alert-color: #4493f8; }
+body.vscode-dark .markdown-alert-tip,
+body.vscode-high-contrast .markdown-alert-tip { --alert-color: #3fb950; }
+body.vscode-dark .markdown-alert-important,
+body.vscode-high-contrast .markdown-alert-important { --alert-color: #ab7df8; }
+body.vscode-dark .markdown-alert-warning,
+body.vscode-high-contrast .markdown-alert-warning { --alert-color: #d29922; }
+body.vscode-dark .markdown-alert-caution,
+body.vscode-high-contrast .markdown-alert-caution { --alert-color: #f85149; }
+
+/* Skill / agent definition card (front matter with name + description, e.g. SKILL.md) */
+.ms-skill-card {
+  opacity: 1;
+  padding: 0.75em 1em;
+  border: 1px solid var(--code-border, #d0d7de);
+  border-left: 0.25em solid var(--vscode-textLink-foreground, #0969da);
+  border-radius: 0 6px 6px 0;
+  background: var(--code-bg, #f6f8fa);
+}
+
+.ms-skill-name {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 1.15em;
+  font-weight: 600;
+}
+
+.ms-skill-description {
+  margin: 0.4em 0 0;
+}
+
+.ms-skill-fields {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.2em 1em;
+  margin: 0.6em 0 0;
+  font-size: 0.9em;
+}
+
+.ms-skill-fields dt {
+  margin: 0;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.ms-skill-fields dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.ms-skill-tool {
+  font-size: 0.85em;
+}
+
+.ms-frontmatter-raw {
+  margin-top: 0.6em;
+  font-size: 0.9em;
+}
+
+.ms-frontmatter-raw summary {
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.ms-frontmatter-raw pre {
+  margin-top: 0.4em;
+}

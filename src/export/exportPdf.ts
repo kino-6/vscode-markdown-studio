@@ -15,6 +15,8 @@ import { resolveOutputFilename, extractH1Title, FilenameContext } from './filena
 import { getExportConfig } from '../infra/config';
 import { loadCustomCss } from '../infra/customCssLoader';
 import { buildHtml } from '../preview/buildHtml';
+import { buildRemoteImageCspSources, isPdfRequestAllowed } from '../renderers/resourceFilter';
+import { extractFrontMatterTitle } from '../parser/frontMatter';
 import type { BookmarkEntry, ExportConfigOverlay } from '../types/models';
 import { RUNTIME_MESSAGES } from '../infra/messages';
 
@@ -237,10 +239,61 @@ async function buildPreparedPdfHtml(
   context: vscode.ExtensionContext,
   assets: PdfAssets,
   cfg: PdfExportConfig,
+  documentTitle?: string,
 ): Promise<string> {
-  const html = await buildHtml(markdown, context, undefined, undefined, uri);
+  const html = injectPdfCsp(
+    injectDocumentTitle(await buildHtml(markdown, context, undefined, undefined, uri), documentTitle),
+    cfg,
+  );
   const inlined = await inlineLocalImages(html);
   return preparePdfHtml(injectPdfAssets(inlined, assets), cfg);
+}
+
+/**
+ * Content Security Policy for the PDF export page. Request routing
+ * (`blockDisallowedRequests`) cannot see connections Chromium opens without a
+ * request, such as `<link rel="preconnect">`; CSP stops those. Local files,
+ * inline styles/scripts (the injected preview runtime) and allowlisted remote
+ * images stay allowed.
+ */
+export function buildPdfCsp(cfg: Pick<PdfExportConfig, 'externalResources'>): string {
+  const remoteImages = buildRemoteImageCspSources(cfg.externalResources);
+  return [
+    "default-src 'none'",
+    `img-src file: data: blob:${remoteImages ? ` ${remoteImages}` : ''}`,
+    "style-src file: 'unsafe-inline'",
+    'font-src file: data:',
+    "script-src file: 'unsafe-inline' 'unsafe-eval'",
+  ].join('; ');
+}
+
+export function injectPdfCsp(html: string, cfg: Pick<PdfExportConfig, 'externalResources'>): string {
+  const meta = `<meta http-equiv="Content-Security-Policy" content="${buildPdfCsp(cfg)}">`;
+  return html.replace(/<head>/i, `<head>\n${meta}`);
+}
+
+/** Chromium writes `<title>` into the PDF's document properties (Title). */
+export function injectDocumentTitle(html: string, title: string | undefined): string {
+  if (!title) return html;
+  const escaped = title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return html.replace(/<head>/i, `<head>\n<title>${escaped}</title>`);
+}
+
+/**
+ * Aborts every request the export page makes unless it is local or an image
+ * the external-resource policy allows. This is the enforcement point for the
+ * local-only guarantee during PDF export.
+ */
+async function blockDisallowedRequests(page: Page, cfg: PdfExportConfig): Promise<void> {
+  if (typeof page.route !== 'function') return;
+  await page.route('**/*', (route) => {
+    const request = route.request();
+    if (isPdfRequestAllowed(request.url(), request.resourceType(), cfg.externalResources)) {
+      return route.continue();
+    }
+    console.warn('[Markdown Studio] Blocked network request during PDF export:', request.url());
+    return route.abort('blockedbyclient');
+  });
 }
 
 async function preparePageForPdf(
@@ -253,6 +306,7 @@ async function preparePageForPdf(
   if (typeof page.emulateMedia === 'function') {
     await page.emulateMedia({ media: 'print' });
   }
+  await blockDisallowedRequests(page, cfg);
   await page.setContent(html, { waitUntil: 'networkidle' });
   await forceLightMode(page);
 
@@ -616,8 +670,9 @@ async function addPdfBookmarksIfNeeded(
 async function writeMergedPdfFile(
   outputPath: string,
   buffers: Buffer[],
+  title?: string,
 ): Promise<void> {
-  const merged = await mergePdfBuffers(buffers);
+  const merged = await mergePdfBuffers(buffers, { title });
   await fs.writeFile(outputPath, merged);
   await fs.access(outputPath);
 }
@@ -626,7 +681,7 @@ function resolvePdfOutputPath(document: vscode.TextDocument, cfg: PdfExportConfi
   const filenameCtx: FilenameContext = {
     filename: path.basename(document.uri.fsPath, path.extname(document.uri.fsPath)),
     ext: path.extname(document.uri.fsPath).replace(/^\./, ''),
-    title: extractH1Title(document.getText()),
+    title: extractFrontMatterTitle(document.getText()) ?? extractH1Title(document.getText()),
   };
   const resolvedName = resolveOutputFilename(cfg.outputFilename, filenameCtx);
   return path.join(path.dirname(document.uri.fsPath), resolvedName);
@@ -662,14 +717,17 @@ export async function exportToPdf(
   for (const w of assets.customCssWarnings) {
     console.warn(w);
   }
-  const html = await buildPreparedPdfHtml(embeddedCover.bodyMarkdown, document.uri, context, assets, cfg);
+  const fileTitle = path.basename(document.uri.fsPath, path.extname(document.uri.fsPath));
+  const frontMatterTitle = extractFrontMatterTitle(sourceMarkdown);
+  const pdfDocumentTitle = frontMatterTitle ?? fileTitle;
+  const html = await buildPreparedPdfHtml(embeddedCover.bodyMarkdown, document.uri, context, assets, cfg, pdfDocumentTitle);
 
   checkCancellation(cancellation);
 
   // Step 2: Prepare optional cover HTML with the same renderer and styling.
   progress?.report(RUNTIME_MESSAGES.exportProgress.processingImages, 15);
   const coverHtml = coverMarkdown
-    ? await buildPreparedPdfHtml(coverMarkdown.markdown, coverMarkdown.uri, context, assets, cfg)
+    ? await buildPreparedPdfHtml(coverMarkdown.markdown, coverMarkdown.uri, context, assets, cfg, pdfDocumentTitle)
     : undefined;
 
   checkCancellation(cancellation);
@@ -711,7 +769,7 @@ export async function exportToPdf(
     checkCancellation(cancellation);
 
     // Compute PDF options early so margin values can be reused by PDF Index
-    const documentTitle = path.basename(document.uri.fsPath, '.md');
+    const documentTitle = frontMatterTitle ?? path.basename(document.uri.fsPath, '.md');
     const pdfOptions = buildPdfOptions(cfg.pdfHeaderFooter, documentTitle, cfg.style.margin);
 
     let coverBuffer: Buffer | undefined;
@@ -731,7 +789,7 @@ export async function exportToPdf(
 
     if (coverBuffer) {
       const bodyBuffer = await renderPdfBuffer(page, cfg, pdfOptions);
-      await writeMergedPdfFile(outputPath, [coverBuffer, bodyBuffer]);
+      await writeMergedPdfFile(outputPath, [coverBuffer, bodyBuffer], pdfDocumentTitle);
     } else {
       await writePdfFile(page, outputPath, cfg, pdfOptions);
     }

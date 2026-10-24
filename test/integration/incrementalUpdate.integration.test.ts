@@ -133,6 +133,7 @@ vi.mock('../../src/extension', () => ({
 import {
   openOrRefreshPreview,
   _resetPanelForTesting,
+  _setRenderDebounceMsForTesting,
 } from '../../src/preview/webviewPanel';
 import type * as vscode from 'vscode';
 
@@ -165,6 +166,7 @@ function fakeDocument(
 describe('Incremental update – end-to-end integration', () => {
   beforeEach(() => {
     _resetPanelForTesting();
+    _setRenderDebounceMsForTesting(0);
     capturedChangeCallback = undefined;
     mockPanel = createMockPanel();
     vi.clearAllMocks();

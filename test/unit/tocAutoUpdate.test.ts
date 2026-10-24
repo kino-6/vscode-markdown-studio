@@ -9,6 +9,7 @@ const onWillSaveTextDocument = vi.fn().mockImplementation((cb: any) => {
   return { dispose: vi.fn() };
 });
 
+vi.mock('../../src/skill/skillDiagnostics', () => ({ registerSkillDiagnostics: () => undefined }));
 vi.mock('vscode', () => {
   class MockPosition {
     constructor(public line: number, public character: number) {}
@@ -84,17 +85,20 @@ vi.mock('../../src/infra/config', () => ({
 // Mock other imports used by extension.ts
 const ensureAllMock = vi.fn().mockResolvedValue({ allReady: true, errors: [] });
 vi.mock('../../src/deps/dependencyManager', () => ({
-  DependencyManager: vi.fn().mockImplementation(() => ({
-    ensureAll: ensureAllMock,
-    reinstall: vi.fn(),
-  })),
+  DependencyManager: vi.fn().mockImplementation(function () {
+    // A regular function: vitest 4 cannot `new` an arrow-function mock.
+    return {
+      ensureAll: ensureAllMock,
+      reinstall: vi.fn(),
+    };
+  }),
 }));
 vi.mock('../../src/commands/exportPdf', () => ({ exportPdfCommand: vi.fn() }));
 vi.mock('../../src/commands/openPreview', () => ({ openPreviewCommand: vi.fn() }));
 vi.mock('../../src/commands/validateEnvironment', () => ({ validateEnvironmentCommand: vi.fn() }));
 vi.mock('../../src/commands/insertToc', () => ({ insertTocCommand: vi.fn() }));
 vi.mock('../../src/infra/tempFiles', () => ({ cleanupTempFiles: vi.fn().mockResolvedValue(undefined) }));
-vi.mock('../../src/preview/webviewPanel', () => ({ destroyPreviewPanel: vi.fn() }));
+vi.mock('../../src/preview/webviewPanel', () => ({ destroyPreviewPanel: vi.fn(), rerenderPreview: vi.fn(), getActivePreviewDocument: vi.fn() }));
 
 describe('TOC auto-update on save', () => {
   beforeEach(async () => {

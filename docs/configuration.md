@@ -28,8 +28,9 @@ For term definitions such as TOC, PDF Index, and bookmarks, see [glossary.md](./
 | `markdownStudio.preview.theme` | enum | `auto` | Preview theme mode: auto, light, dark. |
 | `markdownStudio.preview.contentWidth` | enum | `a4` | Preview content width: a4, full. |
 | `markdownStudio.preview.sourceJump.enabled` | boolean | `true` | Double-click preview to jump to source line. |
+| `markdownStudio.preview.showEditorTitleButton` | boolean | `false` | Show an Open Preview button in the editor title bar for Markdown files. |
 | `markdownStudio.security.externalResources.mode` | enum | `whitelist` | External resource policy: `block-all`, `whitelist`, or `allow-all`. |
-| `markdownStudio.security.externalResources.allowedDomains` | array | GitHub domains | Domains allowed when mode is `whitelist`. |
+| `markdownStudio.security.externalResources.allowedDomains` | array | `[]` | Domains whose images may be loaded when mode is `whitelist`. Empty by default, so nothing remote is fetched. |
 | `markdownStudio.security.blockExternalLinks` | boolean | `true` | Deprecated legacy setting. Use `security.externalResources.mode`. |
 | `markdownStudio.style.preset` | enum | `markdown-pdf` | Base typography preset. |
 | `markdownStudio.style.fontFamily` | string | system sans-serif | Override preset font family. |

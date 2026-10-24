@@ -34,6 +34,11 @@ For PlantUML and PDF export dependencies, run `Markdown Studio: Tools: Setup Dep
 - Source jump — double-click in preview to jump to the corresponding source line
 - Loading overlay with progress indicator for initial render
 - Dark / light theme auto-switching — follows VS Code color theme with manual override (auto / light / dark)
+- Find in preview with `Ctrl+F` / `Cmd+F`
+- YAML front matter shown as a metadata block instead of being rendered as headings
+- Agent Skills (`SKILL.md`) support: front matter with `name` and `description` is shown as a skill card, and `SKILL.md` files are checked against the [Agent Skills specification](https://agentskills.io/specification) (name format and folder match, description and compatibility length, metadata and allowed-tools format, missing referenced files, and the 500-line recommendation) with warnings in the Problems panel
+- GitHub-style alerts: `> [!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`
+- Optional editor title button to open the preview (`markdownStudio.preview.showEditorTitleButton`, off by default)
 
 ### Diagram Rendering
 
@@ -54,6 +59,7 @@ For PlantUML and PDF export dependencies, run `Markdown Studio: Tools: Setup Dep
 - PDF Bookmarks (outlines) — heading-based bookmark tree for PDF viewer sidebar navigation
 - Optional Markdown cover page — write a cover block in the same file, or use `cover.md` as an advanced shared template
 - Customizable output filename via template variables (`${filename}`, `${date}`, `${title}`, etc.)
+- Front matter `title:` is used for the PDF document title, the default header, and `${title}`
 
 ### Syntax Highlighting
 
@@ -97,29 +103,35 @@ Five built-in presets with per-setting overrides:
 
 - CSP policy: `default-src 'none'` by default
 - External resource control: `block-all` / `whitelist` / `allow-all`
-- Default external-resource mode is `whitelist`; GitHub domains are included by default for common README assets
-- Use `block-all` for strict LocalOnly documents
+- Default external-resource mode is `whitelist` with an empty allowlist, so nothing remote is fetched unless you add domains
+- Allowlisted remote images appear in both the preview and the PDF; PDF export blocks every other network request the page makes
 - SVG sanitization via sanitize-html
 
-### Automatic Dependency Management
+### Dependency Management (download only with your consent)
 
-- One-command setup: Amazon Corretto JDK + Playwright Chromium
-- Auto-detection and installation on first activation
-- Manual reinstall via `Setup Dependencies` command
+- Opening Markdown never downloads anything; activation only checks what is already installed
+- When PDF export needs Chromium, or PlantUML cannot find Java, Markdown Studio asks before downloading only the missing runtime
+- Manual install or reinstall via `Setup Dependencies` command
 
 ## Local-First Architecture
 
+With default settings, Markdown Studio does not send anything over the network and does not read information about your machine or VS Code identity.
+
 | Operation          | Network Access                 | Notes                                                                 |
 | ------------------ | ------------------------------ | --------------------------------------------------------------------- |
-| Preview            | None                           | All rendering is local (markdown-it, highlight.js, Mermaid, WaveDrom) |
-| PDF Export         | None                           | Playwright Chromium runs locally with `networkidle` wait              |
-| PlantUML           | None                           | Bundled JAR + Amazon Corretto JDK, Smetana layout engine              |
-| Mermaid            | None                           | Bundled in webview script, rendered client-side                       |
-| WaveDrom           | None                           | Bundled in webview script, rendered client-side                       |
-| SVG                | None                           | Passed through directly, no external references                       |
-| Syntax Highlighting| None                           | Bundled highlight.js with registered languages                        |
-| External resources | GitHub allowlist by default    | Remote images/resources are allowlisted by domain, or fully blocked with `block-all` |
-| Initial Setup      | Corretto + Chromium download   | One-time only, via `Setup Dependencies` command                       |
+| Preview            | None                           | Rendered locally; the webview CSP blocks remote loads                 |
+| PDF Export         | None                           | Local Chromium; every page request passes a network gate plus CSP     |
+| PlantUML           | None                           | Bundled JAR with local Java; URL includes stay disabled even if `PLANTUML_SECURITY_PROFILE` is set |
+| Mermaid / WaveDrom / KaTeX / highlight.js | None    | Bundled and rendered locally                                          |
+| SVG                | None                           | Passed through; remote references are blocked by CSP                  |
+| External images    | None by default                | Only images from domains you add to `allowedDomains` (or `allow-all`) |
+| Links              | Only when you click            | Opened by VS Code; relative links open files in the editor            |
+| Runtime download   | Only with your consent         | Java/Chromium are fetched after you accept the prompt or run `Setup Dependencies` |
+
+How this is verified:
+
+- `test/unit/localOnlyAudit.test.ts` (part of `npm run test:ci`) fails when network, process-launch, machine-information, or VS Code identity APIs appear in the source without review.
+- `npm run test:local-only` (also in CI) renders a document full of external references through the real Preview, PDF, and PlantUML pipeline behind a recording proxy and fails if anything leaves the machine.
 
 ## Commands
 

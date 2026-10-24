@@ -10,6 +10,24 @@ import { createTempFile } from '../infra/tempFiles';
 import { PlantUmlResult } from '../types/models';
 
 const cache = new ContentCache<PlantUmlResult>();
+
+/**
+ * Failures that may succeed on a later attempt (timeouts, Java missing or not
+ * startable, missing output). They are not cached so the next render retries.
+ * Deterministic failures such as PlantUML syntax errors are still cached, so a
+ * broken diagram does not start Java on every keystroke.
+ */
+const transientFailures = new WeakSet<PlantUmlResult>();
+
+function transient(result: PlantUmlResult): PlantUmlResult {
+  transientFailures.add(result);
+  return result;
+}
+
+function cacheResult(key: string, result: PlantUmlResult): void {
+  if (transientFailures.has(result)) return;
+  cache.set(key, result);
+}
 type PlantUmlRuntime = {
   cfg: ReturnType<typeof getConfig>;
   jarPath: string;
@@ -20,6 +38,36 @@ type PlantUmlBatchItem = {
   key: string;
   inputFile: string;
 };
+
+/**
+ * Environment for the PlantUML process. PlantUML's built-in security profile
+ * does not fetch URLs (`!include https://…`, `<img:https://…>`), but the
+ * PLANTUML_SECURITY_PROFILE environment variable can switch it to one that
+ * does. Drop it so rendering stays local regardless of the user's shell.
+ */
+export function plantUmlProcessEnv(base: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(base)) {
+    if (key.toUpperCase() === 'PLANTUML_SECURITY_PROFILE') continue;
+    env[key] = value;
+  }
+  return env;
+}
+
+let javaMissingHandler: (() => void) | undefined;
+
+/** Called when PlantUML cannot run because Java is missing. */
+export function setJavaMissingHandler(handler: (() => void) | undefined): void {
+  javaMissingHandler = handler;
+}
+
+function notifyJavaMissing(): void {
+  try {
+    javaMissingHandler?.();
+  } catch {
+    // Never let the prompt break rendering.
+  }
+}
 
 /** @internal Exposed for testing only. */
 export function clearPlantUmlCache(): void {
@@ -42,6 +90,7 @@ function unsupportedModeResult(mode: string): PlantUmlResult {
 }
 
 function javaMissingResult(): PlantUmlResult {
+  notifyJavaMissing();
   return {
     ok: false,
     error: RUNTIME_MESSAGES.dependencies.javaMissingAutomatic,
@@ -55,7 +104,8 @@ function processFailureResult(result: { timedOut: boolean; exitCode: number; std
      result.stderr?.includes('ENOENT') ||
      result.exitCode === 127);
 
-  return {
+  if (isJavaMissing) notifyJavaMissing();
+  const failure: PlantUmlResult = {
     ok: false,
     error: result.timedOut
       ? RUNTIME_MESSAGES.plantUml.timedOut
@@ -63,6 +113,7 @@ function processFailureResult(result: { timedOut: boolean; exitCode: number; std
         ? RUNTIME_MESSAGES.dependencies.javaMissingAutomatic
         : RUNTIME_MESSAGES.plantUml.failed(result.stderr || result.stdout),
   };
+  return result.timedOut || isJavaMissing ? transient(failure) : failure;
 }
 
 function sanitizePlantUmlSvg(rawSvg: string): string {
@@ -101,7 +152,7 @@ async function readSvgOutput(inputFile: string): Promise<PlantUmlResult> {
     const rawSvg = await fs.readFile(outputFile, 'utf8');
     return { ok: true, svg: sanitizePlantUmlSvg(rawSvg) };
   } catch {
-    return { ok: false, error: RUNTIME_MESSAGES.plantUml.missingSvg };
+    return transient({ ok: false, error: RUNTIME_MESSAGES.plantUml.missingSvg });
   }
 }
 
@@ -114,7 +165,9 @@ async function renderPlantUmlUncached(
   const result = await runProcess(
     runtime.javaPath,
     ['-Djava.awt.headless=true', '-jar', runtime.jarPath, '-Playout=smetana', '-tsvg', inputFile],
-    timeoutMs
+    timeoutMs,
+    undefined,
+    plantUmlProcessEnv()
   );
 
   if (result.timedOut || result.exitCode !== 0) {
@@ -134,13 +187,14 @@ export async function renderPlantUml(
   const cached = cache.get(key);
   if (cached) return cached;
 
+  // Setup problems (Java missing, bundled JAR missing) can be fixed without
+  // touching the diagram, so never cache them.
   if (!('cfg' in runtime)) {
-    cache.set(key, runtime);
     return runtime;
   }
 
   const result = await renderPlantUmlUncached(source, runtime);
-  cache.set(key, result);
+  cacheResult(key, result);
   return result;
 }
 
@@ -177,7 +231,6 @@ export async function renderPlantUmlBatch(
 
   if (!('cfg' in runtime)) {
     for (const item of uncached) {
-      cache.set(item.key, runtime);
       for (const index of item.indexes) {
         results[index] = runtime;
       }
@@ -197,7 +250,9 @@ export async function renderPlantUmlBatch(
   const processResult = await runProcess(
     runtime.javaPath,
     ['-Djava.awt.headless=true', '-jar', runtime.jarPath, '-Playout=smetana', '-tsvg', ...batchItems.map((item) => item.inputFile)],
-    timeoutMs
+    timeoutMs,
+    undefined,
+    plantUmlProcessEnv()
   );
 
   let renderedResults: PlantUmlResult[];
@@ -214,7 +269,7 @@ export async function renderPlantUmlBatch(
   for (let itemIndex = 0; itemIndex < batchItems.length; itemIndex++) {
     const item = batchItems[itemIndex];
     const result = renderedResults[itemIndex];
-    cache.set(item.key, result);
+    cacheResult(item.key, result);
     const target = uncachedByKey.get(item.key);
     if (!target) continue;
     for (const index of target.indexes) {

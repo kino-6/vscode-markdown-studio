@@ -102,11 +102,8 @@ export interface StyleConfigOverrides {
 
 export type ExternalResourceMode = "block-all" | "whitelist" | "allow-all";
 
-export const DEFAULT_ALLOWED_DOMAINS: readonly string[] = [
-  "github.com",
-  "raw.githubusercontent.com",
-  "user-images.githubusercontent.com",
-] as const;
+/** Empty by default: nothing remote is fetched unless the user allows it. */
+export const DEFAULT_ALLOWED_DOMAINS: readonly string[] = [] as const;
 
 export interface ExternalResourceConfig {
   mode: ExternalResourceMode;

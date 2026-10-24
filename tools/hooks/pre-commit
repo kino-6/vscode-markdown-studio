@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Refuses commits that loosen a sealed Min check / Gate in Tasks.lock.json
+# without an amendment. Takes well under a second.
+# Not installed by default. Install: cp tools/hooks/pre-commit .git/hooks/ && chmod +x .git/hooks/pre-commit
+set -euo pipefail
+python3 tools/check_tasks_lock.py --staged

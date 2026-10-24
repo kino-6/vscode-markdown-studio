@@ -34,7 +34,7 @@ import * as runProcessModule from '../../src/infra/runProcess';
 import * as tempFilesModule from '../../src/infra/tempFiles';
 import * as configModule from '../../src/infra/config';
 import * as extensionModule from '../../src/extension';
-import { clearPlantUmlCache, renderPlantUml, renderPlantUmlBatch } from '../../src/renderers/renderPlantUml';
+import { clearPlantUmlCache, plantUmlProcessEnv, renderPlantUml, renderPlantUmlBatch, setJavaMissingHandler } from '../../src/renderers/renderPlantUml';
 
 const accessMock = (fsModule as any).__accessMock as ReturnType<typeof vi.fn>;
 const readFileMock = (fsModule as any).__readFileMock as ReturnType<typeof vi.fn>;
@@ -82,6 +82,114 @@ describe('renderPlantUml', () => {
     expect(result.error).toContain('Setup Dependencies');
   });
 
+  it('retries after a timeout instead of caching the failure', async () => {
+    accessMock.mockResolvedValue(undefined);
+    createTempFileMock.mockResolvedValue('/tmp/in.puml');
+    runProcessMock
+      .mockResolvedValueOnce({ exitCode: -1, stdout: '', stderr: '', timedOut: true })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: '', stderr: '', timedOut: false });
+    readFileMock.mockResolvedValue('<svg><rect/></svg>');
+
+    const first = await renderPlantUml('@startuml\nA->B\n@enduml', context);
+    const second = await renderPlantUml('@startuml\nA->B\n@enduml', context);
+    expect(first.ok).toBe(false);
+    expect(second.ok).toBe(true);
+    expect(runProcessMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('drops PLANTUML_SECURITY_PROFILE so a user environment cannot enable URL fetching', () => {
+    const env = plantUmlProcessEnv({ PATH: '/bin', PLANTUML_SECURITY_PROFILE: 'UNSECURE', plantuml_security_profile: 'INTERNET', JAVA_HOME: '/jdk' });
+    expect(env).toEqual({ PATH: '/bin', JAVA_HOME: '/jdk' });
+  });
+
+  it('passes the sanitized environment to the Java process', async () => {
+    accessMock.mockResolvedValue(undefined);
+    createTempFileMock.mockResolvedValue('/tmp/in.puml');
+    runProcessMock.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '', timedOut: false });
+    readFileMock.mockResolvedValue('<svg/>');
+    process.env.PLANTUML_SECURITY_PROFILE = 'UNSECURE';
+    try {
+      await renderPlantUml('@startuml\nA->B\n@enduml', context);
+    } finally {
+      delete process.env.PLANTUML_SECURITY_PROFILE;
+    }
+    const env = runProcessMock.mock.calls[0][4] as NodeJS.ProcessEnv;
+    expect(env).toBeDefined();
+    expect(env.PLANTUML_SECURITY_PROFILE).toBeUndefined();
+  });
+
+  it('notifies the Java-missing handler so the extension can offer a download', async () => {
+    const handler = vi.fn();
+    setJavaMissingHandler(handler);
+    accessMock.mockResolvedValue(undefined);
+    createTempFileMock.mockResolvedValue('/tmp/in.puml');
+    runProcessMock.mockResolvedValue({ exitCode: 127, stdout: '', stderr: 'java: command not found', timedOut: false });
+
+    await renderPlantUml('@startuml\nA->B\n@enduml', context);
+    setJavaMissingHandler(undefined);
+    expect(handler).toHaveBeenCalled();
+  });
+
+  it('does not notify the Java-missing handler for diagram syntax errors', async () => {
+    const handler = vi.fn();
+    setJavaMissingHandler(handler);
+    accessMock.mockResolvedValue(undefined);
+    createTempFileMock.mockResolvedValue('/tmp/in.puml');
+    runProcessMock.mockResolvedValue({ exitCode: 200, stdout: '', stderr: 'Syntax Error?', timedOut: false });
+
+    await renderPlantUml('@startuml\nA->\n@enduml', context);
+    setJavaMissingHandler(undefined);
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('retries after Java could not be started', async () => {
+    accessMock.mockResolvedValue(undefined);
+    createTempFileMock.mockResolvedValue('/tmp/in.puml');
+    runProcessMock
+      .mockResolvedValueOnce({ exitCode: 127, stdout: '', stderr: 'java: command not found', timedOut: false })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: '', stderr: '', timedOut: false });
+    readFileMock.mockResolvedValue('<svg><rect/></svg>');
+
+    await renderPlantUml('@startuml\nA->B\n@enduml', context);
+    const second = await renderPlantUml('@startuml\nA->B\n@enduml', context);
+    expect(second.ok).toBe(true);
+  });
+
+  it('does not cache setup failures such as a missing bundled JAR', async () => {
+    accessMock.mockRejectedValueOnce(new Error('no jar')).mockResolvedValue(undefined);
+    createTempFileMock.mockResolvedValue('/tmp/in.puml');
+    runProcessMock.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '', timedOut: false });
+    readFileMock.mockResolvedValue('<svg><rect/></svg>');
+
+    expect((await renderPlantUml('@startuml\nA->B\n@enduml', context)).ok).toBe(false);
+    expect((await renderPlantUml('@startuml\nA->B\n@enduml', context)).ok).toBe(true);
+  });
+
+  it('caches syntax errors so a broken diagram does not start Java on every render', async () => {
+    accessMock.mockResolvedValue(undefined);
+    createTempFileMock.mockResolvedValue('/tmp/in.puml');
+    runProcessMock.mockResolvedValue({ exitCode: 200, stdout: '', stderr: 'Syntax Error?', timedOut: false });
+
+    await renderPlantUml('@startuml\nA->\n@enduml', context);
+    const second = await renderPlantUml('@startuml\nA->\n@enduml', context);
+    expect(second.ok).toBe(false);
+    expect(runProcessMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('batch rendering also retries timed-out diagrams', async () => {
+    accessMock.mockResolvedValue(undefined);
+    createTempFileMock.mockResolvedValue('/tmp/in.puml');
+    runProcessMock.mockResolvedValue({ exitCode: -1, stdout: '', stderr: '', timedOut: true });
+
+    await renderPlantUmlBatch(['@startuml\nA->B\n@enduml'], context);
+    const callsAfterFirst = runProcessMock.mock.calls.length;
+    runProcessMock.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '', timedOut: false });
+    readFileMock.mockResolvedValue('<svg><rect/></svg>');
+    const [second] = await renderPlantUmlBatch(['@startuml\nA->B\n@enduml'], context);
+    expect(second.ok).toBe(true);
+    expect(runProcessMock.mock.calls.length).toBeGreaterThan(callsAfterFirst);
+  });
+
   it('uses managed java path when dependencyStatus is available', async () => {
     (extensionModule as any).dependencyStatus = { allReady: true, javaPath: '/managed/java', errors: [] };
     accessMock.mockResolvedValue(undefined);
@@ -93,7 +201,9 @@ describe('renderPlantUml', () => {
     expect(runProcessMock).toHaveBeenCalledWith(
       '/managed/java',
       expect.any(Array),
-      0
+      0,
+      undefined,
+      expect.any(Object),
     );
   });
 
@@ -109,7 +219,9 @@ describe('renderPlantUml', () => {
     expect(runProcessMock).toHaveBeenCalledWith(
       '/custom/java',
       expect.any(Array),
-      0
+      0,
+      undefined,
+      expect.any(Object),
     );
   });
 
@@ -147,6 +259,8 @@ describe('renderPlantUml', () => {
       'java',
       expect.arrayContaining(['/tmp/one.puml', '/tmp/two.puml']),
       0,
+      undefined,
+      expect.any(Object),
     );
     expect(results).toHaveLength(2);
     expect(results[0]).toMatchObject({ ok: true, svg: '<svg><text>one</text></svg>' });

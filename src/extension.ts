@@ -7,7 +7,10 @@ import { validateEnvironmentCommand } from './commands/validateEnvironment';
 import { cleanupTempFiles } from './infra/tempFiles';
 import { DependencyManager } from './deps/dependencyManager';
 import type { DependencyStatus } from './deps/types';
-import { destroyPreviewPanel } from './preview/webviewPanel';
+import { destroyPreviewPanel, getActivePreviewDocument, rerenderPreview } from './preview/webviewPanel';
+import { createDependencyPrompter } from './deps/dependencyConsent';
+import { registerSkillDiagnostics } from './skill/skillDiagnostics';
+import { setJavaMissingHandler } from './renderers/renderPlantUml';
 import { insertTocCommand } from './commands/insertToc';
 import { scanFencedBlocks } from './parser/scanFencedBlocks';
 import { findTocCommentMarkers } from './toc/tocCommentMarker';
@@ -50,25 +53,34 @@ export function checkDependency(name: 'java' | 'chromium'): boolean {
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const depManager = new DependencyManager();
 
-  // Attempt automatic dependency setup — wrapped in try/catch so the
-  // extension still activates even if something unexpected happens.
+  // Only look at what is already installed. Activation never downloads:
+  // missing runtimes are offered for download when a feature needs them.
   try {
-    dependencyStatus = await depManager.ensureAll(context);
-
-    if (!dependencyStatus.allReady) {
-      vscode.window.showWarningMessage(RUNTIME_MESSAGES.dependencies.partialFailureWithRetry(dependencyStatus.errors));
-    }
+    dependencyStatus = await depManager.getStatus(context);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     dependencyStatus = { allReady: false, errors: [message] };
-    vscode.window.showWarningMessage(RUNTIME_MESSAGES.dependencies.setupFailedWithRetry(message));
   }
+
+  const prompter = createDependencyPrompter(context, depManager, (status) => {
+    dependencyStatus = status;
+  });
+  registerSkillDiagnostics(context);
+
+  setJavaMissingHandler(() => {
+    void prompter.offerJavaOnce().then((installed) => {
+      if (installed) void rerenderPreview(context);
+    });
+  });
 
   context.subscriptions.push(
     vscode.commands.registerCommand('markdownStudio.openPreview', async () => openPreviewCommand(context)),
     vscode.commands.registerCommand('markdownStudio.openPreviewInCurrentTab', async () => openPreviewCommand(context, { location: 'current' })),
     vscode.commands.registerCommand('markdownStudio.openPreviewFullWidth', async () => openPreviewCommand(context, { location: 'current', previewContentWidth: 'full' })),
-    vscode.commands.registerCommand('markdownStudio.exportPdf', async () => exportPdfCommand(context)),
+    vscode.commands.registerCommand('markdownStudio.exportPdf', async () => exportPdfCommand(context, {
+      offerChromiumDownload: () => prompter.offerChromium(),
+      getPreviewDocument: getActivePreviewDocument,
+    })),
     vscode.commands.registerCommand('markdownStudio.validateEnvironment', async () => validateEnvironmentCommand(context)),
     vscode.commands.registerCommand('markdownStudio.reloadPreview', async () => {
       destroyPreviewPanel();

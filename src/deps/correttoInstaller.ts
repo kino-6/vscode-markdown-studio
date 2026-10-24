@@ -9,7 +9,6 @@ import { RUNTIME_MESSAGES } from "../infra/messages";
 import {
   appendTlsCertificateSettingsHint,
   isTlsCertificateError,
-  withNodeTlsRejectUnauthorizedDisabled,
 } from "../infra/tlsCertificateRetry";
 
 const CORRETTO_BASE_URL = "https://corretto.aws/downloads/latest";
@@ -46,32 +45,6 @@ export function buildCorrettoUrl(platform: PlatformInfo): string {
  */
 function getJavaPath(storageDir: string): string {
   return path.join(storageDir, "corretto");
-}
-
-function createTlsDisabledNetworkConfig(networkConfig?: NetworkConfig): NetworkConfig {
-  return {
-    ...networkConfig,
-    caCertPaths: networkConfig?.caCertPaths ?? [],
-    strictSSL: false,
-  };
-}
-
-async function downloadFileWithTlsRetry(
-  url: string,
-  archivePath: string,
-  networkConfig?: NetworkConfig
-): Promise<void> {
-  try {
-    await downloadFile(url, archivePath, networkConfig);
-  } catch (err) {
-    if (!isTlsCertificateError(err) || process.env.NODE_TLS_REJECT_UNAUTHORIZED === "0") {
-      throw err;
-    }
-
-    await withNodeTlsRejectUnauthorizedDisabled(() =>
-      downloadFile(url, archivePath, createTlsDisabledNetworkConfig(networkConfig))
-    );
-  }
 }
 
 /**
@@ -125,7 +98,9 @@ export const correttoInstaller = {
     try {
       // Step 1: Download
       progress(RUNTIME_MESSAGES.dependencyProgress.downloadingCorretto, 10);
-      await downloadFileWithTlsRetry(url, archivePath, networkConfig);
+      // A certificate error is reported with setup guidance; certificate
+      // checks are never switched off automatically.
+      await downloadFile(url, archivePath, networkConfig);
 
       // Step 2: Extract
       progress(RUNTIME_MESSAGES.dependencyProgress.extractingJdk, 20);

@@ -41,6 +41,9 @@ const defaultDeps: DependencyManagerDeps = {
   resolveNetworkConfig: defaultResolveNetworkConfig,
 };
 
+/** A downloadable runtime dependency. */
+export type DependencyTarget = 'corretto' | 'chromium';
+
 export class DependencyManager {
   private readonly deps: DependencyManagerDeps;
   private _setupInProgress = false;
@@ -63,13 +66,16 @@ export class DependencyManager {
    * Concurrent calls are deduplicated: if a setup is already in progress,
    * the existing promise is returned instead of starting a new one.
    */
-  ensureAll(context: vscode.ExtensionContext): Promise<DependencyStatus> {
+  ensureAll(
+    context: vscode.ExtensionContext,
+    targets: ReadonlyArray<DependencyTarget> = ['corretto', 'chromium'],
+  ): Promise<DependencyStatus> {
     if (this._setupInProgress && this._setupPromise) {
       return this._setupPromise;
     }
 
     this._setupInProgress = true;
-    this._setupPromise = this._doEnsureAll(context).finally(() => {
+    this._setupPromise = this._doEnsureAll(context, targets).finally(() => {
       this._setupInProgress = false;
       this._setupPromise = null;
     });
@@ -77,26 +83,29 @@ export class DependencyManager {
     return this._setupPromise;
   }
 
-  private async _doEnsureAll(context: vscode.ExtensionContext): Promise<DependencyStatus> {
+  private async _doEnsureAll(
+    context: vscode.ExtensionContext,
+    targets: ReadonlyArray<DependencyTarget>,
+  ): Promise<DependencyStatus> {
     const storageDir = context.globalStorageUri.fsPath;
     await fs.mkdir(storageDir, { recursive: true });
 
     const manifest = await this.deps.readManifest(storageDir);
     const errors: string[] = [];
 
-    const needsCorretto =
-      !manifest.corretto ||
-      !(await this.deps.fileExists(manifest.corretto.javaPath));
-    const needsChromium =
-      !manifest.chromium ||
-      !(await this.deps.fileExists(manifest.chromium.browserPath));
+    const hasCorretto =
+      !!manifest.corretto && (await this.deps.fileExists(manifest.corretto.javaPath));
+    const hasChromium =
+      !!manifest.chromium && (await this.deps.fileExists(manifest.chromium.browserPath));
+    const needsCorretto = targets.includes('corretto') && !hasCorretto;
+    const needsChromium = targets.includes('chromium') && !hasChromium;
 
-    // Fast path: everything present and verified
+    // Fast path: nothing requested is missing — no network access
     if (!needsCorretto && !needsChromium) {
       return {
-        allReady: true,
-        javaPath: manifest.corretto!.javaPath,
-        browserPath: manifest.chromium!.browserPath,
+        allReady: hasCorretto && hasChromium,
+        javaPath: hasCorretto ? manifest.corretto!.javaPath : undefined,
+        browserPath: hasChromium ? manifest.chromium!.browserPath : undefined,
         errors: [],
       };
     }
@@ -163,7 +172,7 @@ export class DependencyManager {
         await this.deps.writeManifest(storageDir, manifest);
 
         return {
-          allReady: errors.length === 0,
+          allReady: errors.length === 0 && !!manifest.corretto && !!manifest.chromium,
           javaPath: manifest.corretto?.javaPath,
           browserPath: manifest.chromium?.browserPath,
           errors,
@@ -242,6 +251,6 @@ export class DependencyManager {
     await this.deps.writeManifest(storageDir, manifest);
 
     // Call _doEnsureAll directly since we already hold the mutex
-    return this._doEnsureAll(context);
+    return this._doEnsureAll(context, ['corretto', 'chromium']);
   }
 }

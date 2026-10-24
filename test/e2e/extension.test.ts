@@ -61,33 +61,35 @@ suite('Markdown Studio E2E', () => {
     });
 
     test('exportPdf command should execute and produce a file', async function () {
-      this.timeout(60000); // PDF export may take time
+      this.timeout(120000); // PDF export may take time
 
       const workspaceFolders = vscode.workspace.workspaceFolders;
       assert.ok(workspaceFolders && workspaceFolders.length > 0);
 
       const testFile = path.join(workspaceFolders[0].uri.fsPath, 'test.md');
+      const expectedPdf = testFile.replace(/\.md$/, '.pdf');
+      if (fs.existsSync(expectedPdf)) fs.unlinkSync(expectedPdf);
+
       const doc = await vscode.workspace.openTextDocument(testFile);
       await vscode.window.showTextDocument(doc);
 
       try {
+        // The command reports failures with a message instead of throwing,
+        // so the produced file is the only reliable evidence of success.
         await vscode.commands.executeCommand('markdownStudio.exportPdf');
-      } catch {
-        // PDF export may fail in CI without Playwright browsers installed.
-        // The test validates the command is callable; actual file generation
-        // depends on the environment.
-        return;
-      }
 
-      // If the command succeeded, check for the generated PDF
-      const expectedPdf = testFile.replace(/\.md$/, '.pdf');
-      if (fs.existsSync(expectedPdf)) {
-        const stat = fs.statSync(expectedPdf);
-        assert.ok(stat.size > 0, 'Generated PDF should not be empty');
-        // Clean up
-        fs.unlinkSync(expectedPdf);
+        assert.ok(
+          fs.existsSync(expectedPdf),
+          `PDF export produced no file at ${expectedPdf}. Chromium must be available ` +
+          '(run "Markdown Studio: Tools: Setup Dependencies" or `npx playwright install chromium`).',
+        );
+        const bytes = fs.readFileSync(expectedPdf);
+        assert.ok(bytes.length > 1000, `Generated PDF is too small (${bytes.length} bytes)`);
+        assert.strictEqual(bytes.subarray(0, 5).toString('latin1'), '%PDF-', 'Generated file is not a PDF');
+      } finally {
+        if (fs.existsSync(expectedPdf)) fs.unlinkSync(expectedPdf);
+        cleanupWorkspaceExports();
       }
-      cleanupWorkspaceExports();
     });
   });
 

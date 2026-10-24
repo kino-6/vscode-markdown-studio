@@ -10,6 +10,7 @@ import type { DependencyStatus } from "../../src/deps/types";
 const showErrorMessage = vi.fn();
 const showWarningMessage = vi.fn();
 
+vi.mock('../../src/skill/skillDiagnostics', () => ({ registerSkillDiagnostics: () => undefined }));
 vi.mock("vscode", () => ({
   workspace: {
     getConfiguration: () => ({ get: (_: string, f: unknown) => f }),
@@ -43,13 +44,16 @@ const reinstallMock = vi.fn();
 let isSetupInProgressValue = false;
 
 vi.mock("../../src/deps/dependencyManager", () => ({
-  DependencyManager: vi.fn().mockImplementation(() => ({
-    ensureAll: ensureAllMock,
-    reinstall: reinstallMock,
-    get isSetupInProgress() {
-      return isSetupInProgressValue;
-    },
-  })),
+  DependencyManager: vi.fn().mockImplementation(function () {
+    // A regular function: vitest 4 cannot `new` an arrow-function mock.
+    return {
+      ensureAll: ensureAllMock,
+      reinstall: reinstallMock,
+      get isSetupInProgress() {
+        return isSetupInProgressValue;
+      },
+    };
+  }),
 }));
 
 // Mock command modules to avoid side effects
