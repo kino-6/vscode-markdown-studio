@@ -4,6 +4,16 @@ All notable changes to Markdown Studio will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-10-25
+
+### Upgrade notes
+
+Three defaults changed to keep everything on your machine:
+
+- Remote images are no longer fetched by default. The default `markdownStudio.security.externalResources.allowedDomains` is now empty (it used to allow three GitHub domains). Add the domains you need to show their images in the preview and PDF.
+- Java and Chromium are no longer downloaded when the extension starts. The first time PDF export or a PlantUML diagram needs one, Markdown Studio asks before downloading it. `Markdown Studio: Tools: Setup Dependencies` still installs both up front.
+- A certificate error during that download no longer triggers a retry with certificate checks turned off. Add your corporate CA to `markdownStudio.network.caCertificates`, or, only if you trust the network, set VS Code `http.proxyStrictSSL` to `false`.
+
 ### Added
 
 - Agent Skills (`SKILL.md`) support: front matter with `name` and `description` renders as a skill card (fields, allowed tools, metadata, and a collapsible raw YAML view), and `SKILL.md` files get Problems-panel diagnostics based on the Agent Skills specification, including missing referenced files and the 500-line recommendation.

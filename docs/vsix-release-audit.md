@@ -126,7 +126,7 @@ Current behavior is local-first:
 - PlantUML defaults to the bundled local jar and Java execution.
 - No document content is sent to a remote renderer by default.
 
-LocalOnly by default (decided after v1.0.3):
+LocalOnly by default (since v1.0.4):
 
 - `markdownStudio.security.externalResources.mode` defaults to `whitelist` with
   an empty allowlist, so no remote resource is fetched unless the user adds a
