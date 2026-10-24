@@ -71,7 +71,7 @@ The handoff is ready when:
      - Working tree status.
      - Verification status for tests, demo render, E2E, package, audit, and VSIX output.
      - Whether the tag already exists locally or on `origin`.
-     - The effect of pushing the tag: `.github/workflows/release.yml` creates the GitHub Release and VSIX artifact on `v*` tag push.
+     - The effect of pushing the tag: `.github/workflows/release.yml` runs lint, unit, integration, and `test:local-only`, then builds the VSIX and creates the GitHub Release on `v*` tag push. If any check fails, no VSIX or release is produced.
    - If the tag already exists, verify it points to the intended commit. If it points elsewhere, stop and explain the mismatch.
    - If the tag is missing and all gates pass, ask for explicit human confirmation such as: `May I create and push v<version> now?`
    - After confirmation, create and push the tag automatically:
@@ -80,6 +80,7 @@ The handoff is ready when:
    - Do not merely hand back tag commands unless the user asks to perform tagging manually.
 
 8. Publish handoff:
+   - Confirm the tag's Release workflow run succeeded (`gh run list --workflow release.yml --limit 1`). If it failed, do not publish: the full checks did not pass for that commit.
    - Before recommending or running Marketplace publish, verify the stored Marketplace token:
      - `vsce verify-pat`
    - If PAT verification fails, stop and explain the failure. Do not publish.

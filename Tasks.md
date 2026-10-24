@@ -9,7 +9,7 @@
 > **上から 1 件ずつ**処理する。詰まったら `[~]` / `[!]` に理由を書いて次へ。2 件を同時に開かない。
 > このファイルは **200 行以内**に保つ。超えたら幅を広げず、履歴へ移す。**commit の粒度で整備する。**
 
-次に起票する ID は **T004 以降**。
+次に起票する ID は **T005 以降**。
 
 ## 何をどこに書くか
 
@@ -37,6 +37,12 @@
 ---
 
 ## 本線 A — ローカル完結の強化とリリース準備（2026-10-21〜）
+
+- [-] **T004 — タグ push 時の Release ワークフローが、VSIX を作る前に全テスト（lint・unit・integration・local-only）を流し、落ちたら VSIX も GitHub Release も作らない**
+  - なぜ: user 2026-10-25。Marketplace に出しているので、配布物ができる時点で守る（main の扱いは変えない）。あわせて、Node 20 で最新 vsce（Node 22 以上が必要）をグローバルに入れている不要な手順を外す
+  - 最小検証: `node scripts/test/releaseWorkflowCheck.js` — `RELEASE_WORKFLOW OK` と出る
+  - Gate: `gh run list --workflow release.yml --branch feat/local-only-hardening --limit 1 --json conclusion -q '.[0].conclusion'` — `success` と出、同じ run の `Create GitHub Release` の結論が `skipped`
+  - 再現: `gh run list --workflow release.yml --branch feat/local-only-hardening --limit 1`
 
 - [!] **T001 — PR #15 が main にマージされている**
   - なぜ: user 2026-10-21。マージはユーザが決める。ユーザの受け入れ確認（`scripts/dev/acceptance.sh`）待ち

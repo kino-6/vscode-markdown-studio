@@ -33,6 +33,14 @@
       "locked": "2026-10-24",
       "passes": false,
       "amendments": []
+    },
+    "T004": {
+      "title": "タグ push 時の Release ワークフローが、VSIX を作る前に全テスト（lint・unit・integration・local-only）を流し、落ちたら VSIX も GitHub Release も作らない",
+      "min_check": "`node scripts/test/releaseWorkflowCheck.js` — `RELEASE_WORKFLOW OK` と出る",
+      "gate": "`gh run list --workflow release.yml --branch feat/local-only-hardening --limit 1 --json conclusion -q '.[0].conclusion'` — `success` と出、同じ run の `Create GitHub Release` の結論が `skipped`",
+      "locked": "2026-10-25",
+      "passes": false,
+      "amendments": []
     }
   }
 }

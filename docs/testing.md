@@ -34,6 +34,7 @@ npm run corpus:check
 
 ## Notes
 
+- The tag-triggered release workflow (`.github/workflows/release.yml`) runs lint, unit, integration, and `test:local-only` before `npm run package`; any failure means no VSIX and no GitHub Release. A PR that changes the workflow runs it as a rehearsal without creating a release. `node scripts/test/releaseWorkflowCheck.js` checks the workflow file itself.
 - `test:e2e` needs Node 22 or later (`@vscode/test-electron` 3.x). The other suites run on Node 20.
 - Tests are local-first and do not call remote APIs.
 - Playwright is mocked in tests so PDF smoke coverage stays deterministic and CI-friendly.
