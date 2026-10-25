@@ -9,7 +9,7 @@
 > **上から 1 件ずつ**処理する。詰まったら `[~]` / `[!]` に理由を書いて次へ。2 件を同時に開かない。
 > このファイルは **200 行以内**に保つ。超えたら幅を広げず、履歴へ移す。**commit の粒度で整備する。**
 
-次に起票する ID は **T010 以降**。
+次に起票する ID は **T011 以降**。
 
 ## 何をどこに書くか
 
@@ -38,8 +38,14 @@
 
 ## 本線 A — ローカル完結の強化とリリース準備（2026-10-21〜）
 
+- [!] **T010 — `npm audit` に開発ツールの指摘が出ない（katex 以外）**
+  - なぜ: 2026-10-26 確認。どれも開発ツールで VSIX には入らない。修正版の公開が新しすぎるので、2 週間待ってから採用する。`@vitest/mocker`（vitest 4.1.12、2026-10-29 以降）、`serialize-javascript`（mocha 経由、7.1.4、2026-11-06 以降）。`braces` は vsce 4 で消えるが、vsce 4 は `@azure/msal-node` の指摘（修正版未公開）を持ち込むので、msal-node の修正版が出るまで vsce 3.9.2 のままにする
+  - 最小検証: `npm audit 2>&1 | grep -cE "^(@vitest/mocker|serialize-javascript|braces|@azure/msal-node)  "` — 0
+  - Gate: `npm audit` — katex 以外の指摘が無く、`npm run test:ci` と `npm run package` が通る
+  - 再現: `npm audit`
+
 - [!] **T003 — `npm audit --omit=dev` に katex の指摘が出ない**
-  - なぜ: GHSA-238p-pmpm-9mq7（katex 0.11.0〜0.18.1）。修正版がまだ出ていない（2026-10-21 確認）ため外部待ち
+  - なぜ: GHSA-238p-pmpm-9mq7（katex 0.11.0〜0.18.1）。修正版 0.19.1 が 2026-10-23 に出た。公開から 2 週間たつ 2026-11-06 以降に採用する。`@vscode/markdown-it-katex` は katex 0.16 系を指定しているので、0.19 で数式の表示が変わらないことの確認が要る
   - 最小検証: `npm view katex version` — 0.18.1 より新しい版が出る
   - Gate: `npm audit --omit=dev` — 出力に `katex` が無い
   - 再現: `npm audit --omit=dev`

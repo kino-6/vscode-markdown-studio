@@ -98,6 +98,14 @@
       "locked": "2026-10-25",
       "passes": true,
       "amendments": []
+    },
+    "T010": {
+      "title": "`npm audit` に開発ツールの指摘が出ない（katex 以外）",
+      "min_check": "`npm audit 2>&1 | grep -cE \"^(@vitest/mocker|serialize-javascript|braces|@azure/msal-node)  \"` — 0",
+      "gate": "`npm audit` — katex 以外の指摘が無く、`npm run test:ci` と `npm run package` が通る",
+      "locked": "2026-10-26",
+      "passes": false,
+      "amendments": []
     }
   }
 }
