@@ -4,12 +4,7 @@ All notable changes to Markdown Studio will be documented in this file.
 
 ## [Unreleased]
 
-### Fixed
-
-- PDF export could fail with "Chromium is not installed" even after agreeing to the download. Chromium sometimes went to Playwright's shared cache instead of the extension storage, and the extension then counted its empty folder as installed. Chromium now always goes to the extension storage (unless `PLAYWRIGHT_BROWSERS_PATH` is set), and it counts as installed only when the browser itself is there. `Markdown Studio: Tools: Setup Dependencies` reinstalls it.
-- PDF export no longer silently uses a Chromium from Playwright's shared cache. Without a Chromium in the extension storage, it asks before downloading one.
-
-## [1.0.4] - 2026-10-25
+## [1.0.4] - 2026-10-28
 
 ### Upgrade notes
 
@@ -54,6 +49,8 @@ Three defaults changed to keep everything on your machine:
 - Escape Mermaid error messages shown in the preview.
 - Render YAML front matter (e.g. `SKILL.md`) as a metadata block in the preview instead of a horizontal rule plus a giant heading; it no longer leaks into the TOC or PDF bookmarks and is omitted from PDF output.
 - Enable the built-in find widget in the preview so `Ctrl+F` / `Cmd+F` searches the rendered document.
+- PDF export could fail with "Chromium is not installed" even after agreeing to the download. Chromium sometimes went to Playwright's shared cache instead of the extension storage, and the extension then counted its empty folder as installed. Chromium now always goes to the extension storage (unless `PLAYWRIGHT_BROWSERS_PATH` is set), and it counts as installed only when the browser itself is there. `Markdown Studio: Tools: Setup Dependencies` reinstalls it.
+- PDF export no longer silently uses a Chromium from Playwright's shared cache. Without a Chromium in the extension storage, it asks before downloading one.
 
 ## [1.0.3] - 2026-06-17
 
