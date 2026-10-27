@@ -4,9 +4,10 @@ set -euo pipefail
 # Markdown Studio — acceptance check in an isolated VS Code
 #
 # Builds the VSIX and starts an empty VS Code with its own settings folder and
-# its own extensions folder, so only Markdown Studio is installed and your
-# normal VS Code profile is untouched. Opens a fresh copy of examples/ and icon/
-# (so PDF exports never overwrite the committed examples) with demo.md shown.
+# its own extensions folder, so only Markdown Studio (plus a PDF viewer to open
+# exported PDFs) is installed and your normal VS Code profile is untouched.
+# Opens a fresh copy of examples/ and icon/ (so PDF exports never overwrite the
+# committed examples) with demo.md shown.
 #
 # Usage:
 #   scripts/dev/acceptance.sh          # build, install, launch
@@ -57,6 +58,16 @@ NODE_OPTIONS="--no-deprecation" code \
   --user-data-dir "$USER_DATA_DIR" \
   --extensions-dir "$EXTENSIONS_DIR" \
   --install-extension "$VSIX_PATH" --force
+
+# VS Code cannot show PDFs by itself; add a viewer so exported PDFs open in
+# the editor. Downloads from the Marketplace; failure (e.g. offline) is not fatal.
+PDF_VIEWER="tomoki1207.pdf"
+if ! NODE_OPTIONS="--no-deprecation" code \
+  --user-data-dir "$USER_DATA_DIR" \
+  --extensions-dir "$EXTENSIONS_DIR" \
+  --install-extension "$PDF_VIEWER"; then
+  echo "Warning: could not install the PDF viewer ($PDF_VIEWER). PDFs will not open inside VS Code."
+fi
 
 INSTALLED=$(NODE_OPTIONS="--no-deprecation" code \
   --user-data-dir "$USER_DATA_DIR" \
