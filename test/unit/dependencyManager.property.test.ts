@@ -100,11 +100,9 @@ describe("DependencyManager property tests", () => {
 
           // Capture the paths from the manifest for the fileExists mock
           const correttoPath = manifest.corretto?.javaPath;
-          const chromiumPath = manifest.chromium?.browserPath;
 
           const fileExistsFn = vi.fn().mockImplementation(async (p: string) => {
             if (correttoPath && p === correttoPath) return disk.correttoExists;
-            if (chromiumPath && p === chromiumPath) return disk.chromiumExists;
             return false;
           });
 
@@ -127,13 +125,17 @@ describe("DependencyManager property tests", () => {
             detectPlatform: () =>
               ({ os: "linux", arch: "x64", archiveExt: "tar.gz" }) as PlatformInfo,
             fileExists: fileExistsFn,
+            // Chromium counts as present only when the browser itself is on
+            // disk; the manifest entry alone does not count.
+            isChromiumInstalled: () => disk.chromiumExists,
+            browsersDir: () => "/storage/chromium",
           });
 
           const ctx = { globalStorageUri: { fsPath: tmpDir } } as any;
           await dm.ensureAll(ctx);
 
           const correttoPresent = !!manifest.corretto && disk.correttoExists;
-          const chromiumPresent = !!manifest.chromium && disk.chromiumExists;
+          const chromiumPresent = disk.chromiumExists;
 
           if (correttoPresent) {
             expect(correttoInstallFn).not.toHaveBeenCalled();

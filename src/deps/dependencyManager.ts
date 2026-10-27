@@ -8,6 +8,11 @@ import { detectPlatform as defaultDetectPlatform } from "./platformDetector";
 import { resolveNetworkConfig as defaultResolveNetworkConfig } from "../infra/networkConfig";
 import type { NetworkConfig } from "../infra/networkConfig";
 import { RUNTIME_MESSAGES } from "../infra/messages";
+import {
+  isChromiumInstalled as defaultIsChromiumInstalled,
+  pinBrowsersDir,
+  PLAYWRIGHT_CORE_VERSION,
+} from "./playwrightBrowsers";
 
 /**
  * Injectable dependencies for testability.
@@ -19,6 +24,10 @@ export interface DependencyManagerDeps {
   writeManifest: typeof writeManifest;
   detectPlatform: typeof defaultDetectPlatform;
   fileExists: (path: string) => Promise<boolean>;
+  /** True when the Chromium that PDF export launches is installed in the directory. */
+  isChromiumInstalled: (browsersDir: string) => boolean;
+  /** The browser directory Playwright uses (pins it on first call). */
+  browsersDir: (storageDir: string) => string;
   resolveNetworkConfig: typeof defaultResolveNetworkConfig;
 }
 
@@ -38,6 +47,8 @@ const defaultDeps: DependencyManagerDeps = {
   writeManifest,
   detectPlatform: defaultDetectPlatform,
   fileExists: defaultFileExists,
+  isChromiumInstalled: defaultIsChromiumInstalled,
+  browsersDir: pinBrowsersDir,
   resolveNetworkConfig: defaultResolveNetworkConfig,
 };
 
@@ -86,6 +97,7 @@ export class DependencyManager {
   private async _doEnsureAll(
     context: vscode.ExtensionContext,
     targets: ReadonlyArray<DependencyTarget>,
+    force = false,
   ): Promise<DependencyStatus> {
     const storageDir = context.globalStorageUri.fsPath;
     await fs.mkdir(storageDir, { recursive: true });
@@ -95,17 +107,20 @@ export class DependencyManager {
 
     const hasCorretto =
       !!manifest.corretto && (await this.deps.fileExists(manifest.corretto.javaPath));
-    const hasChromium =
-      !!manifest.chromium && (await this.deps.fileExists(manifest.chromium.browserPath));
-    const needsCorretto = targets.includes('corretto') && !hasCorretto;
-    const needsChromium = targets.includes('chromium') && !hasChromium;
+    // Look at the directory Playwright will actually use, and for the browser
+    // itself: an empty or outdated directory is not an installed Chromium.
+    const browsersDir = this.deps.browsersDir(storageDir);
+    const hasChromium = this.deps.isChromiumInstalled(browsersDir);
+    const needsCorretto = targets.includes('corretto') && (force || !hasCorretto);
+    const needsChromium = targets.includes('chromium') && (force || !hasChromium);
+    let chromiumPath = hasChromium && !needsChromium ? browsersDir : undefined;
 
     // Fast path: nothing requested is missing — no network access
     if (!needsCorretto && !needsChromium) {
       return {
         allReady: hasCorretto && hasChromium,
         javaPath: hasCorretto ? manifest.corretto!.javaPath : undefined,
-        browserPath: hasChromium ? manifest.chromium!.browserPath : undefined,
+        browserPath: hasChromium ? browsersDir : undefined,
         errors: [],
       };
     }
@@ -154,10 +169,11 @@ export class DependencyManager {
               )
               .then((result) => {
                 if (result.ok) {
+                  chromiumPath = result.path!;
                   manifest.chromium = {
                     installedAt: new Date().toISOString(),
                     browserPath: result.path!,
-                    playwrightVersion: "1.59.1",
+                    playwrightVersion: PLAYWRIGHT_CORE_VERSION,
                   };
                 } else {
                   errors.push(`Chromium: ${result.error}`);
@@ -172,9 +188,9 @@ export class DependencyManager {
         await this.deps.writeManifest(storageDir, manifest);
 
         return {
-          allReady: errors.length === 0 && !!manifest.corretto && !!manifest.chromium,
+          allReady: errors.length === 0 && !!manifest.corretto && !!chromiumPath,
           javaPath: manifest.corretto?.javaPath,
-          browserPath: manifest.chromium?.browserPath,
+          browserPath: chromiumPath,
           errors,
         };
       }
@@ -203,12 +219,11 @@ export class DependencyManager {
       errors.push(RUNTIME_MESSAGES.dependencyStatus.correttoNotInstalled);
     }
 
-    if (manifest.chromium) {
-      if (await this.deps.fileExists(manifest.chromium.browserPath)) {
-        browserPath = manifest.chromium.browserPath;
-      } else {
-        errors.push(RUNTIME_MESSAGES.dependencyStatus.chromiumBinaryMissing);
-      }
+    const browsersDir = this.deps.browsersDir(storageDir);
+    if (this.deps.isChromiumInstalled(browsersDir)) {
+      browserPath = browsersDir;
+    } else if (manifest.chromium) {
+      errors.push(RUNTIME_MESSAGES.dependencyStatus.chromiumBinaryMissing);
     } else {
       errors.push(RUNTIME_MESSAGES.dependencyStatus.chromiumNotInstalled);
     }
@@ -251,6 +266,6 @@ export class DependencyManager {
     await this.deps.writeManifest(storageDir, manifest);
 
     // Call _doEnsureAll directly since we already hold the mutex
-    return this._doEnsureAll(context, ['corretto', 'chromium']);
+    return this._doEnsureAll(context, ['corretto', 'chromium'], true);
   }
 }

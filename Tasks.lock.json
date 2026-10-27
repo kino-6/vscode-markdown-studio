@@ -106,6 +106,14 @@
       "locked": "2026-10-26",
       "passes": false,
       "amendments": []
+    },
+    "T011": {
+      "title": "「ダウンロード」を押したあと PDF 出力が成功し、VS Code を再起動しても出力できる",
+      "min_check": "`npx vitest run -c config/vitest.unit.config.ts test/unit/playwrightBrowsers.test.ts` — 記録ファイルが空フォルダを指すとき Chromium を「無い」と判定するテストが通る（修正前の判定では赤）",
+      "gate": "`node scripts/test/acceptanceCheck.js --only download` — `ok` が 2 行出て `ACCEPTANCE OK`",
+      "locked": "2026-10-28",
+      "passes": true,
+      "amendments": []
     }
   }
 }

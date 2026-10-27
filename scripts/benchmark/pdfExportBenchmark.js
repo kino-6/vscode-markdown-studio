@@ -263,9 +263,7 @@ function formatBytes(value) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const managedDependencyStatus = await loadManagedDependencyStatus();
-  if (managedDependencyStatus?.browserPath && !process.env.PLAYWRIGHT_BROWSERS_PATH) {
-    process.env.PLAYWRIGHT_BROWSERS_PATH = managedDependencyStatus.browserPath;
-  }
+  require('../test/lib/extensionHarness').pinTestBrowsersDir(managedDependencyStatus);
   if (managedDependencyStatus?.javaPath && !Object.prototype.hasOwnProperty.call(options.config, 'java.path')) {
     options.config['java.path'] = managedDependencyStatus.javaPath;
   }

@@ -248,9 +248,7 @@ function report(label, result) {
 
 async function main() {
   const dependencyStatus = await loadManagedDependencyStatus();
-  if (dependencyStatus?.browserPath && !process.env.PLAYWRIGHT_BROWSERS_PATH) {
-    process.env.PLAYWRIGHT_BROWSERS_PATH = dependencyStatus.browserPath;
-  }
+  require('./lib/extensionHarness').pinTestBrowsersDir(dependencyStatus);
 
   const proxy = await startRecordingProxy();
   // A hostile environment: this would let PlantUML fetch URLs if the

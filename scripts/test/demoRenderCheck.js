@@ -126,9 +126,7 @@ function verifyPdfIndexLinks(pdf) {
 
 async function main() {
   const dependencyStatus = await loadManagedDependencyStatus();
-  if (dependencyStatus?.browserPath && !process.env.PLAYWRIGHT_BROWSERS_PATH) {
-    process.env.PLAYWRIGHT_BROWSERS_PATH = dependencyStatus.browserPath;
-  }
+  require('./lib/extensionHarness').pinTestBrowsersDir(dependencyStatus);
 
   const config = {};
   if (dependencyStatus?.javaPath) {

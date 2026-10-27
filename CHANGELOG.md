@@ -4,6 +4,11 @@ All notable changes to Markdown Studio will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- PDF export could fail with "Chromium is not installed" even after agreeing to the download. Chromium sometimes went to Playwright's shared cache instead of the extension storage, and the extension then counted its empty folder as installed. Chromium now always goes to the extension storage (unless `PLAYWRIGHT_BROWSERS_PATH` is set), and it counts as installed only when the browser itself is there. `Markdown Studio: Tools: Setup Dependencies` reinstalls it.
+- PDF export no longer silently uses a Chromium from Playwright's shared cache. Without a Chromium in the extension storage, it asks before downloading one.
+
 ## [1.0.4] - 2026-10-25
 
 ### Upgrade notes

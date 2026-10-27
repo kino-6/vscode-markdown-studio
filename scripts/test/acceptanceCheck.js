@@ -18,6 +18,8 @@ const pkg = require(path.join(repoRoot, 'package.json'));
 const vsix = path.join(repoRoot, 'dist', `${pkg.name}-${pkg.version}.vsix`);
 const outDir = path.join(repoRoot, 'ignore', 'acceptance-check');
 const only = process.argv.includes('--only') ? process.argv[process.argv.indexOf('--only') + 1] : undefined;
+// Chromium that `npx playwright install chromium` put in Playwright's shared cache.
+const sharedBrowsers = process.env.PLAYWRIGHT_BROWSERS_PATH || require('playwright-core/lib/server').registryDirectory;
 
 function findVSCode() {
   const base = path.join(repoRoot, '.vscode-test');
@@ -69,9 +71,11 @@ function installVsix(cli, profile) {
 /** Environment for VS Code. ELECTRON_RUN_AS_NODE (set when this runs inside
  * VS Code itself) would make the binary start as plain Node. */
 function childEnv(extra = {}) {
-  const env = { ...process.env, ...extra };
+  const env = { ...process.env };
   delete env.ELECTRON_RUN_AS_NODE;
-  return env;
+  // Each scenario decides which Chromium the extension may use.
+  delete env.PLAYWRIGHT_BROWSERS_PATH;
+  return { ...env, ...extra };
 }
 
 function freePort() {
@@ -186,6 +190,25 @@ function previewTab(page) {
   return page.locator('.tabs-container .tab', { has: page.locator('.label-name', { hasText: /^Preview/ }) }).first();
 }
 
+/** Runs Export PDF and waits until the file is rewritten. */
+async function exportAndWait(page, pdf, timeoutMs) {
+  const before = fs.existsSync(pdf) ? fs.statSync(pdf).mtimeMs : 0;
+  await runCommand(page, 'Markdown Studio: PDF: Export');
+  return waitForRewrite(page, pdf, before, timeoutMs);
+}
+
+async function waitForRewrite(page, pdf, before, timeoutMs) {
+  const start = Date.now();
+  const mtime = () => (fs.existsSync(pdf) ? fs.statSync(pdf).mtimeMs : 0);
+  while (Date.now() - start < timeoutMs && mtime() === before) await page.waitForTimeout(1000);
+  return mtime() > before && fs.readFileSync(pdf).subarray(0, 5).toString('latin1') === '%PDF-';
+}
+
+/** Error notifications currently on screen. */
+async function errorToasts(page) {
+  return page.locator('.notification-toast', { has: page.locator('.codicon-error') }).allTextContents();
+}
+
 async function shot(page, name) {
   await page.screenshot({ path: path.join(outDir, `${name}.png`) });
 }
@@ -200,7 +223,7 @@ async function scenarioDemo(vscode) {
   console.log('\n[demo] examples/demo.md: preview, images, tab title, find, export from preview');
   const profile = prepareProfile('demo');
   installVsix(vscode.cli, profile);
-  const { app, page } = await launch(vscode.exe, profile, [path.join(profile.workspace, 'examples', 'demo.md')]);
+  const { app, page } = await launch(vscode.exe, profile, [path.join(profile.workspace, 'examples', 'demo.md')], { PLAYWRIGHT_BROWSERS_PATH: sharedBrowsers });
   try {
     await page.waitForTimeout(2000);
     await runCommand(page, 'Markdown Studio: Preview: Open Beside');
@@ -276,7 +299,7 @@ async function scenarioSkills(vscode) {
   console.log('\n[skills] examples/skills: card, diagnostics; acceptance alerts');
   const profile = prepareProfile('skills');
   installVsix(vscode.cli, profile);
-  const { app, page } = await launch(vscode.exe, profile, [path.join(profile.workspace, 'examples', 'skills', 'sample-skill', 'SKILL.md')]);
+  const { app, page } = await launch(vscode.exe, profile, [path.join(profile.workspace, 'examples', 'skills', 'sample-skill', 'SKILL.md')], { PLAYWRIGHT_BROWSERS_PATH: sharedBrowsers });
   try {
     await runCommand(page, 'Markdown Studio: Preview: Open Beside');
     const card = await previewFrame(page, 'document.querySelector(".ms-skill-card")');
@@ -342,11 +365,61 @@ async function scenarioConsent(vscode) {
   }
 }
 
+/**
+ * What a new user does: export with no Chromium, agree to the download, and
+ * export again after restarting VS Code. Downloads Chromium (about 150 MB)
+ * into the profile's extension storage.
+ */
+async function scenarioDownload(vscode) {
+  console.log('\n[download] fresh profile: agree to download Chromium, export, restart, export again');
+  const profile = prepareProfile('download');
+  installVsix(vscode.cli, profile);
+  const storage = path.join(profile.userData, 'User', 'globalStorage', `${pkg.publisher}.${pkg.name}`);
+  const pdf = path.join(profile.workspace, 'examples', 'demo.pdf');
+  const demo = path.join(profile.workspace, 'examples', 'demo.md');
+
+  let { app, page } = await launch(vscode.exe, profile, [demo]);
+  try {
+    await page.waitForTimeout(2000);
+    const before = fs.statSync(pdf).mtimeMs;
+    await runCommand(page, 'Markdown Studio: PDF: Export');
+    const toast = page.locator('.notification-toast', { hasText: 'needs a Chromium browser' });
+    await toast.waitFor({ timeout: 60000 });
+    await toast.getByRole('button', { name: 'Download' }).click();
+    const exported = await waitForRewrite(page, pdf, before, 600000);
+    await shot(page, 'download-exported');
+    assert.ok(exported, `Export after agreeing to the download should write demo.pdf; errors: ${JSON.stringify(await errorToasts(page))}`);
+    const chromiumDir = path.join(storage, 'chromium');
+    assert.ok(fs.readdirSync(chromiumDir).some((n) => n.startsWith('chromium_headless_shell-')), `Chromium should be in extension storage: ${chromiumDir}`);
+    pass('"Download" installs Chromium into extension storage and the export succeeds');
+  } catch (error) {
+    await shot(page, 'failure-download').catch(() => {});
+    throw error;
+  } finally {
+    await app.close();
+  }
+
+  ({ app, page } = await launch(vscode.exe, profile, [demo]));
+  try {
+    await page.waitForTimeout(2000);
+    const exported = await exportAndWait(page, pdf, 120000);
+    await shot(page, 'download-after-restart');
+    assert.ok(exported, `Export after restart should work without asking again; errors: ${JSON.stringify(await errorToasts(page))}`);
+    assert.equal(await page.locator('.notification-toast', { hasText: 'needs a Chromium browser' }).count(), 0, 'should not ask to download again');
+    pass('after restarting VS Code, Export PDF uses the downloaded Chromium');
+  } catch (error) {
+    await shot(page, 'failure-download-restart').catch(() => {});
+    throw error;
+  } finally {
+    await app.close();
+  }
+}
+
 async function main() {
   fs.mkdirSync(outDir, { recursive: true });
   assert.ok(fs.existsSync(vsix), `VSIX not found: ${vsix} (run npm run package)`);
   const vscode = findVSCode();
-  const scenarios = { demo: scenarioDemo, skills: scenarioSkills, consent: scenarioConsent };
+  const scenarios = { demo: scenarioDemo, skills: scenarioSkills, consent: scenarioConsent, download: scenarioDownload };
   for (const [name, run] of Object.entries(scenarios)) {
     if (only && only !== name) continue;
     await run(vscode);

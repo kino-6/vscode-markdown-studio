@@ -83,3 +83,12 @@
 - 再現: `npm run test:local-only`
 - 何が本当の原因だったか: PDF 出力のページには通信の制限が一切無かった（`<img src>` とリンクしか見ていなかった）。「プレビューが追従しない」は、編集のたびに画面より上の図が高さ 0 に潰れることだった
 - commit: `feat/local-only-hardening` の `54a5e3c` 〜 `efdc94a`
+
+### T011 — 「ダウンロード」を押したあと PDF 出力が成功し、再起動後も出力できる
+
+- 完了: 2026-10-28
+- Gate: `node scripts/test/acceptanceCheck.js --only download` — `ACCEPTANCE OK (2 checks)`。全体（demo・skills・consent）、E2E 17 件、unit 1089 件、integration 66 件、local-only も通過
+- 監査: gate-auditor は回していない。新しい単体テストは、修正前の判定（フォルダがあれば導入済み）なら赤になる
+- 再現: 受け入れ用プロファイルで demo.md を PDF 出力すると「Chromium is not installed」と出た
+- 何が本当の原因だったか: Playwright は Chromium の置き場所（`PLAYWRIGHT_BROWSERS_PATH`）を最初に読み込んだときに一度だけ決める。先に PDF 出力が共通キャッシュで動くと、そのあとの「ダウンロード」は共通キャッシュに入り、拡張の置き場所は空のまま記録だけが残った。次の起動では空の置き場所を使って失敗し、「導入済み」はフォルダの有無で判断していたので、再ダウンロードもされなかった
+- E2E で見逃した理由: E2E と受け入れ検査は、どちらも共通キャッシュの Chromium で動いていた。「ダウンロード」を押す流れを試す検査が無かった

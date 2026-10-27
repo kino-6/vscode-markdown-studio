@@ -165,6 +165,25 @@ async function loadManagedDependencyStatus() {
   }
 }
 
+/**
+ * Points Playwright at a folder that really holds Chromium. Playwright reads
+ * PLAYWRIGHT_BROWSERS_PATH once, and the extension pins it to its own storage
+ * folder, so a test must set it before loading extension code. Uses the
+ * managed folder from the manifest when Chromium is in it, otherwise
+ * Playwright's shared cache. A value already in the environment wins.
+ */
+function pinTestBrowsersDir(dependencyStatus) {
+  if (!process.env.PLAYWRIGHT_BROWSERS_PATH) {
+    const managed = dependencyStatus?.browserPath;
+    const managedHasChromium = Boolean(managed) && require('fs').existsSync(managed)
+      && require('fs').readdirSync(managed).some((name) => name.startsWith('chromium_headless_shell-'));
+    process.env.PLAYWRIGHT_BROWSERS_PATH = managedHasChromium
+      ? managed
+      : require('playwright-core/lib/server').registryDirectory;
+  }
+  return process.env.PLAYWRIGHT_BROWSERS_PATH;
+}
+
 function createContext() {
   return {
     extensionPath: repoRoot,
@@ -181,6 +200,7 @@ module.exports = {
   bundleNodeModule,
   defaultStorageManifestPath,
   loadManagedDependencyStatus,
+  pinTestBrowsersDir,
   createContext,
   loadPreviewModule,
   loadExportModule,

@@ -5,6 +5,7 @@ import * as vscode from 'vscode';
 import type { Page } from 'playwright-core';
 import { PDFArray, PDFDict, PDFDocument, PDFName } from 'pdf-lib';
 import { dependencyStatus } from '../extension';
+import { pinBrowsersDir } from '../deps/playwrightBrowsers';
 import { mapWithConcurrency } from '../infra/async';
 import { buildPdfOptions, injectPageBreakCss, injectTocPageBreakCss } from './pdfHeaderFooter';
 import { buildPdfIndexHtml, estimateIndexPageCount, HeadingPageEntry } from './pdfIndex';
@@ -735,10 +736,8 @@ export async function exportToPdf(
   // Step 3: Launch Chromium
   progress?.report(RUNTIME_MESSAGES.exportProgress.launchingBrowser, 20);
 
-  // Point Playwright at the managed Chromium directory when available
-  if (dependencyStatus?.browserPath) {
-    process.env.PLAYWRIGHT_BROWSERS_PATH = dependencyStatus.browserPath;
-  }
+  // Playwright keeps the first browser directory it sees; pin it before loading.
+  pinBrowsersDir(context.globalStorageUri.fsPath);
 
   // Playwright Core is bundled into the extension, but dynamic import keeps it
   // out of the activation path until PDF export is requested.

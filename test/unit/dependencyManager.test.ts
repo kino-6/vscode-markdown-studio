@@ -28,7 +28,7 @@ import { DependencyManager, DependencyManagerDeps } from "../../src/deps/depende
 // ---------------------------------------------------------------------------
 
 const JAVA_PATH = "/storage/corretto/bin/java";
-const BROWSER_PATH = "/storage/chromium/chrome";
+const BROWSER_PATH = "/storage/chromium";
 
 function fullManifest(): DependencyManifest {
   return {
@@ -67,6 +67,8 @@ function makeDeps(overrides: Partial<DependencyManagerDeps> = {}): Partial<Depen
     writeManifest: vi.fn().mockResolvedValue(undefined),
     detectPlatform: () => ({ os: "linux", arch: "x64", archiveExt: "tar.gz" }) as PlatformInfo,
     fileExists: vi.fn().mockResolvedValue(false),
+    isChromiumInstalled: vi.fn().mockReturnValue(false),
+    browsersDir: () => BROWSER_PATH,
     resolveNetworkConfig: vi.fn().mockReturnValue({ caCertPaths: [], strictSSL: true }),
     ...overrides,
   };
@@ -97,6 +99,7 @@ describe("DependencyManager unit tests", () => {
     const deps = makeDeps({
       readManifest: vi.fn().mockResolvedValue(fullManifest()),
       fileExists: vi.fn().mockResolvedValue(true),
+      isChromiumInstalled: vi.fn().mockReturnValue(true),
     });
     const dm = new DependencyManager(deps);
 
@@ -123,7 +126,7 @@ describe("DependencyManager unit tests", () => {
     };
     const deps = makeDeps({
       readManifest: vi.fn().mockResolvedValue(manifest),
-      fileExists: vi.fn().mockImplementation(async (p: string) => p === BROWSER_PATH),
+      isChromiumInstalled: vi.fn().mockReturnValue(true),
     });
     const dm = new DependencyManager(deps);
 
@@ -179,7 +182,7 @@ describe("DependencyManager unit tests", () => {
     const manifest = fullManifest();
     const deps = makeDeps({
       readManifest: vi.fn().mockResolvedValue(manifest),
-      fileExists: vi.fn().mockImplementation(async (p: string) => p === BROWSER_PATH),
+      isChromiumInstalled: vi.fn().mockReturnValue(true),
     });
     const dm = new DependencyManager(deps);
 
@@ -258,6 +261,7 @@ describe("DependencyManager unit tests", () => {
     const deps = makeDeps({
       readManifest: vi.fn().mockResolvedValue(fullManifest()),
       fileExists: vi.fn().mockResolvedValue(true),
+      isChromiumInstalled: vi.fn().mockReturnValue(true),
     });
     const dm = new DependencyManager(deps);
 
@@ -359,6 +363,7 @@ describe("DependencyManager NetworkConfig integration", () => {
     const deps = makeDeps({
       readManifest: vi.fn().mockResolvedValue(fullManifest()),
       fileExists: vi.fn().mockResolvedValue(true),
+      isChromiumInstalled: vi.fn().mockReturnValue(true),
       resolveNetworkConfig: vi.fn().mockReturnValue({ caCertPaths: [], strictSSL: true }),
     });
     const dm = new DependencyManager(deps);

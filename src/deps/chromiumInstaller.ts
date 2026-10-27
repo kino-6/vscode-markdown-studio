@@ -1,5 +1,4 @@
 import * as fs from "fs";
-import * as path from "path";
 import type { InstallerResult } from "./types";
 import type { NetworkConfig } from "../infra/networkConfig";
 import { RUNTIME_MESSAGES } from "../infra/messages";
@@ -7,12 +6,13 @@ import {
   appendTlsCertificateSettingsHint,
   isTlsCertificateError,
 } from "../infra/tlsCertificateRetry";
+import { managedBrowsersDir, pinBrowsersDir } from "./playwrightBrowsers";
 
 /**
  * Returns the absolute path to the chromium browser directory.
  */
 function getBrowserPath(storageDir: string): string {
-  return path.join(storageDir, "chromium");
+  return managedBrowsersDir(storageDir);
 }
 
 /**
@@ -89,7 +89,7 @@ async function installChromiumReportingTlsErrors(): Promise<ChromiumInstallAttem
 export const chromiumInstaller = {
   /**
    * Installs Playwright's Chromium browser into storageDir/chromium/.
-   * 1. Set PLAYWRIGHT_BROWSERS_PATH to storageDir/chromium/
+   * 1. Pin PLAYWRIGHT_BROWSERS_PATH (storageDir/chromium/ unless already set)
    * 2. Apply network env vars from NetworkConfig
    * 3. Try Playwright's programmatic install API
    * 4. Fall back to CLI-based install if programmatic API fails
@@ -101,10 +101,8 @@ export const chromiumInstaller = {
     progress: (message: string, increment: number) => void,
     networkConfig?: NetworkConfig
   ): Promise<InstallerResult> {
-    const browsersDir = getBrowserPath(storageDir);
+    const browsersDir = pinBrowsersDir(storageDir);
     await fs.promises.mkdir(browsersDir, { recursive: true });
-
-    process.env.PLAYWRIGHT_BROWSERS_PATH = browsersDir;
 
     const restoreEnv = applyNetworkEnv(networkConfig);
 
@@ -144,8 +142,7 @@ export const chromiumInstaller = {
     storageDir: string,
     networkConfig?: NetworkConfig
   ): Promise<InstallerResult> {
-    const browsersDir = getBrowserPath(storageDir);
-    process.env.PLAYWRIGHT_BROWSERS_PATH = browsersDir;
+    const browsersDir = pinBrowsersDir(storageDir);
 
     const restoreEnv = applyNetworkEnv(networkConfig);
 

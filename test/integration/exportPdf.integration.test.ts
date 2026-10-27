@@ -208,7 +208,7 @@ describe('exportToPdf smoke/integration', () => {
       uri: { fsPath: '/tmp/sample.md' }
     } as any;
 
-    const output = await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+    const output = await exportToPdf(document, { extensionPath: '/tmp/ext', globalStorageUri: { fsPath: '/tmp/ext-storage' } } as any);
 
     expect(buildHtmlMock).toHaveBeenCalledWith('# Hello', expect.anything(), undefined, undefined, expect.anything());
     expect(setContentMock).toHaveBeenCalledWith(
@@ -242,7 +242,7 @@ describe('exportToPdf smoke/integration', () => {
       uri: { fsPath: '/tmp/sample.md' }
     } as any;
 
-    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+    await exportToPdf(document, { extensionPath: '/tmp/ext', globalStorageUri: { fsPath: '/tmp/ext-storage' } } as any);
 
     const htmlArg = setContentMock.mock.calls[0][0] as string;
     expect(htmlArg).toContain('<style>.hljs-keyword { color: red; }</style>');
@@ -277,7 +277,7 @@ describe('exportToPdf smoke/integration', () => {
     } as any;
 
     // Should not throw even if CSS file is missing
-    const output = await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+    const output = await exportToPdf(document, { extensionPath: '/tmp/ext', globalStorageUri: { fsPath: '/tmp/ext-storage' } } as any);
     expect(output).toBe('/tmp/sample.pdf');
 
     // HTML should be passed without the hljs style injection (page-break CSS may still be present)
@@ -308,7 +308,7 @@ describe('exportToPdf smoke/integration', () => {
       uri: { fsPath: '/tmp/sample.md' }
     } as any;
 
-    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+    await exportToPdf(document, { extensionPath: '/tmp/ext', globalStorageUri: { fsPath: '/tmp/ext-storage' } } as any);
 
     expect(pdfMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -343,7 +343,7 @@ describe('exportToPdf smoke/integration', () => {
       uri: { fsPath: '/tmp/sample.md' }
     } as any;
 
-    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+    await exportToPdf(document, { extensionPath: '/tmp/ext', globalStorageUri: { fsPath: '/tmp/ext-storage' } } as any);
 
     expect(setContentMock).toHaveBeenCalledWith(
       expect.stringContaining('<title>Design &lt;Spec&gt;</title>'),
@@ -379,7 +379,7 @@ describe('exportToPdf smoke/integration', () => {
       uri: { fsPath: '/tmp/sample.md' }
     } as any;
 
-    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+    await exportToPdf(document, { extensionPath: '/tmp/ext', globalStorageUri: { fsPath: '/tmp/ext-storage' } } as any);
 
     const htmlArg = setContentMock.mock.calls[0][0] as string;
     expect(htmlArg).toContain('page-break-before');
@@ -419,7 +419,7 @@ describe('exportToPdf smoke/integration', () => {
       uri: { fsPath: '/tmp/sample.md' }
     } as any;
 
-    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+    await exportToPdf(document, { extensionPath: '/tmp/ext', globalStorageUri: { fsPath: '/tmp/ext-storage' } } as any);
 
     expect(setContentMock).toHaveBeenCalledTimes(1);
     expect(waitForFunctionMock).toHaveBeenCalledTimes(1);
@@ -459,7 +459,7 @@ describe('exportToPdf smoke/integration', () => {
       uri: { fsPath: '/tmp/sample.md' }
     } as any;
 
-    const output = await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+    const output = await exportToPdf(document, { extensionPath: '/tmp/ext', globalStorageUri: { fsPath: '/tmp/ext-storage' } } as any);
 
     expect(buildHtmlMock).toHaveBeenNthCalledWith(1, '# Body', expect.anything(), undefined, undefined, expect.anything());
     expect(buildHtmlMock).toHaveBeenNthCalledWith(2, '# Cover', expect.anything(), undefined, undefined, expect.objectContaining({ fsPath: '/tmp/cover.md' }));
@@ -504,7 +504,7 @@ describe('exportToPdf smoke/integration', () => {
       uri: { fsPath: '/tmp/sample.md' }
     } as any;
 
-    const output = await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+    const output = await exportToPdf(document, { extensionPath: '/tmp/ext', globalStorageUri: { fsPath: '/tmp/ext-storage' } } as any);
 
     expect(readFileMock).not.toHaveBeenCalledWith('/tmp/cover.md', 'utf-8');
     expect(buildHtmlMock).toHaveBeenNthCalledWith(1, '# Body', expect.anything(), undefined, undefined, expect.anything());
@@ -581,7 +581,7 @@ ${Array.from({ length: 16 }, () => '/Type /Page').join('\n')}
       uri: { fsPath: '/tmp/sample.md' }
     } as any;
 
-    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+    await exportToPdf(document, { extensionPath: '/tmp/ext', globalStorageUri: { fsPath: '/tmp/ext-storage' } } as any);
 
     expect(mergePdfBuffersMock).toHaveBeenCalledWith([coverBuffer, bodyFinalBuffer], { title: expect.any(String) });
     expect(writeFileMock.mock.calls[0][0]).toBe('/tmp/sample.pdf');
@@ -629,7 +629,7 @@ ${Array.from({ length: 16 }, () => '/Type /Page').join('\n')}
       uri: { fsPath: '/tmp/sample.md' }
     } as any;
 
-    const output = await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+    const output = await exportToPdf(document, { extensionPath: '/tmp/ext', globalStorageUri: { fsPath: '/tmp/ext-storage' } } as any);
 
     expect(buildHtmlMock).toHaveBeenCalledTimes(1);
     expect(pdfMock).toHaveBeenCalledWith(expect.objectContaining({ path: '/tmp/sample.pdf' }));
@@ -679,7 +679,7 @@ describe('exportToPdf bookmark integration', () => {
     setupPageMocks();
 
     const document = { getText: () => '# Title\n## Section', uri: { fsPath: '/tmp/sample.md' } } as any;
-    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+    await exportToPdf(document, { extensionPath: '/tmp/ext', globalStorageUri: { fsPath: '/tmp/ext-storage' } } as any);
 
     expect(addBookmarksMock).toHaveBeenCalledWith(
       '/tmp/sample.pdf',
@@ -700,7 +700,7 @@ describe('exportToPdf bookmark integration', () => {
     setupPageMocks();
 
     const document = { getText: () => '# Title\n## Section', uri: { fsPath: '/tmp/sample.md' } } as any;
-    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+    await exportToPdf(document, { extensionPath: '/tmp/ext', globalStorageUri: { fsPath: '/tmp/ext-storage' } } as any);
 
     expect(addBookmarksMock).not.toHaveBeenCalled();
   });
@@ -713,7 +713,7 @@ describe('exportToPdf bookmark integration', () => {
     setupPageMocks();
 
     const document = { getText: () => '# Title\n## Section', uri: { fsPath: '/tmp/sample.md' } } as any;
-    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+    await exportToPdf(document, { extensionPath: '/tmp/ext', globalStorageUri: { fsPath: '/tmp/ext-storage' } } as any);
 
     // addBookmarks should be called even without pdfIndex
     expect(addBookmarksMock).toHaveBeenCalledTimes(1);
@@ -771,7 +771,7 @@ describe('exportToPdf bookmark integration', () => {
     launchMock.mockResolvedValue({ newPage: newPageMock, close: closeMock });
 
     const document = { getText: () => '# Title\n## Section', uri: { fsPath: '/tmp/sample.md' } } as any;
-    await exportToPdf(document, { extensionPath: '/tmp/ext' } as any);
+    await exportToPdf(document, { extensionPath: '/tmp/ext', globalStorageUri: { fsPath: '/tmp/ext-storage' } } as any);
 
     expect(addBookmarksMock).toHaveBeenCalledWith(
       '/tmp/sample.pdf',

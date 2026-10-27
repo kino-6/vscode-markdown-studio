@@ -45,7 +45,7 @@ const APPROVED: Record<string, string> = {
   'src/infra/networkConfig.ts|env-read': 'Reads proxy variables for setup downloads.',
   'src/infra/runProcess.ts|process-launch': 'Runs the bundled PlantUML JAR with Java, and `java -version` checks.',
   'src/export/exportPdf.ts|browser-automation': 'Local headless Chromium renders the PDF; its network is gated by isPdfRequestAllowed + CSP.',
-  'src/export/exportPdf.ts|env-read': 'Points Playwright at the managed Chromium folder.',
+  'src/deps/playwrightBrowsers.ts|env-read': 'Pins PLAYWRIGHT_BROWSERS_PATH to the extension storage folder before Playwright loads.',
   'src/renderers/renderPlantUml.ts|env-read': 'Builds the Java environment without PLANTUML_SECURITY_PROFILE.',
   'src/preview/webviewPanel.ts|open-external': 'Opens a link only after the user clicks it; http(s)/mailto/file only.',
   'media/preview.js|clipboard-write': 'Copy button on code blocks writes to the clipboard on click; never reads it.',

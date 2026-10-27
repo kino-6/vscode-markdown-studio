@@ -7,6 +7,7 @@ import { openPreviewCommand } from './commands/openPreview';
 import { validateEnvironmentCommand } from './commands/validateEnvironment';
 import { cleanupTempFiles } from './infra/tempFiles';
 import { DependencyManager } from './deps/dependencyManager';
+import { pinBrowsersDir } from './deps/playwrightBrowsers';
 import type { DependencyStatus } from './deps/types';
 import { destroyPreviewPanel, getActivePreviewDocument, rerenderPreview } from './preview/webviewPanel';
 import { createDependencyPrompter } from './deps/dependencyConsent';
@@ -52,6 +53,8 @@ export function checkDependency(name: 'java' | 'chromium'): boolean {
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  // Before anything loads Playwright: it reads the browser directory only once.
+  pinBrowsersDir(context.globalStorageUri.fsPath);
   const depManager = new DependencyManager();
 
   // Only look at what is already installed. Activation never downloads:
